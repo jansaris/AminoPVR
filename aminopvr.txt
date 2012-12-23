@@ -1,0 +1,54 @@
+scheduler
+- check for duplicates on 'title', 'subtitle' and/or 'description'
+- record from single channel
+- record from all channels
+- prefer SD/HD
+- prefer unscrambled/scrambled
+- record at same time every day/weekday/weekendday/week
+- record once
+- record early / end late
+- indicate recording group (e.g. TV Series, Food, Sport)
+- support recording group filter (genre > group mapping)
+recordings
+- delete (prevent re-recording)
+- delete & re-record
+- mark scrambled / unscrambled
+- index file generation (for RTSP) for unscrambled content
+- keep channel name
+- keep original channel url arguments
+- record from unicast stream
+- record from multicast stream (py-multicast)
+- tag unfinished recordings after crash (automatic reschedule)
+channels
+- sync channel list through JavaScript parser
+- sync channel list through JavaScript code injection
+- manually tag channel as scrambled
+- [future] automatic scramble detection
+epg
+- download EPG daily
+- download detailed EPG on-demand (by scheduler or detailed EPG view)
+- forced download of detailed EPG configurable
+- extraction of series/episode information from name
+- (optional) on-demand grabbing of (tvdb) metadata
+- (optional) parsing of season/episode info from meta data
+api
+- expose channel list
+- expose recording list
+- expose recording groups list
+- expose recording series list
+- expose timer schedule list
+- expose epg
+- unscrabled and/or scrambled capabilities client configurable
+- using HTTP (REST?) API
+- gzipped json
+streams
+- live: multicast igmp/rtp/udp
+- live: unicast http (udpxy)
+- recordings: rtsp or http
+- basic authentication
+- all: apple hls?
+- support timeshift?
+- [future] internal igmp proxy
+- [future] internal multicast > unicast proxy
+- [future] internal rtsp server
+
