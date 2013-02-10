@@ -44,8 +44,8 @@ generalConfig = GeneralConfig( config )
 recorder      = Recorder()
 scheduler     = Scheduler()
 
-def test( eventType, params ):
-    logger.warning( "test" )
+#def test( eventType, params ):
+#    logger.warning( "test" )
 
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
@@ -60,10 +60,11 @@ def aminoPVRProcess():
 
     if provider.indexPageParser() != "":
         provider.codeJSParser()
-#    epgGrabber = provider.EpgProvider()
+    epgGrabber = provider.EpgProvider()
+#    epgGrabber.requestEpgUpdate()
 #    epgGrabber.grabAll()
-    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
-    testTimer.start()
+#    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
+#    testTimer.start()
 #    provider.epgGrabber()
 #    recordingId = recorder.startRecording( '224.1.3.1:1234', 'http', 'test.ts' )
 #    time.sleep( 60.0 )

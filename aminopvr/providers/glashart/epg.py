@@ -20,13 +20,16 @@ from aminopvr.channel import Channel
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
+from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.timer import Timer
 from aminopvr.tools import getPage
-import aminopvr.providers.glashart
 import datetime
 import gzip
 import json
 import logging
 import random
+import re
+import threading
 import time
 import unicodedata
 
@@ -174,13 +177,67 @@ def _lineFilter( line ):
 #    line = _uRe.sub( "u", line )
     return line
 
-class EpgProvider:
+class EpgProvider( threading.Thread ):
     _logger = logging.getLogger( "aminopvr.providers.glashart.EpgProvider" )
 
+    _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
+
     def __init__( self ):
+        threading.Thread.__init__( self )
+
         self._logger.debug( "EpgProvider" )
 
-    def grabAll( self ):
+        now          = datetime.datetime.now()
+        grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( glashartConfig.grabEpgTime, "%H:%M" ).timetz() )
+        grabInterval = EpgProvider._parseTimedetla( glashartConfig.grabEpgInterval )
+        while grabTime < now:
+            grabTime = grabTime + grabInterval
+
+        self._logger.warning( "Starting EPG grab timer @ %s with interval %s" % ( grabTime, grabInterval ) )
+
+        self._epgUpdateInProgress = False
+
+        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
+
+    def requestEpgUpdate( self, wait=False ):
+        # TODO: epg grabbing on it's own thread!
+        if not self._epgUpdateInProgress:
+            self.start()
+            if wait:
+                self.join()
+            return True
+        else:
+            self._logger.warning( "Epg update in progress: skipping request" )
+            return False
+
+    def run( self ):
+        if not self._epgUpdateInProgress:
+            self._epgUpdateInProgress = True
+            self._grabAll()
+            self._epgUpdateInProgress = False
+        else:
+            self._logger.warning( "Epg update in progress: end thread" )
+
+    @staticmethod
+    def _parseTimedetla( timeString ):
+        parts = EpgProvider._timedeltaRegex.match( timeString )
+        if not parts:
+            return
+        parts      = parts.groupdict()
+        timeParams = {}
+        for ( name, param ) in parts.iteritems():
+            if param:
+                timeParams[name] = int( param )
+        return datetime.timedelta( **timeParams )
+
+    def _timerCallback( self, arguments ):
+        self._logger.warning( "Time to grab EPG." )
+        if not self._epgUpdateInProgress:
+            self.start()
+        else:
+            self._logger.warning( "Epg update in progress: skipping timed update" )
+
+    def _grabAll( self ):
         self._logger.debug( "grabAll" )
 
         self._logger.info( "Grabbing EPG for all channels." )
@@ -206,11 +263,11 @@ class EpgProvider:
         EpgProgram.deleteByTimeFromDB( db, int( time.mktime( nowDay.timetuple() ) ) )
 
         for epgId in epgIds:
-            self.grabEpgForChannel( epgId=epgId )
+            self._grabEpgForChannel( epgId=epgId )
 
         self._logger.info( "Grabbing EPG data complete." )
 
-    def grabEpgForChannel( self, channel=None, epgId=None ):
+    def _grabEpgForChannel( self, channel=None, epgId=None ):
         conn = DBConnection()
 
         if channel:
@@ -226,7 +283,7 @@ class EpgProvider:
         daysDetailDelta = datetime.timedelta( days = 3 )
 
         epgFilename = "/%s.json.gz" % ( epgId.epgId )
-        epgUrl      = aminopvr.providers.glashart.glashartConfig.epgChannelsPath + epgFilename
+        epgUrl      = glashartConfig.epgChannelsPath + epgFilename
 
         content, code, mime = getPage( epgUrl )
 
@@ -259,7 +316,7 @@ class EpgProvider:
 
                         time.sleep( random.uniform( 0.5, 1.0 ) )
 
-                        programNew, grabbed = self.grabDetailedEpgForProgram( programNew )
+                        programNew, grabbed = self._grabDetailedEpgForProgram( programNew )
                         if grabbed:
                             numProgramsDetail += 1
                         else:
@@ -284,13 +341,15 @@ class EpgProvider:
 
             self._logger.info( "Num programs:        %i" % numPrograms )
             self._logger.info( "Num program details: %i" % numProgramsDetail )
+        else:
+            self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
 
-    def grabDetailedEpgForProgram( self, program, epgId=None ):
+    def _grabDetailedEpgForProgram( self, program, epgId=None ):
         grabbed = True
 
         # Fetch detailed information. http://w.zt6.nl/epgdata/xx/xxxxxx.json
         detailsFilename         = "/%s/%s.json" % ( program.originalId[-2:], program.originalId )
-        detailsUrl              = aminopvr.providers.glashart.glashartConfig.epgDataPath + detailsFilename
+        detailsUrl              = glashartConfig.epgDataPath + detailsFilename
         detailsPage, code, mime = getPage( detailsUrl, None )
 
         if detailsPage and len( detailsPage ) > 0:

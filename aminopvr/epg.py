@@ -325,6 +325,9 @@ class ProgramGenreAbstract( object ):
 
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
+        if self._programId == -1:
+            self._logger.error( "ProgramGenreAbstract.addToDb: programId is not valid" )
+            return
         if conn:
             genreId = self._genre.addToDb( conn )
             if self._genreId == -1:
@@ -436,6 +439,9 @@ class ProgramPersonAbstract( object ):
 
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
+        if self._programId == -1:
+            self._logger.error( "ProgramPersonAbstract.addToDb: programId is not valid" )
+            return
         if conn:
             personId = self._person.addToDb( conn )
             if self._personId == -1:
@@ -520,21 +526,24 @@ class ProgramAbstract( object ):
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
-        return ( self._epgId                                                      == other._epgId            and
-                 self._originalId                                                 == other._originalId       and
-                 self._startTime                                                  == other._startTime        and
-                 self._endTime                                                    == other._endTime          and
-                 self._title                                                      == other._title            and
-                 self._subtitle                                                   == other._subtitle         and
-                 self._description                                                == other._description      and
-                 self._aspectRatio                                                == other._aspectRatio      and
-                 self._parentalRating                                             == other._parentalRating   and
-                 self._detailed                                                   == other._detailed         and
-                 set( self._genres     ).intersection( set( other._genres     ) ) == set( self._genres )     and
-                 set( self._actors     ).intersection( set( other._actors     ) ) == set( self._actors )     and
-                 set( self._directors  ).intersection( set( other._directors  ) ) == set( self._directors )  and
-                 set( self._presenters ).intersection( set( other._presenters ) ) == set( self._presenters ) and
-                 set( self._ratings    ).intersection( set( other._ratings    ) ) == set( self._ratings ) )
+        # If both instances have 'detailed' program information, compare that
+        # too, else consider them to be the same
+        return ( self._epgId                                                          == other._epgId            and
+                 self._originalId                                                     == other._originalId       and
+                 self._startTime                                                      == other._startTime        and
+                 self._endTime                                                        == other._endTime          and
+                 self._title                                                          == other._title            and
+                 ( ( self._detailed                                                   == other._detailed         and
+                     self._subtitle                                                   == other._subtitle         and
+                     self._description                                                == other._description      and
+                     self._aspectRatio                                                == other._aspectRatio      and
+                     self._parentalRating                                             == other._parentalRating   and
+                     set( self._genres     ).intersection( set( other._genres     ) ) == set( self._genres )     and
+                     set( self._actors     ).intersection( set( other._actors     ) ) == set( self._actors )     and
+                     set( self._directors  ).intersection( set( other._directors  ) ) == set( self._directors )  and
+                     set( self._presenters ).intersection( set( other._presenters ) ) == set( self._presenters ) and
+                     set( self._ratings    ).intersection( set( other._ratings    ) ) == set( self._ratings ) )  or 
+                   ( self._detailed                                                   != other._detailed ) ) )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
@@ -681,15 +690,21 @@ class ProgramAbstract( object ):
         return programs
 
     @classmethod
-    def getAllByEpgIdFromDb( cls, conn, epgId, startTime = None ):
+    def getAllByEpgIdFromDb( cls, conn, epgId, startTime=None, endTime=None ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programs = []
         if conn:
             rows = None
             if startTime == None:
-                rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) ).fetchall()
+                if endTime == None:
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) ).fetchall()
+                else:
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) ).fetchall()
             else:
-                rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) ).fetchall()
+                if endTime == None:
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) ).fetchall()
+                else:
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime ) ).fetchall()
             for row in rows:
                 program = cls._createProgramFromDbDict( conn, row )
                 programs.append( program )
@@ -741,6 +756,8 @@ class ProgramAbstract( object ):
                 programs.append( program )
         return programs
 
+    def toDict( self ):
+        return { "id": self.id, "title": self.title, "subtitle": self.subtitle, "start_time": self.startTime, "end_time": self.endTime, "description": self.description }
 
     def dump( self ):
         genres     = [];
@@ -873,8 +890,10 @@ class EpgProgram( ProgramAbstract ):
                         director.programId = id
                     for presenter in self._presenters:
                         presenter.programId = id
+                else:
+                    self._logger.error( "Inserted row, but no auto-increment id returned!" )
 
-            if self.id != -1:
+            if self._id != -1:
                 # Delete programs of the same channel but with different IDs when:
                 # - the start and end time completely overlap
                 # - the start time overlaps and the end time is after the program being added.

@@ -397,6 +397,24 @@ class ChannelAbstract( object ):
         return channel
 
     @classmethod
+    def getNumChannelsFromDb( cls, conn, includeInactive=False, includeRadio=False ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        numChannels = 0
+        if conn:
+            rows = None
+            whereCondition = []
+            if not includeInactive:
+                whereCondition.append( "inactive=0" )
+            if not includeRadio:
+                whereCondition.append( "radio=0" )
+            if len( whereCondition ) > 0:
+                rows = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s WHERE %s" % ( cls._tableName, " AND ".join( whereCondition ) ) ).fetchone()
+            else:
+                rows = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s" % ( cls._tableName ) ).fetchone()
+            numChannels = rows["num_channels"]
+        return numChannels
+
+    @classmethod
     def _createChannelFromDbDict( cls, conn, channelData ):
         channel = None
         if channelData:
@@ -467,6 +485,9 @@ class ChannelAbstract( object ):
 #            output = output + "%s\n" % ( url.getUrl( unicast ) )
 #
 #        return output
+
+    def toDict( self ):
+        return { "id": self.id, "number": self.number, "name": self.name }
 
     def dump( self ):
         radio = self._radio and ", radio" or ""

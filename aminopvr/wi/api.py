@@ -15,11 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import PendingChannel, PendingChannelUrl
+from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel
 from aminopvr.db import DBConnection
+from aminopvr.epg import EpgProgram
 from aminopvr.recorder import Recorder
 import aminopvr
 import cherrypy
+import datetime
 import json
 import logging
 import re
@@ -180,6 +182,50 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     def index( self ):
         return "Welcome to AminoPVR API"
+
+    @cherrypy.expose
+    def getNumChannels( self ):
+        self._logger.debug( "getNumChannels" )
+        if self._grantAccess():
+            conn = DBConnection()
+            return json.dumps( { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
+        else:
+            self._logger.error( "getNumChannels: no access!" )
+            return json.dumps( { "status": "no_access" } )
+
+    @cherrypy.expose
+    def getChannels( self ):
+        self._logger.debug( "getChannels" )
+        if self._grantAccess():
+            conn     = DBConnection()
+            channels = Channel.getAllFromDb( conn )
+            channelsArray = []
+            for channel in channels:
+                channelsArray.append( channel.toDict() )
+            return json.dumps( channelsArray )
+        else:
+            self._logger.error( "getChannels: no access!" )
+            return json.dumps( { "status": "no_access" } )
+
+    @cherrypy.expose
+    def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
+        self._logger.debug( "getEpgForChannel" )
+        if self._grantAccess():
+            if startTime:
+                startTime = int( startTime )
+            if endTime:
+                endTime   = int( endTime )
+
+            conn     = DBConnection()
+            channel  = Channel.getFromDb( conn, channelId )
+            epgData  = EpgProgram.getAllByEpgIdFromDb( conn, channel.epgId, startTime, endTime )
+            epgArray = []
+            for epg in epgData:
+                epgArray.append( epg.toDict() )
+            return json.dumps( epgArray )
+        else:
+            self._logger.error( "getEpgForChannels: no access!" )
+            return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
     def getStorageInfo( self ):
