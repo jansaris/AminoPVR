@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.const import GLOBAL_TIMEOUT, USER_AGENT
 from urllib2 import Request, urlopen, HTTPError, URLError
 import aminopvr
 import threading
@@ -58,7 +59,7 @@ class fetchURL( threading.Thread ):
         if self._method == "POST":
             txtdata = urllib.urlencode( self._args )
         txtheaders = { 'Keep-Alive' : '300',
-                       'User-Agent' : aminopvr.USER_AGENT }
+                       'User-Agent' : USER_AGENT }
         try:
             rurl   = Request( self._url, txtdata, txtheaders )
             fp     = urlopen( rurl )
@@ -74,15 +75,15 @@ class fetchURL( threading.Thread ):
                 return ( page, 200, fp.info() )
 
         except HTTPError, e:
-            aminopvr.logger.debug( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
-            aminopvr.logger.debug( 'HTTP Error code: %d' % e.code )
+            aminopvr.logger.warning( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
+            aminopvr.logger.warning( 'HTTP Error code: %d' % e.code )
             return ( None, e.code, None )
         except URLError, e:
-            aminopvr.logger.debug( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
-            aminopvr.logger.debug( 'URL Error reason: %s' % e.reason )
+            aminopvr.logger.warning( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
+            aminopvr.logger.warning( 'URL Error reason: %s' % e.reason )
             return ( None, 500, None )
         except:
-            aminopvr.logger.debug( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
+            aminopvr.logger.warning( 'Cannot open url: %s, filename: %s' % ( self._url, self._filename ) )
             return ( None, 500, None )
 
 def getPage( url, filename = None, method="GET", args={} ):
@@ -93,9 +94,9 @@ def getPage( url, filename = None, method="GET", args={} ):
     try: 
         fu = fetchURL( url, filename, method, args )
         fu.start()
-        fu.join( aminopvr.GLOBAL_TIMEOUT )
+        fu.join( GLOBAL_TIMEOUT )
 
         return ( fu.result, fu.code, fu.mimeinfo )
     except:
-        aminopvr.logger.debug( 'getPage timed out on (>%s s): %s' % ( aminopvr.GLOBAL_TIMEOUT, url ) )
+        aminopvr.logger.debug( 'getPage timed out on (>%s s): %s' % ( GLOBAL_TIMEOUT, url ) )
         return ( None, 500, None )

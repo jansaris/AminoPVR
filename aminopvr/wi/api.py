@@ -18,10 +18,10 @@
 from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
+from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
 import aminopvr
 import cherrypy
-import datetime
 import json
 import logging
 import re
@@ -184,9 +184,9 @@ class AminoPVRAPI( API ):
         return "Welcome to AminoPVR API"
 
     @cherrypy.expose
-    def getNumChannels( self ):
+    def getNumChannels( self, apiKey=None ):
         self._logger.debug( "getNumChannels" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             conn = DBConnection()
             return json.dumps( { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
         else:
@@ -194,23 +194,30 @@ class AminoPVRAPI( API ):
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getChannels( self ):
+    def getChannels( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True, apiKey=None ):
         self._logger.debug( "getChannels" )
-        if self._grantAccess():
-            conn     = DBConnection()
-            channels = Channel.getAllFromDb( conn )
+        if self._grantAccess( apiKey ):
+            conn          = DBConnection()
+            channels      = Channel.getAllFromDb( conn, includeRadio=radio, tv=not radio )
             channelsArray = []
+
+            protocol = InputStreamProtocol.HTTP
+            if not unicast:
+                protocol = InputStreamProtocol.MULTICAST
+
             for channel in channels:
-                channelsArray.append( channel.toDict() )
+                channelJson = channel.toDict( protocol, includeScrambled, includeHd )
+                if channelJson:
+                    channelsArray.append( channelJson )
             return json.dumps( channelsArray )
         else:
             self._logger.error( "getChannels: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
+    def getEpgForChannel( self, channelId, startTime=None, endTime=None, apiKey=None ):
         self._logger.debug( "getEpgForChannel" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             if startTime:
                 startTime = int( startTime )
             if endTime:
@@ -228,9 +235,9 @@ class AminoPVRAPI( API ):
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getStorageInfo( self ):
+    def getStorageInfo( self, apiKey=None ):
         self._logger.debug( "getStorageInfo" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             # TODO: get actual storage info
             return json.dumps( { "available_size": 100000, "total_size": 200000 } )
         else:
@@ -238,52 +245,52 @@ class AminoPVRAPI( API ):
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getRecordingList( self ):
+    def getRecordingList( self, apiKey=None ):
         self._logger.debug( "getRecordingList" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             return json.dumps( [] )
         else:
             self._logger.error( "getRecordingList: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getRecordingMeta( self, id ):
+    def getRecordingMeta( self, id, apiKey=None ):
         self._logger.debug( "getRecordingMeta( %s )" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             return json.dumps( { "marker": 0 } )
         else:
             self._logger.error( "getRecordingMeta: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def setRecordingMeta( self, id, marker ):
+    def setRecordingMeta( self, id, marker, apiKey=None ):
         self._logger.debug( "setRecordingMeta( %s, %s )" % ( id, marker ) )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             return json.dumps( { "status": "ok" } )
         else:
             self._logger.error( "setRecordingMeta: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getScheduleList( self ):
+    def getScheduleList( self, apiKey=None ):
         self._logger.debug( "getScheduleList" )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             return json.dumps( [] )
         else:
             self._logger.error( "getScheduleList: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def addSchedule( self, schedule ):
+    def addSchedule( self, schedule, apiKey=None ):
         self._logger.debug( "addSchedule( %s )" % ( schedule ) )
-        if self._grantAccess():
+        if self._grantAccess( apiKey ):
             return json.dumps( { "status": "ok" } )
         else:
             self._logger.error( "addSchedule: no access!" )
             return json.dumps( { "status": "no_access" } )
 
     @cherrypy.expose
-    def getActiveRecordings( self ):
+    def getActiveRecordings( self, apiKey=None ):
         self._logger.debug( "getActiveRecordings" )
         activeRecordings = Recorder.getActiveRecordings()
         return r'''
@@ -297,6 +304,78 @@ class AminoPVRAPI( API ):
     </body>
 </html>
 ''' % ( 'Active Recordings', len( activeRecordings ) )
+
+    @cherrypy.expose
+    def activatePendingChannels( self, apiKey=None ):
+        self._logger.debug( "activatePendingChannels" )
+        if self._grantAccess( apiKey ):
+            conn = DBConnection()
+            pendingChannels = PendingChannel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
+
+            for channel in pendingChannels:
+                currChannel = Channel.getByNumberFromDb( conn, channel.number )
+                if currChannel and currChannel.epgId != channel.epgId:
+                    # Found a channel on the same channel number, but epgId is different
+                    # Find another match.
+                    self._logger.info( "activatePendingChannels: epgId mismatch for channel %i - %s: %s != %s" % ( channel.number, channel.name, channel.epgId, currChannel.epgId ) )
+                    # If channel name is the same, then they must have changed epgId
+                    if channel.name != currChannel.name:
+                        currChannel   = None
+                        epgIdChannels = Channel.getAllByEpgIdFromDb( conn, channel.epgId, includeInactive=True, includeRadio=True )
+                        for epgIdChannel in epgIdChannels:
+                            if epgIdChannel.name == channel.name:
+                                currChannel = epgIdChannel
+                                break
+                if currChannel:
+                    # Convert PendingChannel to Channel but keep channel id
+                    newCurrChannel = Channel.copy( channel, currChannel.id )
+                    if newCurrChannel != currChannel:
+                        self._logger.info( "activatePendingChannels: existing channel: %i - %s" % ( channel.number, channel.name ) )
+#                        self._logger.info( "%s == %s" % ( newCurrChannel.dump(), currChannel.dump() ) )
+
+                        # Hmm, channel number and name are the same, but epgId is different
+                        if newCurrChannel.epgId != currChannel.epgId:
+                            self._logger.info( "activatePendingChannels: epgId has changed: %s > %s" % ( currChannel.epgId, newCurrChannel.epgId ) )
+
+                        # Make sure the changed channel is activated (again)
+                        newCurrChannel.inactive = False
+
+                        # Keep the scrambled setting from ChannelUrl's currently in the Db.
+                        # This setting cannot be retrieved from the source 
+                        for key in currChannel.urls.keys():
+                            if newCurrChannel.urls[key].has_key( key ):
+                                newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
+
+                        # TODO: delete logo and/or thumbnail if changed
+                        #if os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
+                        #    currChannel.removeLogo()
+                        #if os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
+                        #    currChannel.removeThumbnail()
+
+                        # Download the logo and thumbnail for this channel
+                        newCurrChannel.downloadLogoAndThumbnail()
+                        newCurrChannel.addToDb( conn )
+                else:
+                    self._logger.info( "activatePendingChannels: new channel: %i - %s" % ( channel.number, channel.name ) )
+                    newChannel = Channel.copy( channel )
+                    newChannel.downloadLogoAndThumbnail()
+                    newChannel.addToDb( conn )
+
+            currentChannels = Channel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
+            removedChannels = set( currentChannels ).difference( set( pendingChannels ) )
+
+            self._logger.info( "activatePendingChannels: %i, %i, %i" % ( len( set( currentChannels ) ), len( set( pendingChannels ) ), len( removedChannels ) ) )
+            for channel in removedChannels:
+                currChannel = Channel.getByNumberFromDb( conn, channel.number )
+                if not currChannel.inactive:
+                    self._logger.info( "activatePendingChannels: inactive channel: %i - %s" % ( channel.number, channel.name ) )
+                    currChannel.inactive = True
+                    currChannel.addToDb( conn )
+
+            return self.getChannels( radio=False, unicast=True, includeScrambled=False, includeHd=True, apiKey=apiKey )
+        else:
+            self._logger.error( "activatePendingChannels: no access!" )
+            return json.dumps( { "status": "no_access" } )
 
 class AminoPVRWI( object ):
 

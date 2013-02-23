@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.config import ConfigSectionAbstract, config
 from aminopvr.multicast import MulticastSocket
 import logging
 import urllib2
@@ -22,6 +23,18 @@ import urllib2
 class InputStreamProtocol( object ):
     MULTICAST = 1
     HTTP      = 2
+
+class InputStreamConfig( ConfigSectionAbstract ):
+    _section = "InputStreams"
+    _options = {
+                 "http_base_url": "http://localhost:4022/[protocol]/[ip]:[port]"
+               }
+
+    @property
+    def httpBaseUrl( self ):
+        return self._get( "http_base_url" )
+
+inputStreamConfig = InputStreamConfig( config )
 
 class InputStreamAbstract( object ):
     """
@@ -44,6 +57,12 @@ class InputStreamAbstract( object ):
             return MulticastInputStream( url.ip, url.port )
         elif protocol == InputStreamProtocol.HTTP:
             return HttpInputStream( url.getUrl( True ) )
+        return None
+
+    @classmethod
+    def getUrl( cls, protocol, url ):
+        if protocol == InputStreamProtocol.HTTP:
+            return HttpInputStream.getUrl( url )
         return None
 
 class MulticastInputStream( InputStreamAbstract ):
@@ -100,3 +119,19 @@ class HttpInputStream( InputStreamAbstract ):
 
     def read( self, length ):
         return self._request.read( length )
+
+    @classmethod
+    def getUrl( cls, url ):
+        if url.arguments == ";rtpskip=yes":
+            protocol = "rtp"
+        else:
+            protocol = "udp"
+
+        httpBaseUrl = inputStreamConfig.httpBaseUrl
+        formatMap = {
+                        "[protocol]": protocol,
+                        "[ip]":       url.ip,
+                        "[port]":     str( url.port )
+                    }
+
+        return reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, httpBaseUrl )

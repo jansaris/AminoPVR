@@ -15,12 +15,15 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
+from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
+from aminopvr.tools import getPage
 import copy
 import logging
+import os
 import sys
-
-UNICAST_URL_BASE = "http://192.168.1.253:4022/"
+import urlparse
 
 class ChannelUrlAbstract( object ):
 
@@ -38,7 +41,7 @@ class ChannelUrlAbstract( object ):
 
     def __hash__( self ):
         return ( hash( self._channelType + self._protocol + self._ip + self._arguments ) +
-                 hash( self._port + self._scrambled ) )
+                 hash( self._port ) )
 
     def __eq__( self, other ):
         return ( self._protocol  == other._protocol  and
@@ -154,20 +157,8 @@ class ChannelUrlAbstract( object ):
         if conn:
             conn.execute( "DELETE FROM %s WHERE channel_id=? AND type=?" % ( self._tableName ), ( channelId, self._channelType ) )
 
-    def getUrl( self, unicast ):
-        url = ""
-
-        if self._arguments == ";rtpskip=yes":
-            protocol = "rtp"
-        else:
-            protocol = "udp"
-
-        if unicast:
-            url = UNICAST_URL_BASE + protocol + "/" + self.ip + ":" + str( self._port )
-        else:
-            url = protocol + "://" + self.ip + ":" + str( self._port )
-
-        return url
+    def getUrl( self, protocol ):
+        return InputStreamAbstract.getUrl( protocol, self )
 
     def dump( self ):
         return ( "{%r, %s://%s:%i%s}" % ( self._channelType, self._protocol, self._ip, self._port, self._arguments ) )
@@ -205,30 +196,38 @@ class ChannelAbstract( object ):
     def __hash__( self ):
         return ( hash( self._number + self._radio + self._inactive ) +
                  hash( self._epgId + self._name + self._nameShort ) +
-                 hash( self._logo + self.thumbnail ) )
+                 hash( os.path.basename( self._logo ) + os.path.basename( self._thumbnail ) ) )
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
-        return ( self._epgId     == other._epgId      and
-                 self._number    == other._number     and
-                 self._name      == other._name       and
-                 self._nameShort == other._nameShort  and
-                 self._logo      == other._logo       and
-                 self._thumbnail == other._thumbnail  and
-                 self._radio     == other._radio      and
-                 self._urls      == other._urls       and
-                 self._inactive  == other._inactive )
+        return ( self._epgId                                          == other._epgId                         and
+                 self._number                                         == other._number                        and
+                 self._name                                           == other._name                          and
+                 self._nameShort                                      == other._nameShort                     and
+                 os.path.basename( self._logo )                       == os.path.basename( other._logo )      and
+                 os.path.basename( self._thumbnail )                  == os.path.basename( other._thumbnail ) and
+                 self._radio                                          == other._radio                         and
+#                 self._urls                                           == other._urls                          and
+                 set( self._urls ).intersection( set( other._urls ) ) == set( self._urls )                    and
+                 self._inactive                                       == other._inactive )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
 
     @classmethod
-    def copy( cls, channel ):
+    def copy( cls, channel, id=-1 ):
         if isinstance( channel, ChannelAbstract ):
             channel = copy.copy( channel )
             channel.__class__ = cls
-            channel._id       = -1
+            channel._id       = id
+
+            urls    = []
+            for key in channel._urls.keys():
+                urls.append( cls._channelUrlClass.copy( channel._urls[key] ) )
+                channel._urls = {}
+            for url in urls:
+                channel.addUrl( url )
             return channel
         return None
 
@@ -317,7 +316,7 @@ class ChannelAbstract( object ):
 
     @urls.setter
     def urls( self, urls ):
-        self._urls = int( urls )
+        self._urls = urls
 
     @classmethod
     def getAllByEpgIdFromDb( cls, conn, epgId, includeInactive=False, includeRadio=False ):
@@ -338,7 +337,7 @@ class ChannelAbstract( object ):
         return channels
 
     @classmethod
-    def getAllFromDb( cls, conn, includeInactive=False, includeRadio=False ):
+    def getAllFromDb( cls, conn, includeInactive=False, includeRadio=False, tv=True ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         channels = []
         if conn:
@@ -348,6 +347,8 @@ class ChannelAbstract( object ):
                 whereCondition.append( "inactive=0" )
             if not includeRadio:
                 whereCondition.append( "radio=0" )
+            if not tv and includeRadio:
+                whereCondition.append( "radio=1" )
             if len( whereCondition ) > 0:
                 rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) ).fetchall()
             else:
@@ -486,8 +487,31 @@ class ChannelAbstract( object ):
 #
 #        return output
 
-    def toDict( self ):
-        return { "id": self.id, "number": self.number, "name": self.name }
+    def getChannelUrl( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
+        channelUrl = None
+
+        if includeHd and self._urls.has_key( "hd" ):
+            if self._urls["hd"].scrambled and includeScrambled:
+                channelUrl = self._urls["hd"]
+            elif not self._urls["hd"].scrambled:
+                channelUrl = self._urls["hd"]
+        if not channelUrl:
+            if self._urls.has_key( "sd" ):
+                if self._urls["sd"].scrambled and includeScrambled:
+                    channelUrl = self._urls["sd"]
+                elif not self._urls["sd"].scrambled:
+                    channelUrl = self._urls["sd"]
+        if channelUrl:
+            return channelUrl.getUrl( protocol )
+        else:
+            return None
+
+    def toDict( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
+        channelUrl = self.getChannelUrl( protocol, includeScrambled, includeHd )
+        if channelUrl:
+            return { "id": self.id, "number": self.number, "name": self.name, "url": channelUrl, "logo_path": "/assets/images/channels/logos/" + self.logo }
+        else:
+            return None
 
     def dump( self ):
         radio = self._radio and ", radio" or ""
@@ -502,6 +526,36 @@ class Channel( ChannelAbstract ):
     _tableName       = "channels"
     _channelUrlClass = ChannelUrl
     _logger          = logging.getLogger( 'aminopvr.Channel' )
+
+    def downloadLogoAndThumbnail( self ):
+        if self._logo != "" and self._logo.startswith( "http://" ):
+            logoFilename = urlparse.urlsplit( self._logo )[2].split( '/' )[-1]
+            logoPath     = os.path.join( DATA_ROOT, "assets/images/channels/logos", logoFilename )
+            filename, code, mime = getPage( self._logo, logoPath )
+            if filename:
+                self._logo = logoFilename
+                self._logger.info( "Channel.downloadLogoAndThumbnail: downloaded logo to %s" % ( logoPath ) )
+            else:
+                self._logger.info( "Channel.downloadLogoAndThumbnail: could not download logo from %s" % ( self._logo ) )
+                self._logo = ""
+        if self._thumbnail != "" and self._thumbnail.startswith( "http://" ):
+            thumbnailFilename = urlparse.urlsplit( self._thumbnail )[2].split( '/' )[-1]
+            thumbnailPath     = os.path.join( DATA_ROOT, "assets/images/channels/thumbnails", thumbnailFilename )
+            filename, code, mime = getPage( self._thumbnail, thumbnailPath )
+            if filename:
+                self._thumbnail = thumbnailFilename
+                self._logger.info( "Channel.downloadLogoAndThumbnail: downloaded thumbnail to %s" % ( thumbnailPath ) )
+            else:
+                self._logger.info( "Channel.downloadLogoAndThumbnail: could not download thumbnail from %s" % ( self._thumbnail ) )
+                self._thumbnail = ""
+
+#    def removeLogo( self ):
+#        # TODO check if logo is used by other channel
+#        # if not, unlink the file
+#
+#    def removeThumbnail( self ):
+#        # TODO check if logo is used by other channel
+#        # if not, unlink the file
 
 class PendingChannel( ChannelAbstract ):
     _tableName       = "pending_channels"

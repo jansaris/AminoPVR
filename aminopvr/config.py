@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import aminopvr
+from aminopvr.const import DATA_ROOT
 import ConfigParser
 import logging
 import os
@@ -149,4 +149,6 @@ class Config( object ):
 
     @staticmethod
     def configFilename( filename ):
-        return os.path.join( aminopvr.DATA_ROOT, filename )
+        return os.path.join( DATA_ROOT, filename )
+
+config = Config()

@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.config import Config, ConfigSectionAbstract, GeneralConfig
+from aminopvr.config import config, GeneralConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
@@ -25,21 +25,8 @@ import logging
 import os
 import time
 
-DATA_ROOT               = os.path.dirname( os.path.abspath( __file__ ) ) + "/../"
-
-CHANNEL_LOGO_URL        = "http://amino.inodekker.com/images/channels"
-KIJKWIJZER_IMAGE_URL    = "http://amino.inodekker.com/images/kijkwijzer"
-UNICAST_URL_BASE        = "http://192.168.1.253:4022/"
-
-# how many seconds to wait before we timeout on a 
-# url fetch, 10 seconds seems reasonable
-GLOBAL_TIMEOUT = 10
-
-USER_AGENT = 'Opera/9.70 (Linux sh4 ; U;  Amino; en) Presto/2.2.1'
-
 logger        = logging.getLogger( "aminopvr" )
 
-config        = Config()
 generalConfig = GeneralConfig( config )
 recorder      = Recorder()
 scheduler     = Scheduler()
@@ -58,11 +45,9 @@ def aminoPVRProcess():
 
     scheduler.start()
 
-    if provider.indexPageParser() != "":
-        provider.codeJSParser()
     epgGrabber = provider.EpgProvider()
 #    epgGrabber.requestEpgUpdate()
-#    epgGrabber.grabAll()
+    contentProvider = provider.ContentProvider()
 #    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
 #    testTimer.start()
 #    provider.epgGrabber()

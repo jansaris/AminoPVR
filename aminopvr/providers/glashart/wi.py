@@ -80,14 +80,14 @@ class WebInterface( aminopvr.wi.WebInterface ):
     def last_update_txt( self, *args, **kwargs ):
         self._logger.debug( "last_update_txt( %s, %s )" % ( str( args ), str( kwargs ) ) )
         method = cherrypy.request.method.upper()
-        url    = glashartConfig.tvmenuPath + "/last-update.txt"
+        url    = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/last-update.txt"
         return self._serveRemoteContent( url, method, kwargs )
 
     @cherrypy.expose
     def images( self, *args, **kwargs ):
         self._logger.debug( "images( %s, %s )" % ( str( args ), str( kwargs ) ) )
 
-        url = glashartConfig.tvmenuPath + "/images/" + '/'.join( list( args ) )
+        url = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/images/" + '/'.join( list( args ) )
         return self._serveRemoteContent( url )
 
     @cherrypy.expose

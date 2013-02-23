@@ -99,17 +99,17 @@ def initWebserver():
             'tools.encode.on': True,
             'tools.encode.encoding': 'utf-8',
         },
-#        '/images': {
-#            'tools.staticdir.on':  True,
-#            'tools.staticdir.dir': 'images'
-#        },
-        '/js':     {
+        '/assets/images': {
             'tools.staticdir.on':  True,
-            'tools.staticdir.dir': 'js'
+            'tools.staticdir.dir': 'assets/images'
         },
-        '/css':    {
+        '/assets/js':     {
             'tools.staticdir.on':  True,
-            'tools.staticdir.dir': 'css'
+            'tools.staticdir.dir': 'assets/js'
+        },
+        '/assets/css':    {
+            'tools.staticdir.on':  True,
+            'tools.staticdir.dir': 'assets/css'
         },
     }
 

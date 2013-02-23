@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import aminopvr
+from aminopvr.const import DATA_ROOT
 import logging
 import os
 import sqlite3
@@ -76,4 +76,4 @@ class DBConnection:
 
     @staticmethod
     def dbFilename( filename ):
-        return os.path.join( aminopvr.DATA_ROOT, filename )
+        return os.path.join( DATA_ROOT, filename )
