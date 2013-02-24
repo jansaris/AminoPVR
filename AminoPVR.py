@@ -26,7 +26,10 @@ logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
 
 signal.signal( signal.SIGINT,   aminopvr.signalHandler )
 signal.signal( signal.SIGTERM,  aminopvr.signalHandler )
-signal.signal( signal.SIGBREAK, aminopvr.signalHandler )
+try:
+    signal.signal( signal.SIGBREAK, aminopvr.signalHandler )
+except:
+    pass
 
 def main():
 #    logger = logging.getLogger( "AminoPVR" )
