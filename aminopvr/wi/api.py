@@ -44,17 +44,17 @@ class API( object ):
 
     def _addressInNetwork( self, ip, nets ):
         # Is an address in a network
-        ipAddress = struct.unpack( 'L', socket.inet_aton( ip ) )[0]
+        ipAddress = struct.unpack( '=L', socket.inet_aton( ip ) )[0]
         self._apiLogger.debug( "_addressInNetwork( %s, %s )" % ( ip, nets ) )
         self._apiLogger.debug( "_addressInNetwork: type( nets )=%s )" % ( type( nets ) ) )
         if isinstance( nets, types.StringTypes ):
             if '/' in nets:
                 netAddress, maskBits = nets.split( '/' )
-                netmask = struct.unpack( 'L',socket.inet_aton( netAddress ) )[0] & ((2L << int( maskBits ) - 1) - 1)
+                netmask = struct.unpack( '=L', socket.inet_aton( netAddress ) )[0] & ((2L << int( maskBits ) - 1) - 1)
                 self._apiLogger.debug( "_addressInNetwork: ipAddress=%x, netmask=%x )" % ( ipAddress, netmask ) )
                 return ipAddress & netmask == netmask
             else:
-                netmask = struct.unpack( 'L',socket.inet_aton( nets ) )[0]
+                netmask = struct.unpack( '=L', socket.inet_aton( nets ) )[0]
                 self._apiLogger.debug( "_addressInNetwork: ipAddress=%x, netmask=%x )" % ( ipAddress, netmask ) )
                 return ipAddress & netmask == netmask
         else:
@@ -62,7 +62,8 @@ class API( object ):
                 inNet = self._addressInNetwork( ip, net )
                 if inNet:
                     return True
-            return False
+            return False
+
 class STBAPI( API ):
     _logger = logging.getLogger( "aminopvr.WI.STBAPI" )
 
