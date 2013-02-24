@@ -20,6 +20,7 @@ from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.providers.glashart.config import glashartConfig
 from aminopvr.providers.glashart.epg import EpgProvider
+from aminopvr.providers.glashart.page import PageSymbol
 from aminopvr.providers.glashart.wi import WebInterface
 from aminopvr.timer import Timer
 from aminopvr.tools import getPage
@@ -113,30 +114,34 @@ class ContentProvider( threading.Thread ):
                     conn = DBConnection()
 
                     if conn:
-                        row = conn.execute( "SELECT * FROM pages WHERE page=?", ( "index.xhtml", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "index.xhtml", ) ).fetchone()
                         if row:
-                            conn.execute( "UPDATE pages SET content=? WHERE page=?", ( indexContent, "index.xhtml" ) )
+                            conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( indexContent, "index.xhtml" ) )
                         else:
-                            conn.insert( "INSERT INTO pages (page, content) VALUES (?, ?)", ( "index.xhtml", indexContent ) )
+                            conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "index.xhtml", indexContent ) )
 
-                        row = conn.execute( "SELECT * FROM pages WHERE page=?", ( "code.js", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "code.js", ) ).fetchone()
                         if row:
-                            conn.execute( "UPDATE pages SET content=? WHERE page=?", ( codeJsContent, "code.js" ) )
+                            conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( codeJsContent, "code.js" ) )
                         else:
-                            conn.insert( "INSERT INTO pages (page, content) VALUES (?, ?)", ( "code.js", codeJsContent ) )
+                            conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "code.js", codeJsContent ) )
 
-                        row = conn.execute( "SELECT * FROM pages WHERE page=?", ( "style.css", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "style.css", ) ).fetchone()
                         if row:
-                            conn.execute( "UPDATE pages SET content=? WHERE page=?", ( styleCssContent, "style.css" ) )
+                            conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( styleCssContent, "style.css" ) )
                         else:
-                            conn.insert( "INSERT INTO pages (page, content) VALUES (?, ?)", ( "style.css", styleCssContent ) )
+                            conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "style.css", styleCssContent ) )
 
-                        row = conn.execute( "SELECT * FROM pages WHERE page=?", ( "api.js", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "api.js", ) ).fetchone()
                         if row:
-                            conn.execute( "UPDATE pages SET content=? WHERE page=?", ( apiJsContent, "api.js" ) )
+                            conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( apiJsContent, "api.js" ) )
                         else:
-                            conn.insert( "INSERT INTO pages (page, content) VALUES (?, ?)", ( "api.js", apiJsContent ) )
+                            conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "api.js", apiJsContent ) )
                         # TODO: write symbol table to db
+                if symbolNames:
+                    conn = DBConnection()
+                    if conn:
+                        PageSymbol.addAllDictToDb( conn, symbolNames )
 
     def _parseIndexPage( self ):
         content, code, mime = getPage( glashartConfig.tvmenuIndexPath )

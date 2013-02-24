@@ -81,6 +81,7 @@ class GeneralConfig( ConfigSectionAbstract ):
     _section = "General"
     _options = {
                  "api_key":              "",
+                 "server_port":          "8080",
                  "provider":             "Glashart",
                  "input_stream_support": "multicast,http",
                  "local_access_nets":    "127.0.0.1"
@@ -93,6 +94,10 @@ class GeneralConfig( ConfigSectionAbstract ):
     @property
     def apiKey( self ):
         return self._get( "api_key" )
+
+    @property
+    def serverPort( self ):
+        return self._get( "server_port" )
 
     @property
     def provider( self ):

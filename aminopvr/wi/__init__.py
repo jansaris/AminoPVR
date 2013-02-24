@@ -34,7 +34,7 @@ class WebInterface( object ):
 
     aminopvr = AminoPVRWI()
 
-def initWebserver():
+def initWebserver( serverPort=8080 ):
 
     def http_error_401_hander( status, message, traceback, version ):
         """ Custom handler for 401 error """
@@ -73,7 +73,7 @@ def initWebserver():
 
     options = {
         'host':      '0.0.0.0',
-        'port':      8080,
+        'port':      int( serverPort ),
         'username':  'test',
         'password':  'pass',
         'web_root':  '/',

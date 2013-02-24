@@ -15,13 +15,17 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from Cheetah.Template import Template
+from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.providers.glashart.page import PageSymbol
 from cherrypy.lib.static import serve_fileobj
 import aminopvr.wi
 import cherrypy
 import json
 import logging
+import os
 import urllib
 
 class WebInterface( aminopvr.wi.WebInterface ):
@@ -45,6 +49,12 @@ class WebInterface( aminopvr.wi.WebInterface ):
 
     @cherrypy.expose
     def api_js( self ):
+        conn = DBConnection()
+        if conn:
+            symbols  = PageSymbol.getAllFromDb( conn )
+            template = Template( file=os.path.join( DATA_ROOT, "assets/js/api.js.tmpl" ), searchList=[symbols] )
+            cherrypy.response.headers["Content-Type"] = "application/javascript"
+            return template.respond()
         return self._serveDBContent( "api.js", "application/javascript" )
 
     @cherrypy.expose
@@ -114,7 +124,7 @@ class WebInterface( aminopvr.wi.WebInterface ):
     def _serveDBContent( self, filename, contentType = None ):
         conn = DBConnection()
         try:
-            result = conn.execute( "SELECT content FROM pages WHERE page=?", [filename] )
+            result = conn.execute( "SELECT content FROM glashart_pages WHERE page=?", [filename] )
             if result:
                 row = result.fetchone()
                 if contentType:

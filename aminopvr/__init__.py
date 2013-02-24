@@ -41,13 +41,14 @@ def aminoPVRProcess():
         import providers.glashart as provider
         provider.RegisterProvider()
 
-    initWebserver()
+    initWebserver( generalConfig.serverPort )
 
     scheduler.start()
 
     epgGrabber = provider.EpgProvider()
-#    epgGrabber.requestEpgUpdate()
+    epgGrabber.requestEpgUpdate()
     contentProvider = provider.ContentProvider()
+    contentProvider.requestContentUpdate()
 #    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
 #    testTimer.start()
 #    provider.epgGrabber()
