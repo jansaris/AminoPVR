@@ -48,19 +48,19 @@ class ConfigSectionAbstract( object ):
         self._addIfNew( option )
         return self._config.get( self._section, option )
 
-    def _getint( self, option ):
+    def _getInt( self, option ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         self._addIfNew( option )
         return self._config.getInt( self._section, option )
 
-    def _getfloat( self, option ):
+    def _getFloat( self, option ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         self._addIfNew( option )
         return self._config.getFloat( self._section, option )
 
-    def _getboolean( self, option ):
+    def _getBoolean( self, option ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         self._addIfNew( option )
@@ -70,7 +70,8 @@ class ConfigSectionAbstract( object ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         if option not in self._sectionOptions:
-            self._config.set( self._section, option, str( self._options.has_key( option ) ) )
+            self._logger.debug( "ConfigSectionAbstract<%s>._addIfNew: adding option: %s with value %s" % ( self._section, option, str( self._options[option] ) ) )
+            self._config.set( self._section, option, str( self._options[option] ) )
 
     def _set( self, option, value ):
         assert self._section != None, "_section member not defined!"
@@ -81,7 +82,7 @@ class GeneralConfig( ConfigSectionAbstract ):
     _section = "General"
     _options = {
                  "api_key":              "",
-                 "server_port":          "8080",
+                 "server_port":          8080,
                  "provider":             "Glashart",
                  "input_stream_support": "multicast,http",
                  "local_access_nets":    "127.0.0.1"
@@ -97,7 +98,7 @@ class GeneralConfig( ConfigSectionAbstract ):
 
     @property
     def serverPort( self ):
-        return self._get( "server_port" )
+        return self._getInt( "server_port" )
 
     @property
     def provider( self ):

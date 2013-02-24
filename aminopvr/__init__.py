@@ -46,7 +46,7 @@ def aminoPVRProcess():
     scheduler.start()
 
     epgGrabber = provider.EpgProvider()
-    epgGrabber.requestEpgUpdate()
+#    epgGrabber.requestEpgUpdate()
     contentProvider = provider.ContentProvider()
     contentProvider.requestContentUpdate()
 #    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )

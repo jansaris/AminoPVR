@@ -225,7 +225,7 @@ class ChannelAbstract( object ):
             urls    = []
             for key in channel._urls.keys():
                 urls.append( cls._channelUrlClass.copy( channel._urls[key] ) )
-                channel._urls = {}
+            channel._urls = {}
             for url in urls:
                 channel.addUrl( url )
             return channel

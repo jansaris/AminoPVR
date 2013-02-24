@@ -15,7 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import aminopvr
 import logging.config
 import os
 import sys
@@ -35,6 +34,8 @@ def main():
 #                         datefmt='%Y%m%d %H:%M:%S',
 #                         level=logging.DEBUG )
     logging.config.fileConfig( 'logging.conf', disable_existing_loggers=False )
+
+    import aminopvr
 
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
     aminopvr.aminoPVRProcess()

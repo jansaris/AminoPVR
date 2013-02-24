@@ -73,7 +73,7 @@ def initWebserver( serverPort=8080 ):
 
     options = {
         'host':      '0.0.0.0',
-        'port':      int( serverPort ),
+        'port':      serverPort,
         'username':  'test',
         'password':  'pass',
         'web_root':  '/',
