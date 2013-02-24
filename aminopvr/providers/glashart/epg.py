@@ -195,6 +195,7 @@ class EpgProvider( threading.Thread ):
 
         self._logger.warning( "Starting EPG grab timer @ %s with interval %s" % ( grabTime, grabInterval ) )
 
+        self._running             = True
         self._epgUpdateInProgress = False
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
@@ -209,6 +210,13 @@ class EpgProvider( threading.Thread ):
         else:
             self._logger.warning( "Epg update in progress: skipping request" )
             return False
+
+    def stop( self ):
+        self._logger.warning( "Stopping EpgProvider" )
+        self._timer.stop()
+        self._running = False
+        if self.isAlive():
+            self.join()
 
     def run( self ):
         if not self._epgUpdateInProgress:
@@ -230,12 +238,13 @@ class EpgProvider( threading.Thread ):
                 timeParams[name] = int( param )
         return datetime.timedelta( **timeParams )
 
-    def _timerCallback( self, arguments ):
-        self._logger.warning( "Time to grab EPG." )
-        if not self._epgUpdateInProgress:
-            self.start()
-        else:
-            self._logger.warning( "Epg update in progress: skipping timed update" )
+    def _timerCallback( self, event, arguments ):
+        if event == Timer.TIME_TRIGGER_EVENT:
+            self._logger.warning( "Time to grab EPG." )
+            if not self._epgUpdateInProgress:
+                self.start()
+            else:
+                self._logger.warning( "Epg update in progress: skipping timed update" )
 
     def _grabAll( self ):
         self._logger.debug( "grabAll" )
@@ -263,9 +272,12 @@ class EpgProvider( threading.Thread ):
         EpgProgram.deleteByTimeFromDB( db, int( time.mktime( nowDay.timetuple() ) ) )
 
         for epgId in epgIds:
+            if not self._running:
+                break
             self._grabEpgForChannel( epgId=epgId )
 
-        self._logger.info( "Grabbing EPG data complete." )
+        if self._running:
+            self._logger.info( "Grabbing EPG data complete." )
 
     def _grabEpgForChannel( self, channel=None, epgId=None ):
         conn = DBConnection()
@@ -296,6 +308,8 @@ class EpgProvider( threading.Thread ):
             numProgramsDetailFailed = 0
 
             for program in epgData:
+                if not self._running:
+                    break
 
                 numPrograms += 1
 
@@ -339,8 +353,9 @@ class EpgProvider( threading.Thread ):
                     except:
                         self._logger.exception( programNew.dump() )
 
-            self._logger.info( "Num programs:        %i" % numPrograms )
-            self._logger.info( "Num program details: %i" % numProgramsDetail )
+            if self._running:
+                self._logger.info( "Num programs:        %i" % numPrograms )
+                self._logger.info( "Num program details: %i" % numProgramsDetail )
         else:
             self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
 

@@ -66,6 +66,8 @@ class Timer( threading.Thread ):
                     }
             self._events.append( event )
 
+        self.start()
+
     def __repr__( self ):
         return "Timer( events=%r )" % ( self._events )
 
@@ -117,7 +119,8 @@ class Timer( threading.Thread ):
     def stop( self, triggerLast=False ):
         self._logger.debug( "Timer.stop" )
         self._running = False
-        super( Timer, self ).join()
+        if self.isAlive():
+            self.join()
         if triggerLast:
             lastEvent = self._events[len( self._events ) - 1] 
             lastEvent["callback"]( Timer.CANCEL_TIMER_EVENT, lastEvent["callbackArguments"] )

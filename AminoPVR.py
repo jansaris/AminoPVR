@@ -15,9 +15,18 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import aminopvr
 import logging.config
 import os
+import signal
 import sys
+
+logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
+
+
+signal.signal( signal.SIGINT,   aminopvr.signalHandler )
+signal.signal( signal.SIGTERM,  aminopvr.signalHandler )
+signal.signal( signal.SIGBREAK, aminopvr.signalHandler )
 
 def main():
 #    logger = logging.getLogger( "AminoPVR" )
@@ -33,12 +42,16 @@ def main():
 #    logging.basicConfig( format='%(asctime)s %(levelname)s:$(message)s',
 #                         datefmt='%Y%m%d %H:%M:%S',
 #                         level=logging.DEBUG )
-    logging.config.fileConfig( 'logging.conf', disable_existing_loggers=False )
-
-    import aminopvr
 
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
     aminopvr.aminoPVRProcess()
+
+    logger = logging.getLogger( "aminopvr" )
+    try:
+        while 1:
+            pass
+    except KeyboardInterrupt:
+        logger.warning( "Clean exit" )
 
     sys.exit( 0 )
 

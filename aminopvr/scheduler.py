@@ -54,7 +54,13 @@ class Scheduler( threading.Thread ):
 
         self._logger.debug( "Scheduler.__init__()" )
 
-        self._timers = []
+        self._running = True
+        self._timers  = []
+
+    def stop( self, timeout=10 ):
+        self._logger.warning( "Stopping scheduler and ending all timers" )
+        self._running = False
+        self.join()
 
     def run( self ):
         self._logger.debug( "Scheduler.run()" )
@@ -63,8 +69,6 @@ class Scheduler( threading.Thread ):
 
 #        timer1 = Timer( 'Nederland 1', now + 10, now + 30, {}, Scheduler._callback, self )
 #        timer2 = Timer( 'Nederland 1', now + 25, now + 40, {}, Scheduler._callback, self )
-#        timer1.start()
-#        timer2.start()
 #        self._timers.append( timer1 )
 #        self._timers.append( timer2 )
 #        time.sleep( 15 )
@@ -92,8 +96,6 @@ class Scheduler( threading.Thread ):
 #                             'callback':          self._stopRecording,
 #                             'callbackArguments': scheduleItem2
 #                          } ] )
-#        timer1.start()
-#        timer2.start()
 #        self._timers.append( timer1 )
 #        self._timers.append( timer2 )
 #        time.sleep( 15 )
@@ -104,7 +106,7 @@ class Scheduler( threading.Thread ):
         self.reschedule()
 
         # Keep the thread alive
-        while True:
+        while self._running:
             time.sleep( 1.0 )
 
     def reschedule( self ):

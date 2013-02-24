@@ -73,6 +73,12 @@ class ContentProvider( threading.Thread ):
             self._logger.warning( "Content update in progress: skipping request" )
             return False
 
+    def stop( self ):
+        self._logger.warning( "Stopping ContentProvider" )
+        self._timer.stop()
+        if self.isAlive():
+            self.join()
+
     def run( self ):
         if not self._contentUpdateInProgress:
             self._contentUpdateInProgress = True
@@ -93,12 +99,13 @@ class ContentProvider( threading.Thread ):
                 timeParams[name] = int( param )
         return datetime.timedelta( **timeParams )
 
-    def _timerCallback( self, arguments ):
-        self._logger.warning( "Time to grab Content." )
-        if not self._contentUpdateInProgress:
-            self.start()
-        else:
-            self._logger.warning( "Content update in progress: skipping timed update" )
+    def _timerCallback( self, event, arguments ):
+        if event == Timer.TIME_TRIGGER_EVENT:
+            self._logger.warning( "Time to grab Content." )
+            if not self._contentUpdateInProgress:
+                self.start()
+            else:
+                self._logger.warning( "Content update in progress: skipping timed update" )
 
     def _translateContent( self ):
         indexContent, title, codeJsPath, styleCssPath = self._parseIndexPage()

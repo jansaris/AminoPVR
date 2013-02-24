@@ -18,7 +18,6 @@
 from aminopvr.db import DBConnection
 from aminopvr.wi.api import AminoPVRWI
 from cherrypy.lib.static import serve_file, serve_fileobj
-import aminopvr
 import aminopvr.providers
 import cherrypy
 import cherrypy.lib.auth_basic
@@ -28,19 +27,22 @@ import os
 import sqlite3
 import urllib
 
+_logger = logging.getLogger( "aminopvr.WI" )
+
 class WebInterface( object ):
-
-    _logger = logging.getLogger( "aminopvr.WI" )
-
     aminopvr = AminoPVRWI()
+
+def stopWebserver():
+    _logger.warning( "Stopping CherryPy Engine" )
+    cherrypy.engine.stop()
 
 def initWebserver( serverPort=8080 ):
 
     def http_error_401_hander( status, message, traceback, version ):
         """ Custom handler for 401 error """
         if status != "401 Unauthorized":
-            aminopvr.logger.error( u"CherryPy caught an error: %s %s" % ( status, message ) )
-            aminopvr.logger.debug( traceback )
+            _logger.error( u"CherryPy caught an error: %s %s" % ( status, message ) )
+            _logger.debug( traceback )
         return r'''
 <html>
     <head>
@@ -90,7 +92,7 @@ def initWebserver( serverPort=8080 ):
 
     protocol = "http"
 
-    aminopvr.logger.info( u"Starting AminoPVR on " + protocol + "://" + str(options['host']) + ":" + str(options['port']) + "/" )
+    _logger.info( u"Starting AminoPVR on " + protocol + "://" + str(options['host']) + ":" + str(options['port']) + "/" )
     cherrypy.config.update( options_dict )
 
     conf = {
@@ -135,7 +137,6 @@ def initWebserver( serverPort=8080 ):
                 'tools.auth_basic.on':            False
             },
         } )
-
 
     cherrypy.server.start()
     cherrypy.server.wait()

@@ -82,7 +82,7 @@ class ActiveRecording( threading.Thread ):
     def stop( self, outputFile="" ):
         self._logger.debug( "ActiveRecording.stop( outputFile=%s )" % ( outputFile ) )
 
-        if outputFile == "" or len( self._outputFiles ) == 1:
+        if outputFile or len( self._outputFiles ) == 1:
             self._running = False
             self.join( 3.0 )
             if self.isAlive():
@@ -177,23 +177,32 @@ class Recorder( object ):
                                                                   } )
         return recordingId
 
-    def stopRecording( self, recordingId, recording ):
+    def stopRecording( self, recordingId, recording=None ):
         self._logger.debug( "Recorder.stopRecording( recordingId=%s, filename=%s )" % ( recordingId, recording.filename ) )
         if not self._activeRecordings.has_key( recordingId ):
-            self._logger.error( "recordingId %s is not an active recording" % ( recordingId ) )
+            self._logger.error( "stopRecording: recordingId %s is not an active recording" % ( recordingId ) )
         else:
-            if not self._activeRecordings[recordingId]["activeRecording"].stop( recording.filename ):
-                self._logger.debug( "Recording thread didn't end properly, we're going to delete the object anyway" )
+            recordingFilename = ""
+            if recording:
+                recordingFilename = recording.filename
+
+            if not self._activeRecordings[recordingId]["activeRecording"].stop( recordingFilename ):
+                self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
                 with self._lock:
                     for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
-                        recording = self._activeRecordings[recordingId]["cookie"][i]
-                        if recording.filename == recording["recording"].filename:
-                            recording["callback"]( Recorder.ABORTED, recording["recording"] )
+                        activeRecording = self._activeRecordings[recordingId]["cookie"][i]
+                        if not recording or recordingFilename == activeRecording["recording"].filename:
+                            activeRecording["callback"]( Recorder.ABORTED, activeRecording["recording"] )
                             self._activeRecordings[recordingId]["cookie"].pop( i )
-                            self._logger.debug( "Recorder._recordingResult: removed outputFile and decreased refCount" )
+                            self._logger.debug( "stopRecording: removed outputFile and decreased refCount" )
                     if len( self._activeRecordings[recordingId]["cookie"] ) == 0:
                         del self._activeRecordings[recordingId]
-                        self._logger.debug( "Recorder._recordingResult: no more listeners; removed recordingId" )
+                        self._logger.debug( "stopRecording: : no more listeners; removed recordingId" )
+
+    def stopAllRecordings( self ):
+        self._logger.warning( "Stopping all active recordings" )
+        for recordingId in self._activeRecordings.keys():
+            self.stopRecording( recordingId )
 
     def getActiveRecordings( self ):
         """

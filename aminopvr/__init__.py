@@ -19,38 +19,58 @@ from aminopvr.config import config, GeneralConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
-from aminopvr.wi import initWebserver
+from aminopvr.wi import initWebserver, stopWebserver
 import datetime
 import logging
 import os
 import time
 
-logger        = logging.getLogger( "aminopvr" )
+logger          = logging.getLogger( "aminopvr" )
 
-generalConfig = GeneralConfig( config )
-recorder      = Recorder()
-scheduler     = Scheduler()
+generalConfig   = GeneralConfig( config )
+recorder        = Recorder()
+scheduler       = Scheduler()
+epgGrabber      = None
+contentProvider = None
+
+if generalConfig.provider == "glashart":
+    import providers.glashart as provider
+    provider.RegisterProvider()
 
 #def test( eventType, params ):
 #    logger.warning( "test" )
 
+def signalHandler( signum=None, frame=None ):
+    if type( signum ) != type( None ):
+        logger.warning( "Signal %i caught, exiting..." % int( signum ) )
+        shutdown()
+
+def shutdown():
+    logger.warning( "Let's stop everything before we exit" )
+    if epgGrabber:
+        epgGrabber.stop()
+    if contentProvider:
+        contentProvider.stop()
+    recorder.stopAllRecordings()
+    scheduler.stop()
+    stopWebserver()
+    logger.warning( "Everything has stopped, now exit" )
+    os._exit( 0 )
+
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
-
-    if generalConfig.provider == "glashart":
-        import providers.glashart as provider
-        provider.RegisterProvider()
 
     initWebserver( generalConfig.serverPort )
 
     scheduler.start()
+
+    global epgGrabber, contentProvider
 
     epgGrabber = provider.EpgProvider()
 #    epgGrabber.requestEpgUpdate()
     contentProvider = provider.ContentProvider()
     contentProvider.requestContentUpdate()
 #    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
-#    testTimer.start()
 #    provider.epgGrabber()
 #    recordingId = recorder.startRecording( '224.1.3.1:1234', 'http', 'test.ts' )
 #    time.sleep( 60.0 )
