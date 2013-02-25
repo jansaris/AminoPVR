@@ -31,6 +31,7 @@ import logging
 import os
 import re
 import threading
+import time
 
 _logger = logging.getLogger( "aminopvr.providers.glashart" )
 
@@ -58,16 +59,22 @@ class ContentProvider( threading.Thread ):
 
         self._logger.warning( "Starting Content grab timer @ %s with interval %s" % ( grabTime, grabInterval ) )
 
-        self._contentUpdateInProgress = False
+        self._running = True
+        self._event   = threading.Event()
+        self._event.clear()
+#        self._contentUpdateInProgress = False
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
 
     def requestContentUpdate( self, wait=False ):
         # TODO: epg grabbing on it's own thread!
-        if not self._contentUpdateInProgress:
-            self.start()
+#        if not self._contentUpdateInProgress:
+        if not self._event.isSet():
+            self._event.set()
             if wait:
-                self.join()
+                while self._event.isSet():
+                    time.sleep( 1.0 )
+#                self.join()
             return True
         else:
             self._logger.warning( "Content update in progress: skipping request" )
@@ -76,16 +83,22 @@ class ContentProvider( threading.Thread ):
     def stop( self ):
         self._logger.warning( "Stopping ContentProvider" )
         self._timer.stop()
-        if self.isAlive():
-            self.join()
+        self._running = False
+        self._event.set()
+        self.join()
 
     def run( self ):
-        if not self._contentUpdateInProgress:
-            self._contentUpdateInProgress = True
-            self._translateContent()
-            self._contentUpdateInProgress = False
-        else:
-            self._logger.warning( "Content update in progress: end thread" )
+        while self._running:
+            self._event.wait()
+            if self._running:
+                self._translateContent()
+            self._event.clear()
+#        if not self._contentUpdateInProgress:
+#            self._contentUpdateInProgress = True
+#            self._translateContent()
+#            self._contentUpdateInProgress = False
+#        else:
+#            self._logger.warning( "Content update in progress: end thread" )
 
     @staticmethod
     def _parseTimedetla( timeString ):
@@ -102,10 +115,11 @@ class ContentProvider( threading.Thread ):
     def _timerCallback( self, event, arguments ):
         if event == Timer.TIME_TRIGGER_EVENT:
             self._logger.warning( "Time to grab Content." )
-            if not self._contentUpdateInProgress:
-                self.start()
-            else:
-                self._logger.warning( "Content update in progress: skipping timed update" )
+            self.requestContentUpdate( True )
+#            if not self._contentUpdateInProgress:
+#                self.start()
+#            else:
+#                self._logger.warning( "Content update in progress: skipping timed update" )
 
     def _translateContent( self ):
         indexContent, title, codeJsPath, styleCssPath = self._parseIndexPage()
