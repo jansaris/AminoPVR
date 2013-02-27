@@ -882,14 +882,6 @@ class EpgProgram( ProgramAbstract ):
                                          self._detailed ) )
                 if id:
                     self._id = id
-                    for genre in self._genres:
-                        genre.programId = id
-                    for actor in self._actors:
-                        actor.programId = id
-                    for director in self._directors:
-                        director.programId = id
-                    for presenter in self._presenters:
-                        presenter.programId = id
                 else:
                     self._logger.error( "Inserted row, but no auto-increment id returned!" )
 
@@ -1007,6 +999,15 @@ class EpgProgram( ProgramAbstract ):
                                      self._startTime,
                                      self._endTime,
                                      self._endTime ) )
+
+                for genre in self._genres:
+                    genre.programId = id
+                for actor in self._actors:
+                    actor.programId = id
+                for director in self._directors:
+                    director.programId = id
+                for presenter in self._presenters:
+                    presenter.programId = id
 
                 genres            = EpgProgramGenre.getAllFromDb( conn, self._id )
                 actors            = EpgProgramActor.getAllFromDb( conn, self._id )

@@ -195,26 +195,19 @@ class EpgProvider( threading.Thread ):
 
         self._logger.warning( "Starting EPG grab timer @ %s with interval %s" % ( grabTime, grabInterval ) )
 
-        self._running             = True
-        self._event               = threading.Event()
+        self._running = True
+        self._event   = threading.Event()
         self._event.clear()
-#        self._epgUpdateInProgress = False
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
 
     def requestEpgUpdate( self, wait=False ):
-        # TODO: epg grabbing on it's own thread!
         if not self._event.isSet():
             self._event.set()
             if wait:
                 while self._event.isSet():
                     time.sleep( 1.0 )
             return True
-#        if not self._epgUpdateInProgress:
-#            self.start()
-#            if wait:
-#                self.join()
-#            return True
         else:
             self._logger.warning( "Epg update in progress: skipping request" )
             return False
@@ -225,8 +218,6 @@ class EpgProvider( threading.Thread ):
         self._running = False
         self._event.set()
         self.join()
-#        if self.isAlive():
-#            self.join()
 
     def run( self ):
         while self._running:
@@ -234,12 +225,6 @@ class EpgProvider( threading.Thread ):
             if self._running:
                 self._grabAll()
             self._event.clear()
-#        if not self._epgUpdateInProgress:
-#            self._epgUpdateInProgress = True
-#            self._grabAll()
-#            self._epgUpdateInProgress = False
-#        else:
-#            self._logger.warning( "Epg update in progress: end thread" )
 
     @staticmethod
     def _parseTimedetla( timeString ):
@@ -257,10 +242,6 @@ class EpgProvider( threading.Thread ):
         if event == Timer.TIME_TRIGGER_EVENT:
             self._logger.warning( "Time to grab EPG." )
             self.requestEpgUpdate( True )
-#            if not self._epgUpdateInProgress:
-#                self.start()
-#            else:
-#                self._logger.warning( "Epg update in progress: skipping timed update" )
 
     def _grabAll( self ):
         self._logger.debug( "grabAll" )

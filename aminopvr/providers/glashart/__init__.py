@@ -62,19 +62,15 @@ class ContentProvider( threading.Thread ):
         self._running = True
         self._event   = threading.Event()
         self._event.clear()
-#        self._contentUpdateInProgress = False
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
 
     def requestContentUpdate( self, wait=False ):
-        # TODO: epg grabbing on it's own thread!
-#        if not self._contentUpdateInProgress:
         if not self._event.isSet():
             self._event.set()
             if wait:
                 while self._event.isSet():
                     time.sleep( 1.0 )
-#                self.join()
             return True
         else:
             self._logger.warning( "Content update in progress: skipping request" )
@@ -93,12 +89,6 @@ class ContentProvider( threading.Thread ):
             if self._running:
                 self._translateContent()
             self._event.clear()
-#        if not self._contentUpdateInProgress:
-#            self._contentUpdateInProgress = True
-#            self._translateContent()
-#            self._contentUpdateInProgress = False
-#        else:
-#            self._logger.warning( "Content update in progress: end thread" )
 
     @staticmethod
     def _parseTimedetla( timeString ):
@@ -116,10 +106,6 @@ class ContentProvider( threading.Thread ):
         if event == Timer.TIME_TRIGGER_EVENT:
             self._logger.warning( "Time to grab Content." )
             self.requestContentUpdate( True )
-#            if not self._contentUpdateInProgress:
-#                self.start()
-#            else:
-#                self._logger.warning( "Content update in progress: skipping timed update" )
 
     def _translateContent( self ):
         indexContent, title, codeJsPath, styleCssPath = self._parseIndexPage()
