@@ -20,6 +20,7 @@ import logging.config
 import os
 import signal
 import sys
+import time
 
 logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
 
@@ -52,6 +53,7 @@ def main():
     logger = logging.getLogger( "aminopvr" )
     try:
         while 1:
+            time.sleep( 1.0 )
             pass
     except KeyboardInterrupt:
         logger.warning( "Clean exit" )
