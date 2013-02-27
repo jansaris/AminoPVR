@@ -208,7 +208,7 @@ class EpgProvider( threading.Thread ):
             self._event.set()
             if wait:
                 while self._event.isSet():
-                    time.sleep()
+                    time.sleep( 1.0 )
             return True
 #        if not self._epgUpdateInProgress:
 #            self.start()
@@ -233,6 +233,7 @@ class EpgProvider( threading.Thread ):
             self._event.wait()
             if self._running:
                 self._grabAll()
+            self._event.clear()
 #        if not self._epgUpdateInProgress:
 #            self._epgUpdateInProgress = True
 #            self._grabAll()
