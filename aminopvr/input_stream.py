@@ -56,7 +56,7 @@ class InputStreamAbstract( object ):
         if protocol == InputStreamProtocol.MULTICAST:
             return MulticastInputStream( url.ip, url.port )
         elif protocol == InputStreamProtocol.HTTP:
-            return HttpInputStream( url.getUrl( True ) )
+            return HttpInputStream( cls.getUrl( InputStreamProtocol.HTTP, url ) )
         return None
 
     @classmethod
@@ -102,15 +102,15 @@ class HttpInputStream( InputStreamAbstract ):
         try:
             self._request = urllib2.urlopen( self._url )
         except urllib2.HTTPError, e:
-            self._logger.debug( "Cannot open url: %s" % ( self._url ) )
-            self._logger.debug( "HTTP Error code: %d" % e.code )
+            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+            self._logger.warning( "HTTP Error code: %d" % e.code )
             return False
         except urllib2.URLError, e:
-            self._logger.debug( "Cannot open url: %s" % ( self._url ) )
-            self._logger.debug( "URL Error reason: %s" % e.reason )
+            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+            self._logger.warning( "URL Error reason: %s" % e.reason )
             return False
         except:
-            self._logger.debug( "Cannot open url: %s" % ( self._url ) )
+            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
             return False
         return True
 

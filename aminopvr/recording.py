@@ -52,12 +52,7 @@ class RecordingAbstract( object ):
         self._marker          = marker
         self._status          = status
         self._rerecord        = rerecord
-        self._epgProgram      = None
-
-        if epgProgram:
-            self._epgProgram   = RecordingProgram.copy( epgProgram )
-            self._epgProgramId = self._epgProgram.id
-        
+        self._epgProgram      = epgProgram
 
 #        if self._filename = "":
 #            self._filename = self._createFilename()
@@ -113,9 +108,17 @@ class RecordingAbstract( object ):
     def epgProgramId( self ):
         return self._epgProgramId
 
+    @epgProgramId.setter
+    def epgProgramId( self, epgProgramId ):
+        self._epgProgramId = epgProgramId
+
     @property
     def epgProgram( self ):
         return self._epgProgram
+
+    @epgProgram.setter
+    def epgProgram( self, epgProgram ):
+        self._epgProgram = epgProgram
 
     @property
     def channelId( self ):
@@ -176,10 +179,6 @@ class RecordingAbstract( object ):
     @property
     def status( self ):
         return self._status
-
-    @status.setter
-    def status( self, status ):
-        self._status = status
 
     @property
     def rerecord( self ):
@@ -394,13 +393,19 @@ class Recording( RecordingAbstract ):
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
     def changeStatus( self, conn, status ):
-        if self._id != -1:
+        if conn and self._id != -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
-        self.status = status
+        self._status = status
         if conn:
             # TODO: set fileSize and length when status == RECORDING_STATUS_RECORDING_FINISHED
             conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
+
+    def copyEpgProgram( self ):
+        if self._epgProgram:
+            self._epgProgram   = RecordingProgram.copy( self._epgProgram )
+            self._epgProgramId = self._epgProgram.id
+
 
 class OldRecording( RecordingAbstract ):
     _tableName = "old_recordings"

@@ -116,9 +116,7 @@ class GeneralConfig( ConfigSectionAbstract ):
 class Config( object ):
     __metaclass__ = Singleton
 
-    _instance = None
-
-    _logger   = logging.getLogger( "aminopvr.Config" )
+    _logger = logging.getLogger( "aminopvr.Config" )
 
     def __init__( self, filename="aminopvr.conf"  ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )

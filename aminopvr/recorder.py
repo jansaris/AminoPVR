@@ -104,25 +104,34 @@ class ActiveRecording( threading.Thread ):
 
     def run( self ):
         inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
-        if inputStream:
-            self._callback( self._callbackArguments, self._recordingId, self._outputFiles[0], 0 )
+        if inputStream and inputStream.open():
+            self._logger.debug( "ActiveRecording.run: start recording for recordingId=%s, file=%s" % ( self._recordingId, self._outputFiles[0] ) )
+            self._callback( self._callbackArguments, self._recordingId, self._outputFiles[0], ActiveRecording.STARTED )
             while self._running:
                 inputStream.read( 10240 )
     
-                time.sleep( 0.1 )
+                time.sleep( 0.01 )
     
                 if self._oldOutputFile != "":
                     with self._outputFileLock:
-                        self._callback( self._callbackArguments, self._recordingId, self._oldOutputFile, 1 )
+                        self._logger.debug( "ActiveRecording.run: loop: finished recording for recordingId=%s, file=%s" % ( self._recordingId, self._oldOutputFile ) )
+                        self._callback( self._callbackArguments, self._recordingId, self._oldOutputFile, ActiveRecording.FINISHED )
                         self._outputFiles.remove( self._oldOutputFile )
                         self._oldOutputFile = ""
                 if self._newOutputFile != "":
                     with self._outputFileLock:
-                        self._callback( self._callbackArguments, self._recordingId, self._newOutputFile, 0 )
+                        self._logger.debug( "ActiveRecording.run: loop: start recording for recordingId=%s, file=%s" % ( self._recordingId, self._newOutputFile ) )
+                        self._callback( self._callbackArguments, self._recordingId, self._newOutputFile, ActiveRecording.STARTED )
                         self._outputFiles.append( self._newOutputFile )
                         self._newOutputFile = ""
-            for outputFile in self._outputFiles:
-                self._callback( self._callbackArguments, self._recordingId, outputFile, 1 )
+            inputStream.close()
+            with self._outputFileLock:
+                for outputFile in self._outputFiles:
+                    self._logger.debug( "ActiveRecording.run: finished recording for recordingId=%s, file=%s" % ( self._recordingId, outputFile ) )
+                    self._callback( self._callbackArguments, self._recordingId, outputFile, ActiveRecording.FINISHED )
+        else:
+            self._logger.critical( "ActiveRecording.run: Could not create or open url=%r on protocol=%d for recordingId=%s" % ( self._url, self._protocol, self._recordingId ) )
+            self._callback( self._callbackArguments, self._recordingId, self._outputFiles[0], ActiveRecording.ABORTED )
 
 class Recorder( object ):
     """
@@ -139,7 +148,6 @@ class Recorder( object ):
     """
     __metaclass__ = Singleton
 
-    _instance         = None
     _activeRecordings = dict()
     _lock             = threading.Lock()
     _logger           = logging.getLogger( "aminopvr.Recorder" )
@@ -151,46 +159,50 @@ class Recorder( object ):
     def __init__( self ):
         self._logger.debug( "__init__" ) 
 
-    def startRecording( self, url, recording, protocol, callback ):
+    def startRecording( self, url, timerId, filename, protocol, callback ):
         """
         This can be much better. A 'cookie'-list makes searching for one troublesome and duplicate
         output files can easily happen.
         """
-        self._logger.debug( "Start recording from url %s using protocol %s; filename: %s" % ( url, protocol, recording.filename ) )
+        self._logger.debug( "Start recording from url %s using protocol %s; filename: %s" % ( url, protocol, filename ) )
         recordingId = self._createId( url, protocol )
         with self._lock:
             if self._activeRecordings.has_key( recordingId ):
                 self._logger.warning( "Recording with recordingId %s already running" % ( recordingId ) )
-                self._activeRecordings[recordingId]["activeRecording"].addOutputFile( recording.filename )
+                self._activeRecordings[recordingId]["activeRecording"].addOutputFile( filename )
             else:
-                activeRecording = ActiveRecording( recordingId, url, protocol, recording.filename, Recorder._recordingResult, self )
+                activeRecording = ActiveRecording( recordingId, url, protocol, filename, Recorder._recordingResult, self )
                 activeRecording.start()
                 self._activeRecordings[recordingId] = {}
                 self._activeRecordings[recordingId]["activeRecording"] = activeRecording
                 self._activeRecordings[recordingId]["cookie"]    = []
             self._activeRecordings[recordingId]["cookie"].append( {
-                                                                    "recording":  recording,
-                                                                    "outputFile": recording.filename,
+                                                                    "timerId":    timerId,
+                                                                    "outputFile": filename,
                                                                     "callback":   callback
                                                                   } )
         return recordingId
 
-    def stopRecording( self, recordingId, recording=None ):
-        self._logger.debug( "Recorder.stopRecording( recordingId=%s, filename=%s )" % ( recordingId, recording.filename ) )
+    def stopRecording( self, recordingId, timerId=None ):
+        self._logger.debug( "Recorder.stopRecording( recordingId=%s, timerId=%d )" % ( recordingId, timerId ) )
         if not self._activeRecordings.has_key( recordingId ):
             self._logger.error( "stopRecording: recordingId %s is not an active recording" % ( recordingId ) )
         else:
             recordingFilename = ""
-            if recording:
-                recordingFilename = recording.filename
+            if timerId:
+                with self._lock:
+                    for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
+                        activeRecording = self._activeRecordings[recordingId]["cookie"][i]
+                        if timerId == activeRecording["timerId"]:
+                            recordingFilename = activeRecording["outputFile"]
 
             if not self._activeRecordings[recordingId]["activeRecording"].stop( recordingFilename ):
                 self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
                 with self._lock:
                     for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
                         activeRecording = self._activeRecordings[recordingId]["cookie"][i]
-                        if not recording or recordingFilename == activeRecording["recording"].filename:
-                            activeRecording["callback"]( Recorder.ABORTED, activeRecording["recording"] )
+                        if not timerId or timerId == activeRecording["timerId"]:
+                            activeRecording["callback"]( Recorder.ABORTED, activeRecording["timerId"] )
                             self._activeRecordings[recordingId]["cookie"].pop( i )
                             self._logger.debug( "stopRecording: removed outputFile and decreased refCount" )
                     if len( self._activeRecordings[recordingId]["cookie"] ) == 0:
@@ -216,18 +228,26 @@ class Recorder( object ):
         """
         WIP
         """
-        return "%s_%s" % ( url, protocol )
+        return "%s_%d" % ( url.ip, protocol )
 
     def _recordingResult( self, recordingId, outputFile, result ):
         self._logger.debug( "Recorder._recordingResult( recordingId=%s, outputFile=%s, result=%s )" % ( recordingId, outputFile, result ) )
         if result == ActiveRecording.STARTED:
             self._logger.debug( "Recorder._recordingResult: ActiveRecording.STARTED" )
+            with self._lock:
+                for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
+                    recording = self._activeRecordings[recordingId]["cookie"][i]
+                    if outputFile == recording["outputFile"]:
+                        recording["callback"]( recording["timerId"], Recorder.STARTED )
         elif result == ActiveRecording.ABORTED or result == ActiveRecording.FINISHED:
             with self._lock:
                 for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
                     recording = self._activeRecordings[recordingId]["cookie"][i]
-                    if outputFile == recording["recording"].filename:
-                        recording["callback"]( recording["recording"], Recorder.FINISHED )
+                    if outputFile == recording["outputFile"]:
+                        if result == result == ActiveRecording.FINISHED:
+                            recording["callback"]( recording["timerId"], Recorder.FINISHED )
+                        else:
+                            recording["callback"]( recording["timerId"], Recorder.ABORTED )
                         self._activeRecordings[recordingId]["cookie"].pop( i )
                         self._logger.debug( "Recorder._recordingResult: removed outputFile and decreased refCount" )
                 if len( self._activeRecordings[recordingId]["cookie"] ) == 0:

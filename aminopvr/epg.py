@@ -1097,11 +1097,6 @@ class RecordingProgram( ProgramAbstract ):
                 if not program:
                     self._id = -1
 
-            if self._id == -1:
-                program = self.getByOriginalIdFromDb( conn, self._originalId )
-                if program:
-                    self._id = program._id
-
             if self._id != -1:
                 if program and self != program:
                     conn.execute( """
