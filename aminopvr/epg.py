@@ -1001,13 +1001,13 @@ class EpgProgram( ProgramAbstract ):
                                      self._endTime ) )
 
                 for genre in self._genres:
-                    genre.programId = id
+                    genre.programId = self._id
                 for actor in self._actors:
-                    actor.programId = id
+                    actor.programId = self._id
                 for director in self._directors:
-                    director.programId = id
+                    director.programId = self._id
                 for presenter in self._presenters:
-                    presenter.programId = id
+                    presenter.programId = self._id
 
                 genres            = EpgProgramGenre.getAllFromDb( conn, self._id )
                 actors            = EpgProgramActor.getAllFromDb( conn, self._id )
@@ -1149,16 +1149,19 @@ class RecordingProgram( ProgramAbstract ):
                                          self._detailed ) )
                 if id:
                     self._id = id
-                    for genre in self._genres:
-                        genre.programId = id
-                    for actor in self._actors:
-                        actor.programId = id
-                    for director in self._directors:
-                        director.programId = id
-                    for presenter in self._presenters:
-                        presenter.programId = id
+                else:
+                    self._logger.error( "Inserted row, but no auto-increment id returned!" )
 
             if self._id != -1:
+                for genre in self._genres:
+                    genre.programId = self._id
+                for actor in self._actors:
+                    actor.programId = self._id
+                for director in self._directors:
+                    director.programId = self._id
+                for presenter in self._presenters:
+                    presenter.programId = self._id
+
                 genres            = RecordingProgramGenre.getAllFromDb( conn, self._id )
                 actors            = RecordingProgramActor.getAllFromDb( conn, self._id )
                 directors         = RecordingProgramDirector.getAllFromDb( conn, self._id )
