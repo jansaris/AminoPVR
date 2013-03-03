@@ -40,9 +40,9 @@ if generalConfig.provider == "glashart":
 #def test( eventType, params ):
 #    logger.warning( "test" )
 
-def signalHandler( signum=None, frame=None ):
-    if type( signum ) != type( None ):
-        logger.warning( "Signal %i caught, exiting..." % int( signum ) )
+def signalHandler( signalNumber=None, frame=None ):
+    if type( signalNumber ) != type( None ):
+        logger.warning( "Signal %i caught, exiting..." % int( signalNumber ) )
         shutdown()
 
 def shutdown():

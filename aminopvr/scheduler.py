@@ -22,6 +22,7 @@ from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording, OldRecording
 from aminopvr.schedule import Schedule
 from aminopvr.timer import Timer
+from aminopvr.tools import Singleton
 import datetime
 import logging
 import threading
@@ -40,14 +41,11 @@ class Scheduler( threading.Thread ):
     TODO:
     - Actually do something with the result of 'reschedule'
     """
+    __metaclass__ = Singleton
+
     _instance = None
 
     _logger = logging.getLogger( "aminopvr.Scheduler" )
-
-    def __new__( self, *args, **kwargs ):
-        if not self._instance:
-            self._instance = super( Scheduler, self ).__new__( self, *args, **kwargs )
-        return self._instance
 
     def __init__( self ):
         threading.Thread.__init__( self )

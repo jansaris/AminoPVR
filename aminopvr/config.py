@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import DATA_ROOT
+from aminopvr.tools import Singleton
 import ConfigParser
 import logging
 import os
@@ -113,14 +114,11 @@ class GeneralConfig( ConfigSectionAbstract ):
         return self._get( "local_access_nets" ).split( ',' )
 
 class Config( object ):
+    __metaclass__ = Singleton
+
     _instance = None
 
     _logger   = logging.getLogger( "aminopvr.Config" )
-
-    def __new__( self, *args, **kwargs ):
-        if not self._instance:
-            self._instance = super( Config, self ).__new__( self, *args, **kwargs )
-        return self._instance
 
     def __init__( self, filename="aminopvr.conf"  ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )

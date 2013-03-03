@@ -291,6 +291,10 @@ class ProgramGenreAbstract( object ):
     def genreId( self, genreId ):
         self._genreId = genreId
 
+    @property
+    def genre( self ):
+        return self._genre
+
     @classmethod
     def getFromDb( cls, conn, programId, genreId ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
@@ -757,7 +761,16 @@ class ProgramAbstract( object ):
         return programs
 
     def toDict( self ):
-        return { "id": self.id, "title": self.title, "subtitle": self.subtitle, "start_time": self.startTime, "end_time": self.endTime, "description": self.description }
+        genres = []
+        for genre in self._genres:
+            genres.append( genre.genre.genre )
+        return { "id":          self.id,
+                 "title":       self.title,
+                 "subtitle":    self.subtitle,
+                 "genre":       genres,
+                 "start_time":  self.startTime,
+                 "end_time":    self.endTime,
+                 "description": self.description }
 
     def dump( self ):
         genres     = [];

@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.input_stream import InputStreamAbstract
+from aminopvr.tools import Singleton
 import logging
 import threading
 import time
@@ -136,6 +137,8 @@ class Recorder( object ):
     - getActiveRecordings should return list of recording.Recording
     - Event callback from Recording and towards caller 
     """
+    __metaclass__ = Singleton
+
     _instance         = None
     _activeRecordings = dict()
     _lock             = threading.Lock()
@@ -144,11 +147,6 @@ class Recorder( object ):
     STARTED  = 1
     ABORTED  = 2
     FINISHED = 3
-
-    def __new__( self, *args, **kwargs ):
-        if not self._instance:
-            self._instance = super( Recorder, self ).__new__( self, *args, **kwargs )
-        return self._instance
 
     def __init__( self ):
         self._logger.debug( "__init__" ) 

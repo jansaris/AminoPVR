@@ -23,7 +23,7 @@ from aminopvr.providers.glashart.epg import EpgProvider
 from aminopvr.providers.glashart.page import PageSymbol
 from aminopvr.providers.glashart.wi import WebInterface
 from aminopvr.timer import Timer
-from aminopvr.tools import getPage
+from aminopvr.tools import getPage, Singleton
 import aminopvr.providers
 import datetime
 import gzip
@@ -42,6 +42,8 @@ def RegisterProvider():
     aminopvr.providers.contentProvider = ContentProvider
 
 class ContentProvider( threading.Thread ):
+    __metaclass__ = Singleton
+
     _logger = logging.getLogger( "aminopvr.providers.glashart.ContentProvider" )
 
     _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')

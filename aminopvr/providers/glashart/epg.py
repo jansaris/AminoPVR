@@ -22,7 +22,7 @@ from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector,
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
 from aminopvr.providers.glashart.config import glashartConfig
 from aminopvr.timer import Timer
-from aminopvr.tools import getPage
+from aminopvr.tools import getPage, Singleton
 import datetime
 import gzip
 import json
@@ -178,6 +178,8 @@ def _lineFilter( line ):
     return line
 
 class EpgProvider( threading.Thread ):
+    __metaclass__ = Singleton
+
     _logger = logging.getLogger( "aminopvr.providers.glashart.EpgProvider" )
 
     _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
@@ -244,9 +246,9 @@ class EpgProvider( threading.Thread ):
             self.requestEpgUpdate( True )
 
     def _grabAll( self ):
-        self._logger.debug( "grabAll" )
+        self._logger.debug( "EpgProvider._grabAll" )
 
-        self._logger.info( "Grabbing EPG for all channels." )
+        self._logger.warning( "Grabbing EPG for all channels." )
 
         self._syncEpgIds()
 
@@ -255,7 +257,7 @@ class EpgProvider( threading.Thread ):
         allChannels = Channel.getAllFromDb( db )
 
         if len( allChannels ) == 0:
-            self._logger.critical( "No channels parsed from index page. Script error?" )
+            self._logger.critical( "No channels in the database. Script error?" )
             return
 
         # Get epgids from database (contains channels per epg_id and strategy)
@@ -265,7 +267,7 @@ class EpgProvider( threading.Thread ):
         nowDay = datetime.datetime( now[0], now[1], now[2] )
 
         # Remove program older than this day
-        self._logger.info( "Removing EPG from before %i" % ( int( time.mktime( nowDay.timetuple() ) ) ) )
+        self._logger.warning( "Removing EPG from before %i" % ( int( time.mktime( nowDay.timetuple() ) ) ) )
         EpgProgram.deleteByTimeFromDB( db, int( time.mktime( nowDay.timetuple() ) ) )
 
         for epgId in epgIds:
@@ -274,7 +276,9 @@ class EpgProvider( threading.Thread ):
             self._grabEpgForChannel( epgId=epgId )
 
         if self._running:
-            self._logger.info( "Grabbing EPG data complete." )
+            self._logger.warning( "Grabbing EPG data complete." )
+        else:
+            self._logger.warning( "Grabbing EPG interrupted." )
 
     def _grabEpgForChannel( self, channel=None, epgId=None ):
         conn = DBConnection()
@@ -340,10 +344,10 @@ class EpgProvider( threading.Thread ):
 
                 if not programOld or programNew != programOld:
                     if programOld:
-                        self._logger.info( "Updated program: id = %s" % ( programNew.originalId ) )
-                        self._logger.info( "Start time: %s > %s" % ( str( programOld.startTime ), str( programNew.startTime ) ) )
-                        self._logger.info( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
-                        self._logger.info( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
+                        self._logger.debug( "Updated program: id = %s" % ( programNew.originalId ) )
+                        self._logger.debug( "Start time: %s > %s" % ( str( programOld.startTime ), str( programNew.startTime ) ) )
+                        self._logger.debug( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
+                        self._logger.debug( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
 
                     try:
                         programNew.addToDb( conn )
@@ -374,12 +378,11 @@ class EpgProvider( threading.Thread ):
         return program, grabbed
 
     def _syncEpgIds( self ):
-        """
-        TODO: 'disable' epgIds when no channels are active with this epgId
-        """
         conn = DBConnection()
 
-        uniqueEpgIds = Channel.getUniqueEpgIdsFromDb( conn )
+        # By not including inactive channels, we automatically delete epgIds that
+        # are currently not active
+        uniqueEpgIds = Channel.getUniqueEpgIdsFromDb( conn, includeRadio=True )
 
         # Get epgids from database (contains channels per epg_id and strategy)
         epgIds        = EpgId.getAllFromDb( conn )
@@ -398,7 +401,6 @@ class EpgProvider( threading.Thread ):
             epgId = EpgId( newEpgId, "none" )
             epgId.addToDb( conn )
             self._logger.info( "_syncEpgIds: adding epgId=%s" % ( epgId.epgId ) )
-                
 
     def _getProgramFromJson( self, epgId, json ):
         startTime = json["start"]

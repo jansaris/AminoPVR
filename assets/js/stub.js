@@ -170,9 +170,12 @@ function RecordingAsset()
                     {
                         var responseItem = eval( '(' + this.responseText + ')' );
 
-                        asset.marker = responseItem.marker;
+						if ( repsonseItem["status"] == "success" )
+						{
+                        	asset.marker = responseItem["data"]["marker"];
 
-                        DebugLog( "RecordingAsset.ReadMeta: onreadystatechange: read meta data: marker=" + responseItem.marker );
+                        	DebugLog( "RecordingAsset.ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
+                        }
                     }
                 }
             };
@@ -243,11 +246,18 @@ function PVRClass()
                             var responseItem = eval( '(' + this.responseText + ')' );
                             var i = 1;
 
-                            pvr.storage_info               = new StorageInfo;
-                            pvr.storage_info.availableSize = responseItem["available_size"];
-                            pvr.storage_info.totalSize     = responseItem["total_size"];
+							if ( responseItem["status"] == "success" )
+							{
+                            	pvr.storage_info               = new StorageInfo;
+                            	pvr.storage_info.availableSize = responseItem["data"]["available_size"];
+                            	pvr.storage_info.totalSize     = responseItem["data"]["total_size"];
 
-                            DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: Downloaded storage info" );
+                            	DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: Downloaded storage info" );
+                            }
+                            else
+                            {
+                            	DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
+                            }
                         }
                         catch ( e )
                         {
@@ -299,29 +309,32 @@ function PVRClass()
                             var responseItem = eval( '(' + this.responseText + ')' );
                             var i = 1;
 
-                            for ( var row in responseItem )
-                            {
-                                asset                = new RecordingAsset;
-                                asset.assetId        = responseItem[row]["id"];
-                                asset.title          = responseItem[row]["title"];
-                                asset.startTime      = responseItem[row]["start_time"];
-                                asset.duration       = responseItem[row]["end_time"] - responseItem[row]["start_time"];
-                                asset.viewingControl = 12;
-                                asset.position       = 0;
-                                asset.url            = "src=" + responseItem[row]["url"] + ";servertype=mediabase";
-                                asset.marker         = responseItem[row]["marker"];
+							if ( responseItem["status"] == "success" )
+							{
+	                            for ( var row in responseItem["data"] )
+	                            {
+	                                asset                = new RecordingAsset;
+	                                asset.assetId        = responseItem["data"][row]["id"];
+	                                asset.title          = responseItem["data"][row]["title"];
+	                                asset.startTime      = responseItem["data"][row]["start_time"];
+	                                asset.duration       = responseItem["data"][row]["end_time"] - responseItem["data"][row]["start_time"];
+	                                asset.viewingControl = 12;
+	                                asset.position       = 0;
+	                                asset.url            = "src=" + responseItem["data"][row]["url"] + ";servertype=mediabase";
+	                                asset.marker         = responseItem["data"][row]["marker"];
 
-                                if ( responseItem[row]["subtitle"] != "" )
-                                {
-                                    asset.title += ": " + responseItem[row]["subtitle"];
-                                }
+	                                if ( responseItem["data"][row]["subtitle"] != "" )
+	                                {
+	                                    asset.title += ": " + responseItem["data"][row]["subtitle"];
+	                                }
 
-                                pvr.recordings[asset.assetId] = asset;
-                                pvr.recording_ids[i] = asset.assetId;
-                                i++;
-                            }
+	                                pvr.recordings[asset.assetId] = asset;
+	                                pvr.recording_ids[i] = asset.assetId;
+	                                i++;
+	                            }
 
-                            pvr.recording_ids.count = i - 1;
+	                            pvr.recording_ids.count = i - 1;
+	                        }
 
                             DebugLog( "PVRClass.GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
                         }
@@ -358,20 +371,23 @@ function PVRClass()
                             var responseItem = eval( '(' + this.responseText + ')' );
                             var i = 1;
 
-                            for ( var row in responseItem )
-                            {
-                                schedItem                = new ScheduleItem;
-                                schedItem.title          = responseItem[row]["title"];
-                                schedItem.startTime      = responseItem[row]["start_time"];
-                                schedItem.endTime        = responseItem[row]["end_time"];
-                                schedItem.viewingControl = responseItem[row]["viewing_control"];
-                                schedItem.active         = responseItem[row]["active"];
+							if ( responseItem["status"] == "success" )
+							{
+	                            for ( var row in responseItem["data"] )
+    	                        {
+        	                        schedItem                = new ScheduleItem;
+            	                    schedItem.title          = responseItem["data"][row]["title"];
+                	                schedItem.startTime      = responseItem["data"][row]["start_time"];
+                    	            schedItem.endTime        = responseItem["data"][row]["end_time"];
+                        	        schedItem.viewingControl = responseItem["data"][row]["viewing_control"];
+                            	    schedItem.active         = responseItem["data"][row]["active"];
 
-                                pvr.schedule_list[i] = schedItem;
-                                i++;
-                            }
+	                                pvr.schedule_list[i] = schedItem;
+    	                            i++;
+        	                    }
 
-                            pvr.schedule_list.count = i - 1;
+            	                pvr.schedule_list.count = i - 1;
+            	            }
 
                             DebugLog( "PVRClass.GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
                         }

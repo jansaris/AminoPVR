@@ -21,6 +21,7 @@ from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
 import aminopvr
+import aminopvr.providers
 import cherrypy
 import json
 import logging
@@ -32,15 +33,25 @@ import types
 import urllib
 
 class API( object ):
+
     _apiLogger = logging.getLogger( "aminopvr.WI.API" )
+
+    STATUS_FAIL      = 1
+    STATUS_SUCCESS   = 2
+
     def _grantAccess( self, apiKey=None ):
+        access = False
         if apiKey:
             # TODO: check against API key
-            return True
+            access = True
         else:
             clientIP = cherrypy.request.remote.ip
             self._apiLogger.debug( "_grantAccess: clientIP=%s" % ( clientIP ) )
-            return self._addressInNetwork( clientIP, aminopvr.generalConfig.localAccessNets )
+            access = self._addressInNetwork( clientIP, aminopvr.generalConfig.localAccessNets )
+
+        if not access:
+            raise cherrypy.HTTPError( 401 )
+        return access
 
     def _addressInNetwork( self, ip, nets ):
         # Is an address in a network
@@ -64,6 +75,18 @@ class API( object ):
                     return True
             return False
 
+    def _createResponse( self, status, data=None ):
+        response = {}
+        response["status"] = "unknown"
+        if status == API.STATUS_SUCCESS:
+            response["status"] = "success"
+        elif status == API.STATUS_FAIL:
+            response["status"] = "fail"
+        if data:
+            response["data"] = data
+        cherrypy.response.headers["Content-Type"] = "application/json"
+        return json.dumps( response )
+
 class STBAPI( API ):
     _logger = logging.getLogger( "aminopvr.WI.STBAPI" )
 
@@ -73,12 +96,12 @@ class STBAPI( API ):
         if self._grantAccess():
             if init == None:
                 time.sleep( 25 )
-                return json.dumps( { "type": "timeout" } )
+                return self._createResponse( API.STATUS_SUCCESS, { "type": "timeout" } )
             else:
-                return json.dumps( { "type": "command", "command": "get_channel_list" } )
+                return self._createResponse( API.STATUS_SUCCESS, { "type": "command", "command": "get_channel_list" } )
         else:
             self._logger.error( "poll: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_NO_ACCESS )
 
     @cherrypy.expose
     def setChannelList( self, channelList ):
@@ -115,14 +138,11 @@ class STBAPI( API ):
                     self._logger.info( "setChannelList: remove channel: %i - %s" % ( channel.number, channel.name ) )
                     channel.deleteFromDb( conn )
 
-                return json.dumps( { "status": "success", "numChannels": len( channels ) } )
+                return self._createResponse( API.STATUS_SUCCESS, { "numChannels": len( channels ) } )
             except:
                 self._logger.exception( "setChannelList: exception: channelList=%s" % ( channelList ) )
 
-            return json.dumps( { "status": "fail", "numChannels": 0 } )
-        else:
-            self._logger.error( "setChannelList: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_FAIL, { "numChannels": 0 } )
 
     @cherrypy.expose
     def postLog( self, logData ):
@@ -131,19 +151,13 @@ class STBAPI( API ):
             logs = json.loads( logData )
             for log in logs:
                 self._logger.debug( "[%d] %d %s" % ( log["level"], log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            return json.dumps( { "numLogs": len( logs ) } )
-        else:
-            self._logger.error( "postLog: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )
 
     @cherrypy.expose
     def setActiveChannel( self, channel ):
         self._logger.debug( "setActiveChannel( %s )" % ( channel ) )
         if self._grantAccess():
-            return json.dumps( { "status": "ok" } )
-        else:
-            self._logger.error( "setActiveChannel: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS )
 
     def _getChannelFromJson( self, json, channelId=-1 ):
         channel = PendingChannel( channelId, json["id"], json["epg_id"], json["name"], json["name_short"], json["logo"], json["thumbnail"], json["radio"], False )
@@ -189,10 +203,7 @@ class AminoPVRAPI( API ):
         self._logger.debug( "getNumChannels" )
         if self._grantAccess( apiKey ):
             conn = DBConnection()
-            return json.dumps( { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
-        else:
-            self._logger.error( "getNumChannels: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
 
     @cherrypy.expose
     def getChannels( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True, apiKey=None ):
@@ -210,10 +221,7 @@ class AminoPVRAPI( API ):
                 channelJson = channel.toDict( protocol, includeScrambled, includeHd )
                 if channelJson:
                     channelsArray.append( channelJson )
-            return json.dumps( channelsArray )
-        else:
-            self._logger.error( "getChannels: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, channelsArray )
 
     @cherrypy.expose
     def getEpgForChannel( self, channelId, startTime=None, endTime=None, apiKey=None ):
@@ -230,65 +238,44 @@ class AminoPVRAPI( API ):
             epgArray = []
             for epg in epgData:
                 epgArray.append( epg.toDict() )
-            return json.dumps( epgArray )
-        else:
-            self._logger.error( "getEpgForChannels: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, epgArray )
 
     @cherrypy.expose
     def getStorageInfo( self, apiKey=None ):
         self._logger.debug( "getStorageInfo" )
         if self._grantAccess( apiKey ):
             # TODO: get actual storage info
-            return json.dumps( { "available_size": 100000, "total_size": 200000 } )
-        else:
-            self._logger.error( "getStorageInfo: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, { "available_size": 100000, "total_size": 200000 } )
 
     @cherrypy.expose
     def getRecordingList( self, apiKey=None ):
         self._logger.debug( "getRecordingList" )
         if self._grantAccess( apiKey ):
-            return json.dumps( [] )
-        else:
-            self._logger.error( "getRecordingList: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, [] )
 
     @cherrypy.expose
     def getRecordingMeta( self, id, apiKey=None ):
         self._logger.debug( "getRecordingMeta( %s )" )
         if self._grantAccess( apiKey ):
-            return json.dumps( { "marker": 0 } )
-        else:
-            self._logger.error( "getRecordingMeta: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, { "marker": 0 } )
 
     @cherrypy.expose
     def setRecordingMeta( self, id, marker, apiKey=None ):
         self._logger.debug( "setRecordingMeta( %s, %s )" % ( id, marker ) )
         if self._grantAccess( apiKey ):
-            return json.dumps( { "status": "ok" } )
-        else:
-            self._logger.error( "setRecordingMeta: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS )
 
     @cherrypy.expose
     def getScheduleList( self, apiKey=None ):
         self._logger.debug( "getScheduleList" )
         if self._grantAccess( apiKey ):
-            return json.dumps( [] )
-        else:
-            self._logger.error( "getScheduleList: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS, [] )
 
     @cherrypy.expose
     def addSchedule( self, schedule, apiKey=None ):
         self._logger.debug( "addSchedule( %s )" % ( schedule ) )
         if self._grantAccess( apiKey ):
-            return json.dumps( { "status": "ok" } )
-        else:
-            self._logger.error( "addSchedule: no access!" )
-            return json.dumps( { "status": "no_access" } )
+            return self._createResponse( API.STATUS_SUCCESS )
 
     @cherrypy.expose
     def getActiveRecordings( self, apiKey=None ):
@@ -344,7 +331,7 @@ class AminoPVRAPI( API ):
                         # Keep the scrambled setting from ChannelUrl's currently in the Db.
                         # This setting cannot be retrieved from the source 
                         for key in currChannel.urls.keys():
-                            if newCurrChannel.urls[key].has_key( key ):
+                            if newCurrChannel.urls.has_key( key ):
                                 newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
 
                         # TODO: delete logo and/or thumbnail if changed
@@ -374,9 +361,19 @@ class AminoPVRAPI( API ):
                     currChannel.addToDb( conn )
 
             return self.getChannels( radio=False, unicast=True, includeScrambled=False, includeHd=True, apiKey=apiKey )
-        else:
-            self._logger.error( "activatePendingChannels: no access!" )
-            return json.dumps( { "status": "no_access" } )
+
+    @cherrypy.expose
+    def requestEpgUpdate( self, apiKey=None ):
+        self._logger.debug( "requestEpgUpdate" )
+        if self._grantAccess( apiKey ):
+            if aminopvr.providers.epgProvider:
+                epgProvider = aminopvr.providers.epgProvider()
+                if epgProvider.requestEpgUpdate():
+                    return self._createResponse( API.STATUS_SUCCESS )
+                else:
+                    return self._createResponse( API.STATUS_FAIL )
+            else:
+                return self._createResponse( API.STATUS_FAIL )
 
 class AminoPVRWI( object ):
 

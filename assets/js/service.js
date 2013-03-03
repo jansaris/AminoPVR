@@ -327,83 +327,86 @@ function RemoteServiceClass()
                 if ( RemoteServiceClassInst.pollRequest.responseText.length > 0 )
                 {
                     var responseItem = eval( '(' + RemoteServiceClassInst.pollRequest.responseText + ')' );
-                    if ( responseItem['type'] == 'command' )
+                    if ( responseItem['status'] == 'success' )
                     {
-                        if ( responseItem['command'] == 'show_osd' )
-                        {
-                            RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: command: show_osd." );
-//                            RemoteServiceClassInst.API.SetChannelInstance().$(5000);
-                        }
-                        else if ( responseItem['command'] == 'play_stream' )
-                        {
-                            RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: command: play_stream: url=" + responseItem['url'] );
+                    	if ( responseItem['data']['type'] == 'command' )
+                    	{
+                        	if ( responseItem['data']['command'] == 'show_osd' )
+                        	{
+                            	RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: command: show_osd." );
+//                                RemoteServiceClassInst.API.SetChannelInstance().$(5000);
+	                        }
+    	                    else if ( responseItem['data']['command'] == 'play_stream' )
+        	                {
+            	                RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: command: play_stream: url=" + responseItem['data']['url'] );
 
-                            RemoteServiceClassInst.API.PlayStreamAction1( RemoteServiceClassInst.API.SetChannelInstance() );
-                            b = new RemoteServiceClassInst.API.PlayStreamClass( responseItem['url'], "", true );
-                            RemoteServiceClassInst.API.PlayStreamAction2( b );
-                        }
-                        else if ( responseItem['command'] == 'get_channel_list' )
-                        {
-                            window.setTimeout( function()
-                            {
-                                RemoteServiceClassInst.SendChannelList();
-                            }, 5000 );
-                        }
-                        else if ( responseItem['command'] == 'remote_debug' )
-                        {
-                            if ( !RemoteServiceClassInst.remoteDebug )
-                            {
-                                RemoteServiceClassInst.EnableRemoteDebug( true );
-                            }
-                            else
-                            {
-                                RemoteServiceClassInst.EnableRemoteDebug( false );
-                            }
-                        }
-                        else if ( responseItem['command'] == 'debug' )
-                        {
-                            if ( RemoteServiceClassInst.debugDiv !== undefined && RemoteServiceClassInst.debugDiv != null )
-                            {
-                                if ( RemoteServiceClassInst.debugDiv.style.display == "none" )
-                                {
-                                    RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: Enable Debug Logging." );
-                                    RemoteServiceClassInst.debugDiv.style.display = "block";
-                                }
-                                else
-                                {
-                                    RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: Disable Debug Logging." );
-                                    RemoteServiceClassInst.debugDiv.style.display = "none";
-                                }
-                            }
-                        }
-                        else
-                        {
-                            RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: other command: " + responseItem['command'] );
-                        }
-                    }
-                    else if ( responseItem['type'] == 'channel' )
-                    {
-                        RemoteServiceClassInst.API.SetChannelFunction( responseItem['channel'], 0 );
-                    }
-                    else if ( responseItem['type'] == 'key' )
-                    {
-                        evt          = new API_KeyboardEvent;
-                        evt.keyCode  = responseItem['key'];
-                        RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: key: " + responseItem['key'] );
-                        RemoteServiceClassInst.KeyListener( evt );
-                    }
-                    else if ( responseItem['type'] == 'unknown_message' )
-                    {
-                        RemoteServiceClassInstDebugLog( "RemoteServiceClass.PollStateChange: unknown message received." );
-                    }
-                    else if ( responseItem['type'] == 'timeout' )
-                    {
-//                        RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: timeout." );
-                    }
-                    else
-                    {
-//                        RemoteServiceClassInst.API.DebugFunction( "RemoteServiceClass.PollStateChange: " + responseItem );
-                    }
+                	            RemoteServiceClassInst.API.PlayStreamAction1( RemoteServiceClassInst.API.SetChannelInstance() );
+                    	        b = new RemoteServiceClassInst.API.PlayStreamClass( responseItem['data']['url'], "", true );
+                        	    RemoteServiceClassInst.API.PlayStreamAction2( b );
+	                        }
+    	                    else if ( responseItem['data']['command'] == 'get_channel_list' )
+        	                {
+            	                window.setTimeout( function()
+                	            {
+                    	            RemoteServiceClassInst.SendChannelList();
+                        	    }, 5000 );
+	                        }
+    	                    else if ( responseItem['data']['command'] == 'remote_debug' )
+        	                {
+            	                if ( !RemoteServiceClassInst.remoteDebug )
+                	            {
+                    	            RemoteServiceClassInst.EnableRemoteDebug( true );
+                        	    }
+	                            else
+    	                        {
+        	                        RemoteServiceClassInst.EnableRemoteDebug( false );
+            	                }
+                	        }
+                    	    else if ( responseItem['data']['command'] == 'debug' )
+                        	{
+                            	if ( RemoteServiceClassInst.debugDiv !== undefined && RemoteServiceClassInst.debugDiv != null )
+	                            {
+    	                            if ( RemoteServiceClassInst.debugDiv.style.display == "none" )
+        	                        {
+            	                        RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: Enable Debug Logging." );
+                	                    RemoteServiceClassInst.debugDiv.style.display = "block";
+                    	            }
+                        	        else
+                            	    {
+                                	    RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: Disable Debug Logging." );
+                                    	RemoteServiceClassInst.debugDiv.style.display = "none";
+	                                }
+    	                        }
+        	                }
+            	            else
+                	        {
+                    	        RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: other command: " + responseItem['command'] );
+                        	}
+	                    }
+    	                else if ( responseItem['data']['type'] == 'channel' )
+        	            {
+            	            RemoteServiceClassInst.API.SetChannelFunction( responseItem['channel'], 0 );
+                	    }
+                    	else if ( responseItem['data']['type'] == 'key' )
+	                    {
+    	                    evt          = new API_KeyboardEvent;
+        	                evt.keyCode  = responseItem['data']['key'];
+            	            RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: key: " + responseItem['data']['key'] );
+                	        RemoteServiceClassInst.KeyListener( evt );
+                    	}
+	                    else if ( responseItem['data']['type'] == 'unknown_message' )
+    	                {
+        	                RemoteServiceClassInstDebugLog( "RemoteServiceClass.PollStateChange: unknown message received." );
+            	        }
+                	    else if ( responseItem['data']['type'] == 'timeout' )
+                    	{
+//                      	  RemoteServiceClassInst.DebugLog( "RemoteServiceClass.PollStateChange: timeout." );
+	                    }
+    	                else
+        	            {
+//          	              RemoteServiceClassInst.API.DebugFunction( "RemoteServiceClass.PollStateChange: " + responseItem );
+                	    }
+                	}
                 }
 
                 window.setTimeout( function()
