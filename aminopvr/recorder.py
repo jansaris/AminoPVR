@@ -85,7 +85,7 @@ class ActiveRecording( threading.Thread ):
 
         if outputFile or len( self._outputFiles ) == 1:
             self._running = False
-            self.join( 3.0 )
+            self.join( 5.0 )
             if self.isAlive():
                 self._logger.error( "ActiveRecording.stop: thread not stopping in time; kill it!" )
             return not self.isAlive()
@@ -108,7 +108,7 @@ class ActiveRecording( threading.Thread ):
             self._logger.debug( "ActiveRecording.run: start recording for recordingId=%s, file=%s" % ( self._recordingId, self._outputFiles[0] ) )
             self._callback( self._callbackArguments, self._recordingId, self._outputFiles[0], ActiveRecording.STARTED )
             while self._running:
-                inputStream.read( 10240 )
+                #inputStream.read( 10240 )
     
                 time.sleep( 0.01 )
     
@@ -183,13 +183,13 @@ class Recorder( object ):
                                                                   } )
         return recordingId
 
-    def stopRecording( self, recordingId, timerId=None ):
+    def stopRecording( self, recordingId, timerId=-1 ):
         self._logger.debug( "Recorder.stopRecording( recordingId=%s, timerId=%d )" % ( recordingId, timerId ) )
         if not self._activeRecordings.has_key( recordingId ):
             self._logger.error( "stopRecording: recordingId %s is not an active recording" % ( recordingId ) )
         else:
             recordingFilename = ""
-            if timerId:
+            if timerId != -1:
                 with self._lock:
                     for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
                         activeRecording = self._activeRecordings[recordingId]["cookie"][i]
@@ -201,7 +201,7 @@ class Recorder( object ):
                 with self._lock:
                     for i in range( len( self._activeRecordings[recordingId]["cookie"] ) ):
                         activeRecording = self._activeRecordings[recordingId]["cookie"][i]
-                        if not timerId or timerId == activeRecording["timerId"]:
+                        if timerId == -1 or timerId == activeRecording["timerId"]:
                             activeRecording["callback"]( Recorder.ABORTED, activeRecording["timerId"] )
                             self._activeRecordings[recordingId]["cookie"].pop( i )
                             self._logger.debug( "stopRecording: removed outputFile and decreased refCount" )

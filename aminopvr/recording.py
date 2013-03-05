@@ -362,7 +362,7 @@ class RecordingAbstract( object ):
                                              status,
                                              rerecord)
                                      VALUES
-                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                                   """ % ( self._tableName ),
                                   ( self._scheduleId,
                                     self._epgProgramId,
@@ -393,7 +393,7 @@ class Recording( RecordingAbstract ):
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
     def changeStatus( self, conn, status ):
-        if conn and self._id != -1:
+        if conn and self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
         self._status = status

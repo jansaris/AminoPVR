@@ -99,6 +99,7 @@ class HttpInputStream( InputStreamAbstract ):
         self._request = None
 
     def open( self ):
+        self._logger.info( "HttpInputStream.open: url=%s" % ( self._url ) )
         try:
             self._request = urllib2.urlopen( self._url )
         except urllib2.HTTPError, e:

@@ -569,8 +569,13 @@ class Scheduler( threading.Thread ):
 
                                 # Store the recording in the database
                                 recording.addToDb( conn )
+                                self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
+                                # Now lets keep reference to the id, instead of the object
+                                timer["recording"] = recording.id
                         else:
                             self._logger.error( "Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
+                    else:
+                        self._logger.error( "_stopRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
                     # Unexpected, but if recording is already marked as (un)finished, stop
                     # the timer and remove it from our list
@@ -599,14 +604,22 @@ class Scheduler( threading.Thread ):
             with self._lock:
                 if self._timers.has_key( timerId ):
                     timer     = self._timers[timerId]
-                    recording = timer["recording"]
-                    if recording.status == RecordingState.START_RECORDING or \
-                       recording.status == RecordingState.RECORDING_STARTED:
-                        conn             = DBConnection()
-                        recorder         = Recorder()
-                        recording.changeStatus( conn, RecordingState.STOP_RECORDING )
-                        self._logger.warning( "_stopRecording: Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+                    conn      = DBConnection()
+                    self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
+                    recording = Recording.getFromDb( conn, timer["recording"] )
+                    if recording:
+                        if recording.status == RecordingState.START_RECORDING or \
+                           recording.status == RecordingState.RECORDING_STARTED:
+                            recorder         = Recorder()
+                            recording.changeStatus( conn, RecordingState.STOP_RECORDING )
+                            self._logger.warning( "_stopRecording: Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+                            recorder.stopRecording( timer["recordingId"], timerId )
+                        else:
+                            self._logger.error( "_stopRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                    else:
+                        self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
                         recorder.stopRecording( timer["recordingId"], timerId )
+
 #        if eventType == Timer.TIME_TRIGGER_EVENT:
 #            recorder = Recorder()
 #            recorder.stopRecording( item["recordingId"], item["filename"] )
@@ -620,30 +633,38 @@ class Scheduler( threading.Thread ):
             if self._timers.has_key( timerId ):
                 conn      = DBConnection()
                 timer     = self._timers[timerId]
-                recording = timer["recording"]
+                self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
+                recording = Recording.getFromDb( conn, timer["recording"] )
+                if recording:
+                    if recorderState == Recorder.STARTED:
+                        if recording.status == RecordingState.START_RECORDING:
+                            recording.changeStatus( conn, RecordingState.RECORDING_STARTED )
+                            self._logger.warning( "_recorderCallback: Recording '%s' started" % ( recording.title ) )
+                        else:
+                            self._logger.error( "_recorderCallback: STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
-                if recorderState == Recorder.STARTED:
-                    if recording.status == RecordingState.START_RECORDING:
-                        recording.changeStatus( conn, RecordingState.RECORDING_STARTED )
-                        self._logger.warning( "_recorderCallback: Recording '%s' started" % ( recording.title ) )
-                    else:
-                        self._logger.error( "_recorderCallback: STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                    elif recorderState == Recorder.FINISHED:
+                        if recording.status == RecordingState.STOP_RECORDING:
+                            recording.changeStatus( conn, RecordingState.RECORDING_FINISHED )
+                            self._logger.warning( "_recorderCallback: Recording '%s' finished" % ( recording.title ) )
+                        else:
+                            self._logger.error( "_recorderCallback: FINISHED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
-                elif recorderState == Recorder.FINISHED:
-                    if recording.status == RecordingState.STOP_RECORDING:
-                        recording.changeStatus( conn, RecordingState.RECORDING_FINISHED )
-                        self._logger.warning( "_recorderCallback: Recording '%s' finished" % ( recording.title ) )
-                    else:
-                        self._logger.error( "_recorderCallback: FINISHED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                    elif recorderState == Recorder.ABORTED:
+                        if recording.status != RecordingState.RECORDING_FINISHED:
+                            self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
+                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
+                            self._logger.warning( "_recorderCallback: Recording '%s' aborted" % ( recording.title ) )
+                        else:
+                            self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d already finished" % ( timerId ) )
 
-                elif recorderState == Recorder.ABORTED:
-                    if recording.status != RecordingState.RECORDING_FINISHED:
-                        self._logger.warning( "_recordingCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
-                        recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
-                        self._logger.warning( "_recorderCallback: Recording '%s' aborted" % ( recording.title ) )
-
-                if recording.status == RecordingState.RECORDING_FINISHED or \
-                   recording.status == RecordingState.RECORDING_UNFINISHED:
+                    if recording.status == RecordingState.RECORDING_FINISHED or \
+                       recording.status == RecordingState.RECORDING_UNFINISHED:
+                        timer.stop()
+                        del self._timers[timerId]
+                else:
+                    self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
+                    recorder.stopRecording( timer["recordingId"], timerId )
                     timer.stop()
                     del self._timers[timerId]
             else:
