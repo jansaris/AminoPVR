@@ -17,8 +17,11 @@
 """
 from aminopvr.config import ConfigSectionAbstract, config
 from aminopvr.multicast import MulticastSocket
+from lib import httpplus
 import logging
-import urllib2
+import socket
+import urlparse
+#import urllib2
 
 class InputStreamProtocol( object ):
     MULTICAST = 1
@@ -56,7 +59,7 @@ class InputStreamAbstract( object ):
         if protocol == InputStreamProtocol.MULTICAST:
             return MulticastInputStream( url.ip, url.port )
         elif protocol == InputStreamProtocol.HTTP:
-            return HttpInputStream( cls.getUrl( InputStreamProtocol.HTTP, url ) )
+            return HttpInputStream( url )
         return None
 
     @classmethod
@@ -95,31 +98,64 @@ class HttpInputStream( InputStreamAbstract ):
 
     def __init__( self, url ):
         InputStreamAbstract.__init__( self )
-        self._url     = url
-        self._request = None
+        self._url      = url
+        self._request  = None
+        self._response = None
 
     def open( self ):
-        self._logger.info( "HttpInputStream.open: url=%s" % ( self._url ) )
+
+        url    = self.getUrl( self._url )
+        result = urlparse.urlparse( url )
+        self._logger.info( "HttpInputStream.open: url=%s, netloc=%s, path=%s" % ( url, result.netloc, result.path ) )
+#        try:
+#            self._request = urllib2.urlopen( self._url, timeout=2.5 )
+#        except urllib2.HTTPError, e:
+#            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+#            self._logger.warning( "HTTP Error code: %d" % e.code )
+#            return False
+#        except urllib2.URLError, e:
+#            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+#            self._logger.warning( "URL Error reason: %s" % e.reason )
+#            return False
+#        except:
+#            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+#            return False
+        self._request = httpplus.HTTPConnection( result.netloc, timeout=2.5 )
         try:
-            self._request = urllib2.urlopen( self._url )
-        except urllib2.HTTPError, e:
-            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
-            self._logger.warning( "HTTP Error code: %d" % e.code )
+            self._request.request( "GET", result.path )
+            self._response = self._request.getresponse()
+        except httpplus.HTTPTimeoutException, e:
+            self._logger.warning( "Cannot open url: %s" % ( url ) )
+            self._logger.warning( "HTTPTimeoutException reason: %r" % ( e ) )
             return False
-        except urllib2.URLError, e:
-            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
-            self._logger.warning( "URL Error reason: %s" % e.reason )
+        except httpplus.HTTPStateError, e:
+            self._logger.warning( "Cannot open url: %s" % ( url ) )
+            self._logger.warning( "HTTPStateError reason: %r" % ( e ) )
             return False
-        except:
-            self._logger.warning( "Cannot open url: %s" % ( self._url ) )
+        except httpplus.HTTPRemoteClosedError, e:
+            self._logger.warning( "Cannot open url: %s" % ( url ) )
+            self._logger.warning( "HTTPRemoteClosedError reason: %r" % ( e ) )
             return False
+        except socket.error, e:
+            self._logger.warning( "Cannot open url: %s" % ( url ) )
+            self._logger.warning( "socket.error reason: %r" % ( e ) )
+            return False
+
+        if not self._response:
+            return False
+
         return True
 
     def close( self ):
         self._request.close()
 
     def read( self, length ):
-        return self._request.read( length )
+        data = None
+        try:
+            data = self._response.read( length )
+        except httpplus.HTTPTimeoutException:
+            pass
+        return data
 
     @classmethod
     def getUrl( cls, url ):
@@ -136,3 +172,12 @@ class HttpInputStream( InputStreamAbstract ):
                     }
 
         return reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, httpBaseUrl )
+
+def main():
+    sys.stderr.write( "main()\n" );
+
+# allow this to be a module
+if __name__ == '__main__':
+    import sys
+    from aminopvr.channel import ChannelUrl
+    main()

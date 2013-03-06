@@ -71,9 +71,20 @@ def aminoPVRProcess():
 #    epgGrabber.requestEpgUpdate()
     contentProvider = provider.ContentProvider()
     contentProvider.start()
-    contentProvider.requestContentUpdate()
-#    testTimer = Timer( [ { "time": datetime.datetime.now(), "callback": test, "callbackArguments": None } ], recurrenceInterval=datetime.timedelta( minutes=1 ) )
-#    provider.epgGrabber()
-#    recordingId = recorder.startRecording( '224.1.3.1:1234', 'http', 'test.ts' )
-#    time.sleep( 60.0 )
-#    recorder.stopRecording( recordingId )
+#    contentProvider.requestContentUpdate()
+
+    from aminopvr.channel import ChannelUrl
+    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
+    
+#    url = ChannelUrl( "hd", "udp", "224.1.3.1", 12110, "", 0 )
+#    stream = InputStreamAbstract.createInputStream( InputStreamProtocol.HTTP, url )
+#    count = 0
+#    if stream.open():
+#        while count < 4:
+#            data = stream.read( 160 * 1024 )
+#            if data:
+#                logger.warning( "read %d data" % ( len( data ) ) )
+#            else:
+#                logger.warning( "timeout" )
+#            count += 1
+#        stream.close()

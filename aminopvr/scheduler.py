@@ -195,7 +195,6 @@ class Scheduler( threading.Thread ):
                         timer["recording"]    = recording
                         timer["startTime"]    = recording.startTime
                         timer["endTime"]      = recording.endTime
-                        timer["recordingId"]  = -1
                         timer["timer"] = Timer( [ { 'time':              datetime.datetime.fromtimestamp( recording.startTime ),
                                                     'callback':          self._startRecording,
                                                     'callbackArguments': timer["id"] },
@@ -553,11 +552,11 @@ class Scheduler( threading.Thread ):
                             channelUrl       = channel.urls[recording.channelUrlType]
                             recording.changeStatus( None, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
                             self._logger.warning( "_startRecording: Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
-                            timer["recordingId"] = recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback )
-                            # Hmm, recordingId is not set, so we couldn't start the recording
+
+                            # Hmm, recording didn't start
                             # Mark recording as unfinished
-                            if not timer["recordingId"]:
-                                self._logger.critical( "Scheduler._startRecording: recordingId is not set!" )
+                            if not recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback ):
+                                self._logger.critical( "Scheduler._startRecording: recording not started!" )
                                 timer.stop()
                                 del self._timers[timerId]
                             else:
@@ -583,11 +582,6 @@ class Scheduler( threading.Thread ):
                        recording.status == RecordingState.RECORDING_UNFINISHED:
                         timer.stop()
                         del self._timers[timerId]
-#            item["filename"] = 'temp_%s.ts' % ( item["startTime"] )
-#            recorder = Recorder()
-#            item["recordingId"] = recorder.startRecording( "123.0.0.321:1234", InputStreamProtocol.HTTP, item["filename"], self._recorderCallback )
-#            if not item["recordingId"]:
-#                self._logger.critical( "Scheduler._startRecording: recordingId is not set!" )
 
     def _stopRecording( self, eventType, timerId ):
         """
@@ -605,24 +599,21 @@ class Scheduler( threading.Thread ):
                 if self._timers.has_key( timerId ):
                     timer     = self._timers[timerId]
                     conn      = DBConnection()
+                    recorder  = Recorder()
                     self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
                     recording = Recording.getFromDb( conn, timer["recording"] )
                     if recording:
                         if recording.status == RecordingState.START_RECORDING or \
                            recording.status == RecordingState.RECORDING_STARTED:
-                            recorder         = Recorder()
                             recording.changeStatus( conn, RecordingState.STOP_RECORDING )
                             self._logger.warning( "_stopRecording: Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
-                            recorder.stopRecording( timer["recordingId"], timerId )
+                            if not recorder.stopRecording( timerId ):
+                                self._logger.error( "_stopRecording: Recording didn't end properly" )
                         else:
                             self._logger.error( "_stopRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
                     else:
                         self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
-                        recorder.stopRecording( timer["recordingId"], timerId )
-
-#        if eventType == Timer.TIME_TRIGGER_EVENT:
-#            recorder = Recorder()
-#            recorder.stopRecording( item["recordingId"], item["filename"] )
+                        recorder.stopRecording( timerId )
 
     def _recorderCallback( self, timerId, recorderState ):
         """
@@ -633,6 +624,7 @@ class Scheduler( threading.Thread ):
             if self._timers.has_key( timerId ):
                 conn      = DBConnection()
                 timer     = self._timers[timerId]
+                recorder  = Recorder()
                 self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
                 recording = Recording.getFromDb( conn, timer["recording"] )
                 if recording:
@@ -664,7 +656,7 @@ class Scheduler( threading.Thread ):
                         del self._timers[timerId]
                 else:
                     self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
-                    recorder.stopRecording( timer["recordingId"], timerId )
+                    recorder.stopRecording( timerId )
                     timer.stop()
                     del self._timers[timerId]
             else:
