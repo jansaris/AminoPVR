@@ -15,8 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.channel import Channel
 from aminopvr.epg import RecordingProgram
 import copy
+import datetime
 import epg
 import logging
 import sys
@@ -337,6 +339,9 @@ class RecordingAbstract( object ):
                                     self._rerecord,
                                     self._id ) )
             else:
+                if self._filename == "":
+                    self._filename = self._generateFilename( conn )
+
                 if self._epgProgramId == -1 and self._epgProgram:
                     assert isinstance( self._epgProgram, RecordingProgram ), "self._epgProgram not of type RecordingProgram: %r" % ( self._epgProgram ) 
                     self._epgProgram.addToDb( conn )
@@ -383,6 +388,11 @@ class RecordingAbstract( object ):
                                     self._rerecord ) )
                 if id:
                     self._id = id
+
+    def _generateFilename( self, conn ):
+        channel  = Channel.getFromDb( conn, self._channelId )
+        filename = "%d_%s" % ( channel.number, datetime.datetime.fromtimestamp( self._startTime ).strftime( "%Y%m%d%H%M%S" ) )
+        return filename
 
     def dump( self ):
         return ( "%s - %i: %i, %i, %i, %i, %i, %s, %s, %i" % ( self._tableName, self._id, self._scheduleId, self._epgProgramId, self._startTime, self._endTime, self._length, repr( self._title ), repr( self._filename ), self._status ) )
