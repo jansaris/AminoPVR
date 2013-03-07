@@ -61,13 +61,7 @@ class ActiveRecording( threading.Thread ):
         self._listeners         = []
         self._listenerLock      = threading.Lock()
 
-        self._newOutputFile     = ""
-        self._oldOutputFile     = ""
-
         self._logger.debug( "ActiveRecording.__init__( url=%s, protocol=%s )" % ( url, protocol ) )
-
-        if not self._callback:
-            self._logger.critical( "ActiveRecording.__init__: no callback specified" )
 
     def start( self ):
         self._logger.debug( "ActiveRecording.start" )
@@ -80,7 +74,8 @@ class ActiveRecording( threading.Thread ):
         with self._listenerLock:
             for listener in self._listeners:
                 self._logger.critical( "ActiveRecording.stop: listener with id %d is still there; abort" % ( listener["id"] ) )
-                listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                if listener.has_key( "callback" ) and listener["callback"]:
+                    listener["callback"]( listener["id"], ActiveRecording.ABORTED )
                 self._listeners.remove( listener )
 
         self._running = False
@@ -104,7 +99,8 @@ class ActiveRecording( threading.Thread ):
         with self._listenerLock:
             for listener in self._listeners:
                 if listener["id"] == id:
-                    listener["callback"]( listener["id"], ActiveRecording.FINISHED )
+                    if listener.has_key( "callback" ) and listener["callback"]:
+                        listener["callback"]( listener["id"], ActiveRecording.FINISHED )
                     self._listeners.remove( listener )
         return len( self._listeners )
 
@@ -121,20 +117,23 @@ class ActiveRecording( threading.Thread ):
                         for listener in self._listeners:
                             """ Write data to listener["outputFile"] """
                             if listener["new"]:
-                                listener["callback"]( listener["id"], ActiveRecording.STARTED )
+                                if listener.has_key( "callback" ) and listener["callback"]:
+                                    listener["callback"]( listener["id"], ActiveRecording.STARTED )
                                 listener["new"] = False
 
             inputStream.close()
             with self._listenerLock:
                 for listener in self._listeners:
                     self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
-                    listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                    if listener.has_key( "callback" ) and listener["callback"]:
+                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
                     self._listeners.remove( listener )
         else:
             self._logger.critical( "ActiveRecording.run: Could not create or open url=%r on protocol=%d" % ( self._url, self._protocol ) )
             with self._listenerLock:
                 for listener in self._listeners:
-                    listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                    if listener.has_key( "callback" ) and listener["callback"]:
+                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
                     self._listeners.remove( listener )
 
 class Recorder( object ):
