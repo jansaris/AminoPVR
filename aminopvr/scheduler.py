@@ -614,6 +614,8 @@ class Scheduler( threading.Thread ):
                     else:
                         self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
                         recorder.stopRecording( timerId )
+                else:
+                    self._logger.error( "_stopRecording: timer with timerId=%d not found" % ( timerId ) )
 
     def _recorderCallback( self, timerId, recorderState ):
         """
@@ -660,5 +662,5 @@ class Scheduler( threading.Thread ):
                     timer.stop()
                     del self._timers[timerId]
             else:
-                self._logger.error( "_recorderCallback: recording with timerId=%d not found" % ( timerId ) )
+                self._logger.error( "_recorderCallback: timer with timerId=%d not found" % ( timerId ) )
 

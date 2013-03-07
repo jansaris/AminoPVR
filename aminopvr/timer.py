@@ -105,6 +105,7 @@ class Timer( threading.Thread ):
             for event in self._events:
                 with self._lock:
                     if not event["triggered"] and now >= event["time"]:
+                        self._logger.debug( "Timer.run: event @ %s triggered (now %s)" % ( event["time"], now ) )
                         event["callback"]( Timer.TIME_TRIGGER_EVENT, event["callbackArguments"] )
                         if not self._recurrenceInterval:
                             event["triggered"] = True

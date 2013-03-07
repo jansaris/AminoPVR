@@ -85,12 +85,12 @@ class ActiveRecording( threading.Thread ):
         return not self.isAlive()
                     
     def addListener( self, id, outputFile, callback ):
+        listener               = {}
+        listener["id"]         = id
+        listener["outputFile"] = outputFile
+        listener["callback"]   = callback
+        listener["new"]        = True
         with self._listenerLock:
-            listener               = {}
-            listener["id"]         = id
-            listener["outputFile"] = outputFile
-            listener["callback"]   = callback
-            listener["new"]        = True
             self._listeners.append( listener )
 
     def removeListener( self, id ):
@@ -198,13 +198,13 @@ class Recorder( object ):
                 recordingId = self._recordings[id]["recordingId"]
 
             if recordingId != "" and self._activeRecordings.has_key( recordingId ):
-                if self._activeRecordings[recordingId].removeListener( id ) == 0:
-                    self._logger.debug( "stopRecording: No more listeners; stop ActiveRecorder" )
-                    if not self._activeRecordings[recordingId].stop():
-                        self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
-                        with self._lock:
+                with self._lock:
+                    if self._activeRecordings[recordingId].removeListener( id ) == 0:
+                        self._logger.warning( "stopRecording: No more listeners; stop ActiveRecorder" )
+                        if not self._activeRecordings[recordingId].stop():
+                            self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
                             del self._activeRecordings[recordingId]
-                        return False
+                            return False
             else:
                 self._logger.error( "stopRecording: recordingId is not available" )
                 return False
@@ -235,16 +235,18 @@ class Recorder( object ):
         self._logger.debug( "Recorder._recordingResult( id=%d, result=%s )" % ( id, result ) )
         if result == ActiveRecording.STARTED:
             self._logger.debug( "Recorder._recordingResult: ActiveRecording.STARTED" )
-            with self._lock:
-                if self._recordings.has_key( id ):
-                    recording = self._recordings[id]
-                    recording["callback"]( id, Recorder.STARTED )
+            if self._recordings.has_key( id ):
+                recording = self._recordings[id]
+                recording["callback"]( id, Recorder.STARTED )
+            else:
+                self._logger.error( "Recorder._recordingResult: recording with id=%d does not exist" % ( id ) )
         elif result == ActiveRecording.ABORTED or result == ActiveRecording.FINISHED:
-            with self._lock:
-                if self._recordings.has_key( id ):
-                    recording = self._recordings[id]
-                    if result == ActiveRecording.FINISHED:
-                        recording["callback"]( id, Recorder.FINISHED )
-                    else:
-                        recording["callback"]( id, Recorder.ABORTED )
-                    del self._recordings[id]
+            if self._recordings.has_key( id ):
+                recording = self._recordings[id]
+                if result == ActiveRecording.FINISHED:
+                    recording["callback"]( id, Recorder.FINISHED )
+                else:
+                    recording["callback"]( id, Recorder.ABORTED )
+                del self._recordings[id]
+            else:
+                self._logger.error( "Recorder._recordingResult: recording with id=%d does not exist" % ( id ) )
