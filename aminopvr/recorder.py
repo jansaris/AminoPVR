@@ -238,13 +238,13 @@ class Recorder( object ):
             with self._lock:
                 if self._recordings.has_key( id ):
                     recording = self._recordings[id]
-                    recording["callback"]( recording["id"], Recorder.STARTED )
+                    recording["callback"]( id, Recorder.STARTED )
         elif result == ActiveRecording.ABORTED or result == ActiveRecording.FINISHED:
             with self._lock:
                 if self._recordings.has_key( id ):
                     recording = self._recordings[id]
                     if result == ActiveRecording.FINISHED:
-                        recording["callback"]( recording["id"], Recorder.FINISHED )
+                        recording["callback"]( id, Recorder.FINISHED )
                     else:
-                        recording["callback"]( recording["id"], Recorder.ABORTED )
+                        recording["callback"]( id, Recorder.ABORTED )
                     del self._recordings[id]
