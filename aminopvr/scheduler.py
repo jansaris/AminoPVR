@@ -44,7 +44,7 @@ class Scheduler( threading.Thread ):
     """
     __metaclass__ = Singleton
 
-    _lock   = threading.Lock()
+    _lock   = threading.RLock()
     _logger = logging.getLogger( "aminopvr.Scheduler" )
 
     def __init__( self ):
@@ -549,32 +549,33 @@ class Scheduler( threading.Thread ):
                         recorder   = Recorder()
                         channel    = Channel.getFromDb( conn, recording.channelId )
                         if channel.urls.has_key( recording.channelUrlType ):
-                            channelUrl       = channel.urls[recording.channelUrlType]
-                            recording.changeStatus( None, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
+                            channelUrl = channel.urls[recording.channelUrlType]
+
+                            # Convert EpgProgram to RecordingProgram
+                            if recording.epgProgramId != -1 and not recording.epgProgram:
+                                recording.epgProgram = EpgProgram.getFromDb( conn, recording.epgProgramId )
+                            if recording.epgProgram:
+                                recording.copyEpgProgram()
+
+                            # Store the recording in the database
+                            recording.addToDb( conn )
+                            self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
+
+                            recording.changeStatus( conn, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
                             self._logger.warning( "_startRecording: Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
 
                             # Hmm, recording didn't start
                             # Mark recording as unfinished
                             if not recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback ):
                                 self._logger.critical( "Scheduler._startRecording: recording not started!" )
-                                timer.stop()
-                                del self._timers[timerId]
+                                recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )  # Not providing DBConnection, because recording is not in the db yet!
                             else:
-                                # Convert EpgProgram to RecordingProgram
-                                if recording.epgProgramId != -1 and not recording.epgProgram:
-                                    recording.epgProgram = EpgProgram.getFromDb( conn, recording.epgProgramId )
-                                if recording.epgProgram:
-                                    recording.copyEpgProgram()
-
-                                # Store the recording in the database
-                                recording.addToDb( conn )
-                                self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
                                 # Now lets keep reference to the id, instead of the object
                                 timer["recording"] = recording.id
                         else:
                             self._logger.error( "Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
                     else:
-                        self._logger.error( "_stopRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                        self._logger.error( "_startRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
                     # Unexpected, but if recording is already marked as (un)finished, stop
                     # the timer and remove it from our list
@@ -593,7 +594,7 @@ class Scheduler( threading.Thread ):
         - Lookup recording
         - Request recorder to stop recording
         """
-        self._logger.debug( "Scheduler._stopRecording" )
+        self._logger.debug( "Scheduler._stopRecording: eventType=%d, timerId=%d" % ( eventType, timerId ) )
         if eventType == Timer.TIME_TRIGGER_EVENT:
             with self._lock:
                 if self._timers.has_key( timerId ):
@@ -607,6 +608,7 @@ class Scheduler( threading.Thread ):
                            recording.status == RecordingState.RECORDING_STARTED:
                             recording.changeStatus( conn, RecordingState.STOP_RECORDING )
                             self._logger.warning( "_stopRecording: Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+
                             if not recorder.stopRecording( timerId ):
                                 self._logger.error( "_stopRecording: Recording didn't end properly" )
                         else:
@@ -627,7 +629,7 @@ class Scheduler( threading.Thread ):
                 conn      = DBConnection()
                 timer     = self._timers[timerId]
                 recorder  = Recorder()
-                self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
+                self._logger.warning( "_recorderCallback: recording id=%d" % ( timer["recording"] ) )
                 recording = Recording.getFromDb( conn, timer["recording"] )
                 if recording:
                     if recorderState == Recorder.STARTED:
