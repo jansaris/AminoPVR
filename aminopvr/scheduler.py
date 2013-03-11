@@ -581,7 +581,7 @@ class Scheduler( threading.Thread ):
                     # the timer and remove it from our list
                     if recording.status == RecordingState.RECORDING_FINISHED or \
                        recording.status == RecordingState.RECORDING_UNFINISHED:
-                        timer.stop()
+                        timer["timer"].cancel()
                         del self._timers[timerId]
 
     def _stopRecording( self, eventType, timerId ):
@@ -656,12 +656,12 @@ class Scheduler( threading.Thread ):
 
                     if recording.status == RecordingState.RECORDING_FINISHED or \
                        recording.status == RecordingState.RECORDING_UNFINISHED:
-                        timer.stop()
+                        timer["timer"].cancel()
                         del self._timers[timerId]
                 else:
                     self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
                     recorder.stopRecording( timerId )
-                    timer.stop()
+                    timer["timer"].cancel()
                     del self._timers[timerId]
             else:
                 self._logger.error( "_recorderCallback: timer with timerId=%d not found" % ( timerId ) )

@@ -43,7 +43,7 @@ class Timer( threading.Thread ):
 
         self._logger.debug( "Timer.__init__( timers=%s )" % ( timers ) )
 
-        self._lock               = threading.Lock()
+        self._lock               = threading.RLock()
         self._events             = []
         self._pollInterval       = pollInterval
         self._recurrenceInterval = recurrenceInterval
@@ -116,6 +116,10 @@ class Timer( threading.Thread ):
             time.sleep( self._pollInterval )
         self._logger.debug( "Timer.run: timers ended" )
         event["callback"]( Timer.TIMER_ENDED_EVENT, None )
+
+    def cancel( self ):
+        self._logger.debug( "Timer.cancel" )
+        self._running = False
 
     def stop( self, triggerLast=False ):
         self._logger.debug( "Timer.stop" )
