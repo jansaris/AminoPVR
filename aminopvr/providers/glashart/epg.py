@@ -152,7 +152,7 @@ class EpgProvider( threading.Thread ):
         nowDay = datetime.datetime( now[0], now[1], now[2] )
 
         # Remove program older than this day
-        self._logger.warning( "Removing EPG from before %i" % ( int( time.mktime( nowDay.timetuple() ) ) ) )
+        self._logger.warning( "Removing EPG from before %s" % ( time.mktime( nowDay.timetuple() ) ) )
         EpgProgram.deleteByTimeFromDB( db, int( time.mktime( nowDay.timetuple() ) ) )
 
         for epgId in epgIds:
@@ -183,6 +183,9 @@ class EpgProvider( threading.Thread ):
         epgFilename = "/%s.json.gz" % ( epgId.epgId )
         epgUrl      = glashartConfig.epgChannelsPath + epgFilename
 
+        currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
+        currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
+
         content, code, mime = getPage( epgUrl )
 
         if content:
@@ -203,7 +206,9 @@ class EpgProvider( threading.Thread ):
 
                 updateDetailedData = True
 
-                programOld = EpgProgram.getByOriginalIdFromDb( conn, programNew.originalId )
+                programOld = None
+                if currentProgramsDict.has_key( programNew.originalId ):
+                    programOld = currentProgramsDict[programNew.originalId]
 
                 if programOld and programOld.detailed and programNew == programOld:
                     programNew         = programOld

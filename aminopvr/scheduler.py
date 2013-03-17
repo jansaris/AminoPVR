@@ -17,7 +17,7 @@
 """
 from aminopvr.channel import Channel
 from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram, RecordingProgram
+from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording, OldRecording, RecordingState

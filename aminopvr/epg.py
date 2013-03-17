@@ -22,14 +22,12 @@ import logging
 import sys
 
 class EpgId( object ):
-    _logger   = None
+    _logger = logging.getLogger( 'aminopvr.EPG.EpgId' )
 
     def __init__( self, epgId, strategy ):
         self._epgId    = unicode( epgId )
         self._strategy = unicode( strategy )
         self._channels = []
-
-        self._logger   = logging.getLogger( 'aminopvr.EPG.EpgId' )
 
     def __hash__( self ):
         return hash( self._epgId ) + hash( self._strategy )
@@ -62,11 +60,13 @@ class EpgId( object ):
         if conn:
             rows = conn.execute( "SELECT * FROM epg_ids" ).fetchall()
             for row in rows:
-                channels = channel.Channel.getAllByEpgIdFromDb( conn, row["epg_id"], includeRadio )
+                channels = channel.Channel.getAllByEpgIdFromDb( conn, row["epg_id"], includeRadio=includeRadio )
                 if len( channels ) > 0:
                     epgid           = cls( row["epg_id"], row["strategy"] )
                     epgid._channels = channels
                     epgids.append( epgid )
+                else:
+                    cls._logger.info( "getAllFromDb: no channels for epgId=%s" % ( row["epg_id"] ) )
 
         epgidsSorted = sorted( epgids, key=lambda k: k._channels[0]._number ) 
 
@@ -815,48 +815,42 @@ class EpgProgram( ProgramAbstract ):
 
     def addToDb( self, conn ):
         if conn:
-            program = None
-            if self._id != -1:
-                program = self.getFromDb( conn, self._id )
-                if not program:
-                    self._id = -1
-
             if self._id == -1:
                 program = self.getByOriginalIdFromDb( conn, self._originalId )
                 if program:
+                    self._logger.warning( "addToDb: We didn't know id, but there seems to be a program with the same originalId (id=%d, originalId=%s)" % ( program._id, self._originalId ) )
                     self._id = program._id
 
             if self._id != -1:
-                if program and self != program:
-                    conn.execute( """
-                                     UPDATE
-                                         epg_programs
-                                     SET
-                                         epg_id=?,
-                                         original_id=?,
-                                         start_time=?,
-                                         end_time=?,
-                                         title=?,
-                                         subtitle=?,
-                                         description=?,
-                                         aspect_ratio=?,
-                                         parental_rating=?,
-                                         ratings=?,
-                                         detailed=?
-                                     WHERE
-                                         id=?
-                                  """, ( self._epgId,
-                                         self._originalId,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._subtitle,
-                                         self._description,
-                                         self._aspectRatio,
-                                         self._parentalRating,
-                                         ";".join( self._ratings ),
-                                         self._detailed,
-                                         self._id ) )
+                conn.execute( """
+                                 UPDATE
+                                     epg_programs
+                                 SET
+                                     epg_id=?,
+                                     original_id=?,
+                                     start_time=?,
+                                     end_time=?,
+                                     title=?,
+                                     subtitle=?,
+                                     description=?,
+                                     aspect_ratio=?,
+                                     parental_rating=?,
+                                     ratings=?,
+                                     detailed=?
+                                 WHERE
+                                     id=?
+                              """, ( self._epgId,
+                                     self._originalId,
+                                     self._startTime,
+                                     self._endTime,
+                                     self._title,
+                                     self._subtitle,
+                                     self._description,
+                                     self._aspectRatio,
+                                     self._parentalRating,
+                                     ";".join( self._ratings ),
+                                     self._detailed,
+                                     self._id ) )
             else:
                 id = conn.insert( """
                                      INSERT INTO
