@@ -38,7 +38,7 @@ class Timer( threading.Thread ):
     TIMER_ENDED_EVENT  = 2
     CANCEL_TIMER_EVENT = 3
 
-    def __init__( self, timers, pollInterval=10.0, recurrenceInterval=None ):
+    def __init__( self, timers, pollInterval=1.0, recurrenceInterval=None ):
         threading.Thread.__init__( self )
 
         self._logger.debug( "Timer.__init__( timers=%s )" % ( timers ) )
@@ -83,7 +83,7 @@ class Timer( threading.Thread ):
             if time <= previousTimer:
                 self._logger.critical( "Timer.changeTimer: timer %s on/before previous timer %s" % ( time, previousTimer ) )
                 return
-        if index + 1 <= len( self._events ):
+        if index + 1 < len( self._events ):
             nextTimer = self._events[index + 1]["time"]
             if time >= nextTimer:
                 self._logger.critical( "Timer.changeTimer: timer %s on/after next timer %s" % ( time, nextTimer ) )
@@ -114,8 +114,12 @@ class Timer( threading.Thread ):
                             event["time"] = event["time"] + self._recurrenceInterval
                             self._logger.warning( "Timer.run: Resetting timer, next event will fire at %s" % ( event["time"] ) )
             time.sleep( self._pollInterval )
+        self._logger.debug( "Timer.run: timer loop ended, fire untriggered events with TIMER_ENDED_EVENT" )
+        for event in self._events:
+            with self._lock:
+                if not event["triggered"]:
+                    event["callback"]( Timer.TIMER_ENDED_EVENT, event["callbackArguments"] )
         self._logger.debug( "Timer.run: timers ended" )
-        event["callback"]( Timer.TIMER_ENDED_EVENT, None )
 
     def cancel( self ):
         self._logger.debug( "Timer.cancel" )

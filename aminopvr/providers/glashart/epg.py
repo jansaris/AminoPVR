@@ -21,6 +21,7 @@ from aminopvr.db import DBConnection
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
 from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
 from aminopvr.tools import getPage, Singleton
 import datetime
@@ -55,126 +56,8 @@ _CATTRANS = { "amusement"            : "Talk",
               "cultuur"              : "Arts/Culture",
               "wetenschap"           : "Science/Nature" }
 
-#global_r_entity         = re.compile( r'&(#x[0-9A-Fa-f]+|#[0-9]+|[A-Za-z]+);' )
-#global_r_entity_unicode = re.compile( ur'(\\u[0-9A-Fa-f]{4}|\\x[0-9A-Fa-f]{2})', re.UNICODE )
-#
-#def calc_timezone( t ):
-#    """
-#    Takes a time from tvgids.nl and formats it with all the required
-#    timezone conversions.
-#    in: '20050429075000'
-#    out:'20050429075000 (CET|CEST)'
-#
-#    Until I have figured out how to correctly do timezoning in python this method
-#    will bork if you are not in a zone that has the same DST rules as 'Europe/Amsterdam'.
-#
-#    """
-#    year   = int( t[0:4] )
-#    month  = int( t[4:6] )
-#    day    = int( t[6:8] )
-#    hour   = int( t[8:10] )
-#    minute = int( t[10:12] )
-#
-#    #td = {'CET': '+0100', 'CEST': '+0200'}
-#    #td = {'CET': '+0100', 'CEST': '+0200', 'W. Europe Standard Time' : '+0100', 'West-Europa (standaardtijd)' : '+0100'}
-#    td = {0 : '+0100', 1 : '+0200'}
-#
-#    pt       = time.mktime( ( year, month, day, hour, minute, 0, 0, 0, -1 ) )
-#    timezone = ''
-#    try:
-#        #timezone = time.tzname[(time.localtime(pt))[-1]]
-#        timezone = (time.localtime( pt ))[-1]
-#    except:
-#        sys.stderr.write( 'Cannot convert time to timezone' )
-#
-#    return t + ' %s' % td[timezone]
-#
-#def format_timezone( td ):
-#    tstr = td.strftime( '%Y%m%d%H%M00' )
-#    return calc_timezone( tstr )
-
-#def filter_line_identity( m, defs = htmlentitydefs.entitydefs ):
-#    # callback: translate one entity to its ISO Latin value
-#    k = m.group(1)
-#    if k.startswith( "#" ) and k[1:] in xrange( 256 ):
-#        return chr( int( k[1:] ) )
-#
-#    try:
-#        return defs[k]
-#    except KeyError:
-#        return m.group( 0 ) # use as is
-#
-#def filter_line_identity_unicode( m, defs = htmlentitydefs.entitydefs ):
-#    # callback: translate one entity to its ISO Latin value
-#    k = m.group(1)
-#    if k.startswith( "\\u" ) or k.startswith( "\\x" ):
-#        char_num = int( k[2:], 16 )
-#        if char_num in xrange( 256 ):
-#            return chr( char_num )
-#        else:
-#            if char_num == 0x2018 or char_num == 0x2019:
-#                return "'"
-#            elif char_num == 0x2013:
-#                return "-"
-#
-#    try:
-#        return defs[ "x" + k[2:] ]
-#    except KeyError:
-#        return "" #m.group( 0 ) # use as is
-
-#def filter_line( s, encoding = "iso-8859-1" ):
-#    """
-#    Removes unwanted stuff in strings (adapted from tv_grab_be)
-#    """
-#
-#    s = s.encode( encoding, 'replace' )
-#
-#    # do the latin1 stuff
-#    s = global_r_entity.sub( filter_line_identity, s )
-#    s = global_r_entity_unicode.sub( filter_line_identity_unicode, s )
-#
-#    s = replace( s, '&nbsp;', ' ' )
-#
-#    # Ik vermoed dat de volgende drie regels overbodig zijn, maar ze doen
-#    # niet veel kwaad -- Han Holl
-#    s = replace( s, '\r', ' ' )
-#    x = re.compile( '(<.*?>)' ) # Udo
-#    s = x.sub( '', s ) #Udo
-#
-#    s = replace( s, '~Q', "'" )
-#    s = replace( s, '~R', "'" )
-#
-#    return s
-
-#_apostropheRe = re.compile( ur'[\u2018\u2019]', re.UNICODE )
-#_dashRe       = re.compile( ur'[\u2013\u2014]', re.UNICODE )
-#_dotDotDotRe  = re.compile( ur'[\u2026]',       re.UNICODE )
-#_lowerIRe     = re.compile( ur'[\u0131]',       re.UNICODE )
-#_upperIRe     = re.compile( ur'[\u0130]',       re.UNICODE )
-#_lowerGRe     = re.compile( ur'[\u011F]',       re.UNICODE )
-#_lowerSRe     = re.compile( ur'[\u015F]',       re.UNICODE )
-#_upperSRe     = re.compile( ur'[\u015E]',       re.UNICODE )
-#_euroRe       = re.compile( ur'[\u20AC]',       re.UNICODE )
-#_aRe          = re.compile( ur'[\xe2]',         re.UNICODE )
-#_eRe          = re.compile( ur'[\xe9]',         re.UNICODE )
-#_uRe          = re.compile( ur'[\xfc]',         re.UNICODE )
-
 def _lineFilter( line ):
-#    _logger.debug( "_lineFilter( %r )" % ( line ) )
     line = unicodedata.normalize( "NFKD", line ).encode( "ASCII", "ignore" )
-##    line = global_r_entity_unicode.sub( filter_line_identity_unicode, line )
-#    line = _apostropheRe.sub( "'", line )
-#    line = _dashRe.sub( "-", line )
-#    line = _dotDotDotRe.sub( "...", line )
-#    line = _lowerIRe.sub( "i", line )
-#    line = _upperIRe.sub( "I", line )
-#    line = _lowerGRe.sub( "g", line )
-#    line = _lowerSRe.sub( "s", line )
-#    line = _upperSRe.sub( "S", line )
-#    line = _euroRe.sub( "E", line )
-#    line = _aRe.sub( "a", line )
-#    line = _eRe.sub( "e", line )
-#    line = _uRe.sub( "u", line )
     return line
 
 class EpgProvider( threading.Thread ):
@@ -201,7 +84,7 @@ class EpgProvider( threading.Thread ):
         self._event   = threading.Event()
         self._event.clear()
 
-        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], recurrenceInterval=grabInterval )
+        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=60.0, recurrenceInterval=grabInterval )
 
     def requestEpgUpdate( self, wait=False ):
         if not self._event.isSet():
@@ -226,6 +109,8 @@ class EpgProvider( threading.Thread ):
             self._event.wait()
             if self._running:
                 self._grabAll()
+                # Request a reschedule
+                Scheduler().requestReschedule()
             self._event.clear()
 
     @staticmethod
@@ -385,7 +270,7 @@ class EpgProvider( threading.Thread ):
         uniqueEpgIds = Channel.getUniqueEpgIdsFromDb( conn, includeRadio=True )
 
         # Get epgids from database (contains channels per epg_id and strategy)
-        epgIds        = EpgId.getAllFromDb( conn )
+        epgIds        = EpgId.getAllFromDb( conn, includeRadio=True )
         epgIdsDict    = { epgId.epgId: epgId for epgId in epgIds }
         currentEpgIds = epgIdsDict.keys()
 

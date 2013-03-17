@@ -93,16 +93,7 @@ class EpgId( object ):
 
     def deleteFromDb( self, conn ):
         if conn:
-            conn.execute( "DELETE FROM %s WHERE epg_id=?" % ( self._tableName ), ( self._epgId ) )
-
-#    def getConfigEntry( self ):
-#        channels = ""
-#        for channel in self._channels:
-#            if channels != "":
-#                channels = channels + ", "
-#            channels = channels + channel.name
-#        return ( "%s %s %s\n" % ( self._epgId, self._strategy, filter_line( channels ) ) )
-
+            conn.execute( "DELETE FROM epg_ids WHERE epg_id=?", ( self._epgId, ) )
 
     def dump( self ):
         return ( "%s: %s" % ( self._epgId, self._strategy ) )

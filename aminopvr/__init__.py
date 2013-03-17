@@ -63,6 +63,9 @@ def aminoPVRProcess():
     initWebserver( generalConfig.serverPort )
 
     scheduler.start()
+    scheduler.requestReschedule()
+
+    recorder.start()
 
     global epgGrabber, contentProvider
 

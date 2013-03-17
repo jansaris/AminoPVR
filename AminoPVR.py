@@ -22,8 +22,22 @@ import signal
 import sys
 import time
 
-logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
+class CustomFormatter( logging.Formatter ):
+    width = 16
 
+    def __init__( self, default ):
+        self._default = default
+
+    def format( self, record ):
+        if len( record.name ) > self.width:
+            record.name = record.name[-self.width:]
+        return self._default.format( record )
+
+def formatFactory( fmt, datefmt ):
+    default = logging.Formatter( fmt, datefmt )
+    return CustomFormatter( default )
+
+logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
 
 signal.signal( signal.SIGINT,   aminopvr.signalHandler )
 signal.signal( signal.SIGTERM,  aminopvr.signalHandler )
@@ -33,20 +47,6 @@ except:
     pass
 
 def main():
-#    logger = logging.getLogger( "AminoPVR" )
-#    logger.setLevel( logging.DEBUG )
-#    ch = logging.StreamHandler()
-#    ch.setLevel( logging.DEBUG )
-#
-#    formatter = logging.Formatter( '%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y%m%d %H:%M:%S' )
-#    ch.setFormatter( formatter )
-#
-#    logger.addHandler( ch )
-
-#    logging.basicConfig( format='%(asctime)s %(levelname)s:$(message)s',
-#                         datefmt='%Y%m%d %H:%M:%S',
-#                         level=logging.DEBUG )
-
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
     aminopvr.aminoPVRProcess()
 

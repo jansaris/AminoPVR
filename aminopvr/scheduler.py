@@ -53,62 +53,53 @@ class Scheduler( threading.Thread ):
         self._logger.debug( "Scheduler.__init__()" )
 
         self._running   = True
+        self._event     = threading.Event()
+        self._event.clear()
         self._timers    = {}
         self._idCounter = 0
+
+    def requestReschedule( self, wait=False ):
+        if not self._event.isSet():
+            self._event.set()
+            if wait:
+                while self._event.isSet():
+                    time.sleep( 1.0 )
+            return True
+        else:
+            self._logger.warning( "Epg update in progress: skipping request" )
+            return False
 
     def stop( self, timeout=10 ):
         self._logger.warning( "Stopping scheduler and ending all timers" )
         self._running = False
+        self._event.set()
         self.join()
 
     def run( self ):
         self._logger.debug( "Scheduler.run()" )
 
-#        now = time.mktime( time.localtime() )
-
-#        timer1 = Timer( 'Nederland 1', now + 10, now + 30, {}, Scheduler._callback, self )
-#        timer2 = Timer( 'Nederland 1', now + 25, now + 40, {}, Scheduler._callback, self )
-#        self._timers.append( timer1 )
-#        self._timers.append( timer2 )
-#        time.sleep( 15 )
-#        timer1.stop()
-
-#        scheduleItem1 = { 'channel': 'Nederland 1', 'startTime': now + 10, 'endTime': now + 30 }
-#        scheduleItem2 = { 'channel': 'Nederland 1', 'startTime': now + 25, 'endTime': now + 40 }
-#        timer1 = Timer( [ {
-#                             'time':              scheduleItem1['startTime'],
-#                             'callback':          self._startRecording,
-#                             'callbackArguments': scheduleItem1
-#                          },
-#                          {
-#                             'time':              scheduleItem1['endTime'],
-#                             'callback':          self._stopRecording,
-#                             'callbackArguments': scheduleItem1
-#                          } ] )
-#        timer2 = Timer( [ {
-#                             'time':              scheduleItem2['startTime'],
-#                             'callback':          self._startRecording,
-#                             'callbackArguments': scheduleItem2
-#                          },
-#                          {
-#                             'time':              scheduleItem2['endTime'],
-#                             'callback':          self._stopRecording,
-#                             'callbackArguments': scheduleItem2
-#                          } ] )
-#        self._timers.append( timer1 )
-#        self._timers.append( timer2 )
-#        time.sleep( 15 )
-#        timer1.stop( True )
-
-        # We will want to 'reschedule' when the outside world of this class requests it
-        # For testing we just call it once.
-        self.reschedule()
-
         # Keep the thread alive
         while self._running:
-            time.sleep( 1.0 )
+            self._event.wait()
+            if self._running:
+                self._reschedule()
+            self._event.clear()
 
-    def reschedule( self ):
+        self._logger.warning( "Scheduler is about to shutdown, stop and remove timers" )
+
+        with self._lock:
+            for timerId in self._timers.keys():
+                timer = self._timers[timerId]
+                timer["timer"].cancel()
+                del self._timers[timerId]
+                self._logger.debug( "Timer %d still active" )
+
+                # When recording has not started yet, recordingId is not set yet.
+                if timer.has_key( "recordingId" ):
+                    self._logger.warning( "Timer %d has an active recording!" )
+                    # TODO: what to do with the active recording
+
+    def _reschedule( self ):
         """
         Find out what programs ('program.Program') to record for each 'schedule.Schedule'
 
@@ -122,7 +113,6 @@ class Scheduler( threading.Thread ):
         TODO:
         - Handle manual recordings: they do not record a 'program.Program', so no duplicate rules.
           Just make sure the 'recorder.Recorder' will not be too busy at time of recording.
-        - Do something with the list of 'recording.Recording's created
         """
         conn = DBConnection()
 
@@ -157,32 +147,50 @@ class Scheduler( threading.Thread ):
 
                     newRecordings = self._handleSchedule( conn, schedule, newRecordings )
 
+        touchedTimers = []
+
         # Loop through new recordings and create/update timers for them
         # TODO: remove timers that are not needed anymore.
         for recording in newRecordings:
-            self._logger.info( "%s", recording.dump() )
             timerFound = False
             with self._lock:
                 for timerId in self._timers.keys():
                     timer = self._timers[timerId]
+
+                    # If epgProgramId of existing timer and 'new' recording are the same,
+                    # then we're updating an existing timer.
+                    # If epgProgramId == -1, then it is a manual schedule.
                     if recording.epgProgramId != -1 and \
                        timer["scheduleId"]   == recording.scheduleId and \
                        timer["epgProgramId"] == recording.epgProgramId:
-                        self._logger.info( "Updating timer with id=%d" % ( timer["id"] ) )
+                        self._logger.info( "_reschedule: Updating timer with id=%d" % ( timer["id"] ) )
                         # Update the timer if the startTime is updated
                         if timer["startTime"] != recording.startTime:
+                            self._logger.info( "_reschedule: startTime: %d > %d" % ( timer["startTime"], recording.startTime ) )
                             timer["startTime"] = recording.startTime
                             timer["timer"].changeTimer( 0, datetime.datetime.fromtimestamp( recording.startTime ) )
                         # Update the timer if the endTime is updated
                         if timer["endTime"] != recording.endTime:
+                            self._logger.info( "_reschedule: endTime: %d > %d" % ( timer["endTime"], recording.endTime ) )
                             timer["endTime"] = recording.endTime
                             timer["timer"].changeTimer( 1, datetime.datetime.fromtimestamp( recording.endTime ) )
+
                         # Make sure we remember the new recording instance, but only if the recording has not started yet
-                        if timer["recording"].status == RecordingState.UNKNOWN:
+                        # If 'recordingId' is not a key yet, then recording has not started yet.
+                        if not timer.has_key( "recordingId" ):
                             timer["recording"] = recording
                         else:
                             # TODO: The recording has started, so update what is relevant
                             self._logger.warning( "We're updating a recording that has started recording, be careful" )
+
+                            # Copy status, filename and channelUrlType from 'old' recording to 'new' recording.
+                            # Update 'old' epgProgram (Type: RecordingProgram) with data from 'new' epgProgram (Type: EpgProgram)
+                            # Save in database
+
+                        self._logger.warning( "Updated timer with id=%d for recording of %s (schedule: %d) at %s on %s" % ( timer["id"], timer["recording"].title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName ) )
+
+                        touchedTimers.append( timerId )
+
                         timerFound = True
                         break
 
@@ -202,23 +210,20 @@ class Scheduler( threading.Thread ):
                                                     'callback':          self._stopRecording,
                                                     'callbackArguments': timer["id"] } ] )
                         self._timers[timer["id"]] = timer
+
+                        self._logger.warning( "Created timer with id=%d for recording of %s (schedule: %d) at %s on %s" % ( timer["id"], timer["recording"].title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName ) )
+
                         self._idCounter += 1
+                        touchedTimers.append( timer["id"] )
                     else:
                         self._logger.critical( "Timer with id=%d already exists!" % ( self._idCounter ) )
+
+        with self._lock:
+            untouchedTimers = set( self._timers.keys() ).difference( set( touchedTimers ) )
+            self._logger.info( "untouchedTimers=%r" % ( untouchedTimers ) )
+#            for untouchedTimer in untouchedTimers:
+#                del self._timers[untouchedTimer]
             
-
-        """
-        No we need to create/update the list of timers. Maybe some of the created recordings 
-        were already attached to a timer. Those recordings can be removed again.
-        We cannot replace existing recordings with the new one, because the 'Recorder' might
-        already have a reference to it (for active recordings). If the recording has change, we
-        will need to copy the relevant properties to the existing instance.
-        If we want to make it more robust, we should assign a unique ID to which is the same for
-        the existing and new recording. This can be difficult, because the properties that make
-        a recording unique might change (startTime, endTime, channelId, channelUrlType). For a
-        recording that has started, changing startTime, channelId or channelUrlType is useless. 
-        """
-
     def _handleSchedule( self, conn, schedule, newRecordings ):
         """
         Private function that handles one 'schedule.Schedule'
@@ -537,7 +542,7 @@ class Scheduler( threading.Thread ):
         - Add recording to database
         - Request recorder to start recording
         """
-        self._logger.debug( "Scheduler._startRecording" )
+        self._logger.debug( "_startRecording: eventType=%d, timerId=%d" % ( eventType, timerId ) )
 
         if eventType == Timer.TIME_TRIGGER_EVENT:
             with self._lock:
@@ -562,18 +567,17 @@ class Scheduler( threading.Thread ):
                             self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
 
                             recording.changeStatus( conn, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
-                            self._logger.warning( "_startRecording: Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+                            self._logger.warning( "Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+
+                            # Now lets keep reference to the id, instead of the object
+                            timer["recordingId"] = recording.id
+                            del timer["recording"]
 
                             # Hmm, recording didn't start
                             # Mark recording as unfinished
-                            if not recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback ):
-                                self._logger.critical( "Scheduler._startRecording: recording not started!" )
-                                recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )  # Not providing DBConnection, because recording is not in the db yet!
-                            else:
-                                # Now lets keep reference to the id, instead of the object
-                                timer["recording"] = recording.id
+                            recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback )
                         else:
-                            self._logger.error( "Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
+                            self._logger.error( "_startRecording: Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
                     else:
                         self._logger.error( "_startRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
@@ -594,27 +598,26 @@ class Scheduler( threading.Thread ):
         - Lookup recording
         - Request recorder to stop recording
         """
-        self._logger.debug( "Scheduler._stopRecording: eventType=%d, timerId=%d" % ( eventType, timerId ) )
+        self._logger.debug( "_stopRecording: eventType=%d, timerId=%d" % ( eventType, timerId ) )
         if eventType == Timer.TIME_TRIGGER_EVENT:
             with self._lock:
                 if self._timers.has_key( timerId ):
                     timer     = self._timers[timerId]
                     conn      = DBConnection()
                     recorder  = Recorder()
-                    self._logger.warning( "_stopRecording: recording id=%d" % ( timer["recording"] ) )
-                    recording = Recording.getFromDb( conn, timer["recording"] )
+                    self._logger.info( "_stopRecording: recording id=%d" % ( timer["recordingId"] ) )
+                    recording = Recording.getFromDb( conn, timer["recordingId"] )
                     if recording:
                         if recording.status == RecordingState.START_RECORDING or \
                            recording.status == RecordingState.RECORDING_STARTED:
                             recording.changeStatus( conn, RecordingState.STOP_RECORDING )
-                            self._logger.warning( "_stopRecording: Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+                            self._logger.warning( "Stop recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
 
-                            if not recorder.stopRecording( timerId ):
-                                self._logger.error( "_stopRecording: Recording didn't end properly" )
+                            recorder.stopRecording( timerId )
                         else:
                             self._logger.error( "_stopRecording: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
                     else:
-                        self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
+                        self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recordingId"] ) )
                         recorder.stopRecording( timerId )
                 else:
                     self._logger.error( "_stopRecording: timer with timerId=%d not found" % ( timerId ) )
@@ -624,33 +627,47 @@ class Scheduler( threading.Thread ):
         - Lookup recording
         - Forget about timer and recording
         """
+        self._logger.debug( "_recorderCallback: id=%d, recorderState=%d" % ( timerId, recorderState ) )
         with self._lock:
             if self._timers.has_key( timerId ):
-                conn      = DBConnection()
-                timer     = self._timers[timerId]
-                recorder  = Recorder()
-                self._logger.warning( "_recorderCallback: recording id=%d" % ( timer["recording"] ) )
-                recording = Recording.getFromDb( conn, timer["recording"] )
+                conn  = DBConnection()
+                timer = self._timers[timerId]
+                self._logger.info( "_recorderCallback: recording id=%d" % ( timer["recordingId"] ) )
+                recording = Recording.getFromDb( conn, timer["recordingId"] )
                 if recording:
                     if recorderState == Recorder.STARTED:
                         if recording.status == RecordingState.START_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_STARTED )
-                            self._logger.warning( "_recorderCallback: Recording '%s' started" % ( recording.title ) )
+                            self._logger.warning( "Recording '%s' started" % ( recording.title ) )
                         else:
                             self._logger.error( "_recorderCallback: STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+
+                    elif recorderState == Recorder.NOT_STARTED:
+                        if recording.status == RecordingState.START_RECORDING:
+                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
+                            self._logger.warning( "Recording '%s' not started" % ( recording.title ) )
+                        else:
+                            self._logger.error( "_recorderCallback: NOT_STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
                     elif recorderState == Recorder.FINISHED:
                         if recording.status == RecordingState.STOP_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_FINISHED )
-                            self._logger.warning( "_recorderCallback: Recording '%s' finished" % ( recording.title ) )
+                            self._logger.warning( "Recording '%s' finished" % ( recording.title ) )
                         else:
                             self._logger.error( "_recorderCallback: FINISHED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+
+                    elif recorderState == Recorder.NOT_STOPPED:
+                        if recording.status == RecordingState.STOP_RECORDING:
+                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
+                            self._logger.warning( "Recording '%s' not stopped" % ( recording.title ) )
+                        else:
+                            self._logger.error( "_recorderCallback: NOT_STOPPED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
                     elif recorderState == Recorder.ABORTED:
                         if recording.status != RecordingState.RECORDING_FINISHED:
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
                             recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
-                            self._logger.warning( "_recorderCallback: Recording '%s' aborted" % ( recording.title ) )
+                            self._logger.warning( "Recording '%s' aborted" % ( recording.title ) )
                         else:
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d already finished" % ( timerId ) )
 
@@ -659,7 +676,8 @@ class Scheduler( threading.Thread ):
                         timer["timer"].cancel()
                         del self._timers[timerId]
                 else:
-                    self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recording"] ) )
+                    self._logger.error( "_stopRecording: recording with timerId=%d and id=%d does not exist in the database" % ( timerId, timer["recordingId"] ) )
+                    recorder = Recorder()
                     recorder.stopRecording( timerId )
                     timer["timer"].cancel()
                     del self._timers[timerId]

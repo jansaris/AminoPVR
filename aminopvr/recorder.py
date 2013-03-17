@@ -17,6 +17,7 @@
 """
 from aminopvr.input_stream import InputStreamAbstract
 from aminopvr.tools import Singleton
+from Queue import Queue
 import logging
 import threading
 import time
@@ -71,12 +72,17 @@ class ActiveRecording( threading.Thread ):
     def stop( self ):
         self._logger.debug( "ActiveRecording.stop()" )
 
-        with self._listenerLock:
-            for listener in self._listeners:
-                self._logger.critical( "ActiveRecording.stop: listener with id %d is still there; abort" % ( listener["id"] ) )
-                if listener.has_key( "callback" ) and listener["callback"]:
-                    listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-                self._listeners.remove( listener )
+        self._listenerLock.acquire()
+        listeners = list( self._listeners )
+        self._listenerLock.release()
+
+        for listener in listeners:
+            self._logger.critical( "ActiveRecording.stop: listener with id %d is still there; abort" % ( listener["id"] ) )
+            with self._listenerLock:
+                if listener in self._listeners:
+                    self._listeners.remove( listener )
+            if listener.has_key( "callback" ) and listener["callback"]:
+                listener["callback"]( listener["id"], ActiveRecording.ABORTED )
 
         self._running = False
         self.join( 5.0 )
@@ -100,9 +106,9 @@ class ActiveRecording( threading.Thread ):
             for listener in self._listeners:
                 if listener["id"] == id:
                     self._logger.info( "ActiveRecording.removeListener: remove listener" )
+                    self._listeners.remove( listener )
                     if listener.has_key( "callback" ) and listener["callback"]:
                         listener["callback"]( listener["id"], ActiveRecording.FINISHED )
-                    self._listeners.remove( listener )
         self._logger.info( "ActiveRecording.removeListener: number of listeners=%d" % ( len( self._listeners ) ) )
         return len( self._listeners )
 
@@ -119,26 +125,38 @@ class ActiveRecording( threading.Thread ):
                         for listener in self._listeners:
                             """ Write data to listener["outputFile"] """
                             if listener["new"]:
+                                listener["new"] = False
                                 if listener.has_key( "callback" ) and listener["callback"]:
                                     listener["callback"]( listener["id"], ActiveRecording.STARTED )
-                                listener["new"] = False
 
             inputStream.close()
             with self._listenerLock:
                 for listener in self._listeners:
                     self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
+                    self._listeners.remove( listener )
                     if listener.has_key( "callback" ) and listener["callback"]:
                         listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-                    self._listeners.remove( listener )
         else:
             self._logger.critical( "ActiveRecording.run: Could not create or open url=%r on protocol=%d" % ( self._url, self._protocol ) )
             with self._listenerLock:
                 for listener in self._listeners:
+                    self._listeners.remove( listener )
                     if listener.has_key( "callback" ) and listener["callback"]:
                         listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-                    self._listeners.remove( listener )
 
-class Recorder( object ):
+class _RecorderQueueItem( object ):
+    STOP_RECORDER       = 1
+    STOP_ALL_RECORDINGS = 2
+    START_RECORDING     = 3
+    STOP_RECORDING      = 4
+    RECORDING_STARTED   = 5
+    RECORDING_STOPPED   = 6
+    RECORDING_ABORTED   = 7
+    def __init__( self, id, data=None ):
+        self.id   = id
+        self.data = data
+
+class Recorder( threading.Thread ):
     """
     Singleton class that is the arbiter for all (active) recordings.
 
@@ -156,67 +174,41 @@ class Recorder( object ):
     _recordings       = dict()
     _activeRecordings = dict()
     _lock             = threading.RLock()
+    _queue            = Queue()
     _logger           = logging.getLogger( "aminopvr.Recorder" )
 
-    STARTED  = 1
-    ABORTED  = 2
-    FINISHED = 3
+    STARTED     = 1
+    NOT_STARTED = 2
+    ABORTED     = 3
+    FINISHED    = 4
+    NOT_STOPPED = 5
 
     def __init__( self ):
+        threading.Thread.__init__( self )
+
         self._logger.debug( "__init__" ) 
 
+        self._messageHandler = {}
+        self._messageHandler[_RecorderQueueItem.START_RECORDING]   = self._startRecording
+        self._messageHandler[_RecorderQueueItem.STOP_RECORDING]    = self._stopRecording
+        self._messageHandler[_RecorderQueueItem.RECORDING_STARTED] = self._recordingStarted
+        self._messageHandler[_RecorderQueueItem.RECORDING_STOPPED] = self._recordingStopped
+        self._messageHandler[_RecorderQueueItem.RECORDING_ABORTED] = self._recordingAborted
+
+    def stop( self, wait=False ):
+        self._queue.put( _RecorderQueueItem( _RecorderQueueItem.STOP_RECORDER ) )
+        if wait:
+            self._queue.join()
+
     def startRecording( self, url, id, filename, protocol, callback ):
-        """
-        This can be much better. A 'cookie'-list makes searching for one troublesome and duplicate
-        output files can easily happen.
-        """
-        self._logger.debug( "Start recording from url %s using protocol %s; filename: %s" % ( url, protocol, filename ) )
-        recordingId = self._createId( url, protocol )
-        with self._lock:
-            if self._recordings.has_key( id ):
-                self._logger.error( "Recording with id %d already exists" % ( id ) )
-                return False
-            else:
-                if self._activeRecordings.has_key( recordingId ):
-                    self._logger.warning( "Recording with recordingId %s already running; add this one" % ( recordingId ) )
-                    self._activeRecordings[recordingId].addListener( id, filename, self._recordingResult )
-                else:
-                    self._activeRecordings[recordingId] = ActiveRecording( url, protocol )
-                    self._activeRecordings[recordingId].addListener( id, filename, self._recordingResult )
-                    self._activeRecordings[recordingId].start()
-                self._recordings[id] = {}
-                self._recordings[id]["recordingId"] = recordingId
-                self._recordings[id]["outputFile"]  = filename
-                self._recordings[id]["callback"]    = callback
-        return True
+        self._queue.put( _RecorderQueueItem( _RecorderQueueItem.START_RECORDING, ( url, id, filename, protocol, callback ) ) )
 
     def stopRecording( self, id ):
-        self._logger.debug( "Recorder.stopRecording( id=%d )" % ( id ) )
-        if not self._recordings.has_key( id ):
-            self._logger.error( "Recorder.stopRecording: recording with id %d is not an active recording" % ( id ) )
-            return False
-        else:
-            with self._lock:
-                recordingId = self._recordings[id]["recordingId"]
-
-                self._logger.debug( "Recorder.stopRecording: recordingId=%s" % ( recordingId ) )
-
-                if recordingId != "" and self._activeRecordings.has_key( recordingId ):
-                    if self._activeRecordings[recordingId].removeListener( id ) == 0:
-                        self._logger.warning( "stopRecording: No more listeners; stop ActiveRecorder" )
-                        if not self._activeRecordings[recordingId].stop():
-                            self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
-                            del self._activeRecordings[recordingId]
-                            return False
-                else:
-                    self._logger.error( "Recorder.stopRecording: recordingId is not available" )
-                    return False
-        return True
+        self._queue.put( _RecorderQueueItem( _RecorderQueueItem.STOP_RECORDING, (id, ) ) )
 
     def stopAllRecordings( self ):
         self._logger.warning( "Stopping all active recordings" )
-        for id in self._recordings.keys():
-            self.stopRecording( id )
+        self._queue.put( _RecorderQueueItem( _RecorderQueueItem.STOP_ALL_RECORDINGS ) )
 
     def getActiveRecordings( self ):
         """
@@ -228,30 +220,101 @@ class Recorder( object ):
             activeRecordings.append( recording )
         return activeRecordings
 
+    def run( self ):
+        running = True
+        while running:
+            item = self._queue.get()
+            if item.id == _RecorderQueueItem.STOP_RECORDER:
+                running = False
+            elif item.id == _RecorderQueueItem.STOP_ALL_RECORDINGS:
+                for id in self._recordings.keys():
+                    self._stopRecording( id )
+            elif self._messageHandler.has_key( item.id ):
+                self._messageHandler[item.id]( *item.data )
+            self._queue.task_done()
+
+    def _startRecording( self, url, id, filename, protocol, callback ):
+        """
+        This can be much better. A 'cookie'-list makes searching for one troublesome and duplicate
+        output files can easily happen.
+        """
+        self._logger.debug( "_startRecording: Start recording from url %s using protocol %s; filename: %s" % ( url, protocol, filename ) )
+        recordingId = self._createId( url, protocol )
+        if self._recordings.has_key( id ):
+            self._logger.error( "Recording with id %d already exists" % ( id ) )
+            if callback:
+                callback( id, Recorder.NOT_STARTED )
+        else:
+            if self._activeRecordings.has_key( recordingId ):
+                self._logger.warning( "_startRecording: Recording with recordingId %s already running; add this one" % ( recordingId ) )
+                self._activeRecordings[recordingId].addListener( id, filename, self._recordingResult )
+            else:
+                self._activeRecordings[recordingId] = ActiveRecording( url, protocol )
+                self._activeRecordings[recordingId].addListener( id, filename, self._recordingResult )
+                self._activeRecordings[recordingId].start()
+            self._recordings[id] = {}
+            self._recordings[id]["recordingId"] = recordingId
+            self._recordings[id]["outputFile"]  = filename
+            self._recordings[id]["callback"]    = callback
+
+    def _stopRecording( self, id ):
+        self._logger.debug( "_stopRecording( id=%d )" % ( id ) )
+        if not self._recordings.has_key( id ):
+            self._logger.error( "_stopRecording: recording with id %d is not an active recording" % ( id ) )
+        else:
+            recordingId = self._recordings[id]["recordingId"]
+
+            self._logger.debug( "_stopRecording: recordingId=%s" % ( recordingId ) )
+
+            if recordingId != "" and self._activeRecordings.has_key( recordingId ):
+                if self._activeRecordings[recordingId].removeListener( id ) == 0:
+                    self._logger.warning( "_stopRecording: No more listeners; stop ActiveRecorder" )
+                    if not self._activeRecordings[recordingId].stop():
+                        self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
+                        del self._activeRecordings[recordingId]
+            else:
+                self._logger.error( "_stopRecording: recordingId is not available" )
+                if self._recordings[id]["callback"]:
+                    self._recordings[id]["callback"]( id, Recorder.NOT_STOPPED )
+                del self._recordings[id]
+
+    def _recordingStarted( self, id ):
+        self._logger.debug( "_recordingStarted: id=%d" % ( id ) )
+        if self._recordings.has_key( id ):
+            recording = self._recordings[id]
+            recording["callback"]( id, Recorder.STARTED )
+        else:
+            self._logger.error( "_recordingStarted: recording with id=%d does not exist" % ( id ) )
+
+    def _recordingStopped( self, id ):
+        self._logger.debug( "_recordingStopped: id=%d" % ( id ) )
+        if self._recordings.has_key( id ):
+            recording = self._recordings[id]
+            del self._recordings[id]
+            recording["callback"]( id, Recorder.FINISHED )
+        else:
+            self._logger.error( "_recordingStopped: recording with id=%d does not exist" % ( id ) )
+
+    def _recordingAborted( self, id ):
+        self._logger.debug( "_recordingAborted: id=%d" % ( id ) )
+        if self._recordings.has_key( id ):
+            recording = self._recordings[id]
+            del self._recordings[id]
+            recording["callback"]( id, Recorder.ABORTED )
+        else:
+            self._logger.error( "_recordingAborted: recording with id=%d does not exist" % ( id ) )
+
+    def _recordingResult( self, id, result ):
+        self._logger.debug( "_recordingResult( id=%d, result=%s )" % ( id, result ) )
+        if result == ActiveRecording.STARTED:
+            self._queue.put( _RecorderQueueItem( _RecorderQueueItem.RECORDING_STARTED, (id, ) ) )
+        elif result == ActiveRecording.FINISHED:
+            self._queue.put( _RecorderQueueItem( _RecorderQueueItem.RECORDING_STOPPED, (id, ) ) )
+        elif result == ActiveRecording.ABORTED:
+            self._queue.put( _RecorderQueueItem( _RecorderQueueItem.RECORDING_ABORTED, (id, ) ) )
+
     def _createId( self, url, protocol ):
         """
         WIP
         """
         return "%s_%d" % ( url.ip, protocol )
-
-    def _recordingResult( self, id, result ):
-        self._logger.debug( "Recorder._recordingResult( id=%d, result=%s )" % ( id, result ) )
-        if result == ActiveRecording.STARTED:
-            self._logger.debug( "Recorder._recordingResult: ActiveRecording.STARTED" )
-            with self._lock:
-                if self._recordings.has_key( id ):
-                    recording = self._recordings[id]
-                    recording["callback"]( id, Recorder.STARTED )
-                else:
-                    self._logger.error( "Recorder._recordingResult: recording with id=%d does not exist" % ( id ) )
-        elif result == ActiveRecording.ABORTED or result == ActiveRecording.FINISHED:
-            with self._lock:
-                if self._recordings.has_key( id ):
-                    recording = self._recordings[id]
-                    if result == ActiveRecording.FINISHED:
-                        recording["callback"]( id, Recorder.FINISHED )
-                    else:
-                        recording["callback"]( id, Recorder.ABORTED )
-                    del self._recordings[id]
-                else:
-                    self._logger.error( "Recorder._recordingResult: recording with id=%d does not exist" % ( id ) )
