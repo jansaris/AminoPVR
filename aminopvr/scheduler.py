@@ -218,11 +218,12 @@ class Scheduler( threading.Thread ):
                     else:
                         self._logger.critical( "Timer with id=%d already exists!" % ( self._idCounter ) )
 
+        self._logger.warning( "Removing existing timers that were not updated." )
         with self._lock:
             untouchedTimers = set( self._timers.keys() ).difference( set( touchedTimers ) )
             self._logger.info( "untouchedTimers=%r" % ( untouchedTimers ) )
-#            for untouchedTimer in untouchedTimers:
-#                del self._timers[untouchedTimer]
+            for untouchedTimer in untouchedTimers:
+                del self._timers[untouchedTimer]
             
     def _handleSchedule( self, conn, schedule, newRecordings ):
         """
