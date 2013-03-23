@@ -20,7 +20,6 @@ from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
-import aminopvr
 import aminopvr.providers
 import cherrypy
 import json
@@ -40,12 +39,15 @@ class API( object ):
     STATUS_SUCCESS   = 2
 
     def _grantAccess( self, apiKey=None ):
-        access = False
+        access   = False
+        clientIP = cherrypy.request.remote.ip
         if apiKey:
-            # TODO: check against API key
-            access = True
+            self.apiKey = aminopvr.generalConfig.apiKey
+            if apiKey == self.apiKey:
+                access = True
+            else:
+                self._apiLogger.error( "_grandAccess: incorrect apiKey: clientIP=%s, apiKey=%s" % ( clientIP, apiKey ) )
         else:
-            clientIP = cherrypy.request.remote.ip
             self._apiLogger.debug( "_grantAccess: clientIP=%s" % ( clientIP ) )
             access = self._addressInNetwork( clientIP, aminopvr.generalConfig.localAccessNets )
 

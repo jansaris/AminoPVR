@@ -76,8 +76,8 @@ def aminoPVRProcess():
     contentProvider.start()
 #    contentProvider.requestContentUpdate()
 
-    from aminopvr.channel import ChannelUrl
-    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
+#    from aminopvr.channel import ChannelUrl
+#    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
     
 #    url = ChannelUrl( "hd", "udp", "224.1.3.1", 12110, "", 0 )
 #    stream = InputStreamAbstract.createInputStream( InputStreamProtocol.HTTP, url )
