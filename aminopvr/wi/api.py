@@ -306,17 +306,26 @@ class AminoPVRAPI( API ):
                     # Found a channel on the same channel number, but epgId is different
                     # Find another match.
                     self._logger.info( "activatePendingChannels: epgId mismatch for channel %i - %s: %s != %s" % ( channel.number, channel.name, channel.epgId, currChannel.epgId ) )
-                    # If channel name is the same, then they must have changed epgId
-                    if channel.name != currChannel.name:
+                    # If channel name is the same (or partially the same), then they must have changed epgId
+                    # Else, try to find a channel that would match
+                    if (channel.name != currChannel.name)         and \
+                       (not channel.name     in currChannel.name) and \
+                       (not currChannel.name in channel.name):
                         currChannel   = None
                         epgIdChannels = Channel.getAllByEpgIdFromDb( conn, channel.epgId, includeInactive=True, includeRadio=True )
                         for epgIdChannel in epgIdChannels:
-                            if epgIdChannel.name == channel.name:
+                            if (epgIdChannel.name == channel.name)      or \
+                               (channel.name      in epgIdChannel.name) or \
+                               (epgIdChannel.name in channel.name):
                                 currChannel = epgIdChannel
                                 break
+                    # TODO: if still no match is found (based on epgId), then look for similar names
+                    # and maybe equal urls 
+
                 if currChannel:
                     # Convert PendingChannel to Channel but keep channel id
                     newCurrChannel = Channel.copy( channel, currChannel.id )
+                    # Has the channel really changed?
                     if newCurrChannel != currChannel:
                         self._logger.info( "activatePendingChannels: existing channel: %i - %s" % ( channel.number, channel.name ) )
 #                        self._logger.info( "%s == %s" % ( newCurrChannel.dump(), currChannel.dump() ) )
