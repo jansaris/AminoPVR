@@ -173,7 +173,6 @@ class Recorder( threading.Thread ):
 
     _recordings       = dict()
     _activeRecordings = dict()
-    _lock             = threading.RLock()
     _queue            = Queue()
     _logger           = logging.getLogger( "aminopvr.Recorder" )
 
@@ -271,7 +270,7 @@ class Recorder( threading.Thread ):
                     self._logger.warning( "_stopRecording: No more listeners; stop ActiveRecorder" )
                     if not self._activeRecordings[recordingId].stop():
                         self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
-                        del self._activeRecordings[recordingId]
+                    del self._activeRecordings[recordingId]
             else:
                 self._logger.error( "_stopRecording: recordingId is not available" )
                 if self._recordings[id]["callback"]:
