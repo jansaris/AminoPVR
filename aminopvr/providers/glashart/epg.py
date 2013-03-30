@@ -238,6 +238,7 @@ class EpgProvider( threading.Thread ):
                         self._logger.debug( "Start time: %s > %s" % ( str( programOld.startTime ), str( programNew.startTime ) ) )
                         self._logger.debug( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
                         self._logger.debug( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
+                        programNew.id = programOld.id
 
                     try:
                         programNew.addToDb( conn )

@@ -516,7 +516,7 @@ class ProgramAbstract( object ):
                  hash( self._genres + self._actors + self._directors + self._presenters + self._ratings ) )
 
     def __repr__( self ):
-        return "ProgramGenreAbstract( epgId=%r, id=%r, originalId=%r, startTime=%r, endTime=%r, title=%r, subtitle=%r, description=%r, aspectRatio=%r, parentalRating=%r, genres=%r, actors=%r, directors=%r, presenters=%r, ratings=%r )" % ( self._epgId, self._id, self._originalId, self._startTime, self._endTime, self._title, self._subtitle, self._description, self._aspectRatio, self._parentalRating, self._genres, self._actors, self._directors, self._presenters, self._ratings )
+        return "ProgramAbstract( epgId=%r, id=%r, originalId=%r, startTime=%r, endTime=%r, title=%r, subtitle=%r, description=%r, aspectRatio=%r, parentalRating=%r, genres=%r, actors=%r, directors=%r, presenters=%r, ratings=%r )" % ( self._epgId, self._id, self._originalId, self._startTime, self._endTime, self._title, self._subtitle, self._description, self._aspectRatio, self._parentalRating, self._genres, self._actors, self._directors, self._presenters, self._ratings )
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
@@ -555,6 +555,13 @@ class ProgramAbstract( object ):
     @property
     def id( self ):
         return self._id
+
+    @id.setter
+    def id( self, id ):
+        if self._id == -1:
+            self._id = id
+        else:
+            self._logger.critical( "ProgramAbstract.id: id is already != -1, so cannot be changed! self._id=%d, id=%d" % ( self._id, id ) )
 
     @property
     def epgId( self ):
