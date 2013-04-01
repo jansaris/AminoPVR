@@ -19,6 +19,7 @@ from aminopvr.config import config, GeneralConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
+from aminopvr.tools import ResourceMonitor
 from aminopvr.wi import initWebserver, stopWebserver
 import datetime
 import logging
@@ -28,6 +29,7 @@ import time
 logger          = logging.getLogger( "aminopvr" )
 
 generalConfig   = GeneralConfig( config )
+resourceMonitor = ResourceMonitor()
 recorder        = Recorder()
 scheduler       = Scheduler()
 epgGrabber      = None
@@ -53,6 +55,7 @@ def shutdown():
         contentProvider.stop()
     recorder.stopAllRecordings()
     scheduler.stop()
+    resourceMonitor.stop()
     stopWebserver()
     logger.warning( "Everything has stopped, now exit" )
     os._exit( 0 )

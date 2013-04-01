@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import DATA_ROOT
+from aminopvr.tools import ResourceMonitor
 import logging
 import os
 import sqlite3
@@ -55,6 +56,12 @@ class DBConnection:
                         self._logger.debug( "%s: %s with args %s" % ( self._filename, query, args ) )
                         sqlResult = self._cursor.execute( query, args )
                     self._conn.commit()
+                    if query.lower().startswith( "select" ):
+                        ResourceMonitor.reportDb( "select", 1, self._cursor.rowcount )
+                    elif query.lower().startswith( "update" ):
+                        ResourceMonitor.reportDb( "update", 1, self._cursor.rowcount )
+                    elif query.lower().startswith( "delete" ):
+                        ResourceMonitor.reportDb( "delete", 1, self._cursor.rowcount )
                     break
                 except sqlite3.OperationalError, e:
                     if "unable to open database file" in e.message or "database is locked" in e.message:
@@ -72,6 +79,7 @@ class DBConnection:
 
     def insert( self, query, args=None ):
         self.execute( query, args )
+        ResourceMonitor.reportDb( "insert", 1, self._cursor.rowcount )
         return self._cursor.lastrowid
 
     @staticmethod

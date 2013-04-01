@@ -101,19 +101,25 @@ class Timer( threading.Thread ):
         numTriggered = 0
 
         while self._running and numTriggered < len( self._events ):
-            now = datetime.datetime.now()
+            now          = datetime.datetime.now()
+            pollInterval = self._pollInterval
+
             for event in self._events:
                 with self._lock:
-                    if not event["triggered"] and now >= event["time"]:
-                        self._logger.debug( "Timer.run: event @ %s triggered (now %s)" % ( event["time"], now ) )
-                        event["callback"]( Timer.TIME_TRIGGER_EVENT, event["callbackArguments"] )
-                        if not self._recurrenceInterval:
-                            event["triggered"] = True
-                            numTriggered += 1
-                        else:
-                            event["time"] = event["time"] + self._recurrenceInterval
-                            self._logger.warning( "Timer.run: Resetting timer, next event will fire at %s" % ( event["time"] ) )
-            time.sleep( self._pollInterval )
+                    if not event["triggered"]:
+                        if now >= event["time"]:
+                            self._logger.debug( "Timer.run: event @ %s triggered (now %s)" % ( event["time"], now ) )
+                            event["callback"]( Timer.TIME_TRIGGER_EVENT, event["callbackArguments"] )
+                            if not self._recurrenceInterval:
+                                event["triggered"] = True
+                                numTriggered += 1
+                            else:
+                                event["time"] = event["time"] + self._recurrenceInterval
+                                self._logger.info( "Timer.run: Resetting timer, next event will fire at %s" % ( event["time"] ) )
+                        # We almost need to trigger the event, decrease the polling interval to 1 second
+                        elif event["time"] - now < datetime.timedelta( seconds=pollInterval ) and pollInterval > 1.0:
+                            pollInterval = 1.0
+            time.sleep( pollInterval )
         self._logger.debug( "Timer.run: timer loop ended, fire untriggered events with TIMER_ENDED_EVENT" )
         for event in self._events:
             with self._lock:

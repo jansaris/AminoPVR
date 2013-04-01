@@ -15,7 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import aminopvr
 import logging.config
 import os
 import signal
@@ -38,6 +37,8 @@ def formatFactory( fmt, datefmt ):
     return CustomFormatter( default )
 
 logging.config.fileConfig( 'logging.conf', disable_existing_loggers=True )
+
+import aminopvr
 
 signal.signal( signal.SIGINT,   aminopvr.signalHandler )
 signal.signal( signal.SIGTERM,  aminopvr.signalHandler )
