@@ -163,16 +163,6 @@ class STBAPI( API ):
 
     def _getChannelFromJson( self, json, channelId=-1 ):
         channel = PendingChannel( channelId, json["id"], json["epg_id"], json["name"], json["name_short"], json["logo"], json["thumbnail"], json["radio"], False )
-#        if not orgChannel:
-#            channel = Channel( -1, json["id"], json["epg_id"], json["name"], json["name_short"], json["logo"], json["thumbnail"], json["radio"] )
-#        else:
-#            channel.number    = json["id"]
-#            channel.epgId     = json["epg_id"]
-#            channel.name      = json["name"]
-#            channel.nameShort = json["name_short"]
-#            channel.logo      = json["logo"]
-#            channel.thumbnail = json["thumbnail"]
-
         urlRe   = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
         for stream in json["streams"]:
             urlMatch = urlRe.search( stream["url"] )

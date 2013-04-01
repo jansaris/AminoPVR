@@ -186,7 +186,7 @@ class EpgProvider( threading.Thread ):
         currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
         currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
 
-        content, code, mime = getPage( epgUrl )
+        content, _, _ = getPage( epgUrl )
 
         if content:
             fileHandle = gzip.GzipFile( fileobj=StringIO( content ) )
@@ -195,6 +195,8 @@ class EpgProvider( threading.Thread ):
             numPrograms             = 0
             numProgramsDetail       = 0
             numProgramsDetailFailed = 0
+            numProgramsNew          = 0
+            numProgramsUpdated      = 0
 
             for program in epgData:
                 if not self._running:
@@ -239,6 +241,9 @@ class EpgProvider( threading.Thread ):
                         self._logger.debug( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
                         self._logger.debug( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
                         programNew.id = programOld.id
+                        numProgramsUpdated += 1
+                    else:
+                        numProgramsNew += 1
 
                     try:
                         programNew.addToDb( conn )
@@ -246,8 +251,12 @@ class EpgProvider( threading.Thread ):
                         self._logger.exception( programNew.dump() )
 
             if self._running:
-                self._logger.info( "Num programs:        %i" % numPrograms )
-                self._logger.info( "Num program details: %i" % numProgramsDetail )
+                self._logger.debug( "Num programs:         %i" % ( numPrograms ) )
+                self._logger.debug( "Num program details:  %i" % ( numProgramsDetail ) )
+                self._logger.info( "Num new programs:     %i" % ( numProgramsNew ) )
+                self._logger.info( "Num updated programs: %i" % ( numProgramsUpdated ) )
+                if numProgramsNew == 0:
+                    self._logger.warning( "No new programs were added" )
         else:
             self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
 
@@ -255,9 +264,9 @@ class EpgProvider( threading.Thread ):
         grabbed = True
 
         # Fetch detailed information. http://w.zt6.nl/epgdata/xx/xxxxxx.json
-        detailsFilename         = "/%s/%s.json" % ( program.originalId[-2:], program.originalId )
-        detailsUrl              = glashartConfig.epgDataPath + detailsFilename
-        detailsPage, code, mime = getPage( detailsUrl, None )
+        detailsFilename   = "/%s/%s.json" % ( program.originalId[-2:], program.originalId )
+        detailsUrl        = glashartConfig.epgDataPath + detailsFilename
+        detailsPage, _, _ = getPage( detailsUrl, None )
 
         if detailsPage and len( detailsPage ) > 0:
             detailsData = json.loads( detailsPage )

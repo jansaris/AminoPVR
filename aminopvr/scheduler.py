@@ -452,8 +452,8 @@ class Scheduler( threading.Thread ):
         if lastRecording:
             lastRecordingStartDay = datetime.datetime.fromtimestamp( lastRecording.startTime ).date()
 
-        startYear, startWeek, startDayOfWeek                                        = startDay.isocalendar()
-        lastRecordingStartYear, lastRecordingStartWeek, lastRecordingStartDayOfWeek = lastRecordingStartDay.isocalendar()
+        startYear, startWeek, _                           = startDay.isocalendar()
+        lastRecordingStartYear, lastRecordingStartWeek, _ = lastRecordingStartDay.isocalendar()
 
         # There is a match when the recording candidate (program) is
         # - Day is later than day of last recording for 'EVERY_DAY' type

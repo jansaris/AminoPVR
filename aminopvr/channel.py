@@ -208,7 +208,6 @@ class ChannelAbstract( object ):
                  os.path.basename( self._logo )                       == os.path.basename( other._logo )      and
                  os.path.basename( self._thumbnail )                  == os.path.basename( other._thumbnail ) and
                  self._radio                                          == other._radio                         and
-#                 self._urls                                           == other._urls                          and
                  set( self._urls ).intersection( set( other._urls ) ) == set( self._urls )                    and
                  self._inactive                                       == other._inactive )
 
@@ -529,9 +528,9 @@ class Channel( ChannelAbstract ):
 
     def downloadLogoAndThumbnail( self ):
         if self._logo != "" and self._logo.startswith( "http://" ):
-            logoFilename = urlparse.urlsplit( self._logo )[2].split( '/' )[-1]
-            logoPath     = os.path.join( DATA_ROOT, "assets/images/channels/logos", logoFilename )
-            filename, code, mime = getPage( self._logo, logoPath )
+            logoFilename   = urlparse.urlsplit( self._logo )[2].split( '/' )[-1]
+            logoPath       = os.path.join( DATA_ROOT, "assets/images/channels/logos", logoFilename )
+            filename, _, _ = getPage( self._logo, logoPath )
             if filename:
                 self._logo = logoFilename
                 self._logger.info( "Channel.downloadLogoAndThumbnail: downloaded logo to %s" % ( logoPath ) )
@@ -541,7 +540,7 @@ class Channel( ChannelAbstract ):
         if self._thumbnail != "" and self._thumbnail.startswith( "http://" ):
             thumbnailFilename = urlparse.urlsplit( self._thumbnail )[2].split( '/' )[-1]
             thumbnailPath     = os.path.join( DATA_ROOT, "assets/images/channels/thumbnails", thumbnailFilename )
-            filename, code, mime = getPage( self._thumbnail, thumbnailPath )
+            filename, _, _    = getPage( self._thumbnail, thumbnailPath )
             if filename:
                 self._thumbnail = thumbnailFilename
                 self._logger.info( "Channel.downloadLogoAndThumbnail: downloaded thumbnail to %s" % ( thumbnailPath ) )

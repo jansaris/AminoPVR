@@ -153,7 +153,7 @@ class ContentProvider( threading.Thread ):
                         PageSymbol.addAllDictToDb( conn, symbolNames )
 
     def _parseIndexPage( self ):
-        content, code, mime = getPage( glashartConfig.tvmenuIndexPath )
+        content, _, _ = getPage( glashartConfig.tvmenuIndexPath )
         if content:
             title        = None
             codeJsPath   = None
@@ -193,7 +193,7 @@ class ContentProvider( threading.Thread ):
             return ( None, None, None, None )
 
     def _parseCodeJs( self, codeJsPath ):
-        content, code, mime = getPage( codeJsPath )
+        content, _, _ = getPage( codeJsPath )
         if content:
             fileHandle  = gzip.GzipFile( fileobj=StringIO( content ) )
             fileContent = fileHandle.read()
@@ -357,7 +357,7 @@ class ContentProvider( threading.Thread ):
             return ( None, None )
 
     def _getStyleCss( self, styleCssPath ):
-        content, code, mime = getPage( styleCssPath )
+        content, _, _ = getPage( styleCssPath )
         if content:
             fileHandle  = gzip.GzipFile( fileobj=StringIO( content ) )
             fileContent = fileHandle.read()
