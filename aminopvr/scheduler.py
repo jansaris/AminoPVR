@@ -139,7 +139,7 @@ class Scheduler( threading.Thread ):
         # We're going through the schedule list in the order as defined in scheduleTypes
         for scheduleType in scheduleTypes:
 
-            # Are there any recordings with this scheduleType?
+            # Are there any schedules with this scheduleType?
             if scheduleTypeGroup.has_key( scheduleType ):
 
                 # Go through schedules in arbitrary order
@@ -225,6 +225,7 @@ class Scheduler( threading.Thread ):
             for untouchedTimer in untouchedTimers:
                 timer = self._timers[untouchedTimer]
                 self._logger.warning( "Removing timer with id=%d (recording @ %s from %s with title %s." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName, timer["recording"].title ) )
+                timer.cancel()
                 del self._timers[untouchedTimer]
             
     def _handleSchedule( self, conn, schedule, newRecordings ):
@@ -301,8 +302,8 @@ class Scheduler( threading.Thread ):
                 # Get recordings with the same title
                 # TODO: only get the finished recordings. Active or future recordings will be
                 # subject to rescheduling
-                recordings    = Recording.getByTitleFromDb( conn, program.title )
-                oldRecordings = OldRecording.getByTitleFromDb( conn, program.title )
+                recordings       = Recording.getByTitleFromDb( conn, program.title )
+                oldRecordings    = OldRecording.getByTitleFromDb( conn, program.title )
                 filteredPrograms = self._filterOutDuplicates( schedule, filteredPrograms, recordings, oldRecordings=oldRecordings )
 
                 # Find the last recording
@@ -590,6 +591,8 @@ class Scheduler( threading.Thread ):
                        recording.status == RecordingState.RECORDING_UNFINISHED:
                         timer["timer"].cancel()
                         del self._timers[timerId]
+                else:
+                    self._logger.error( "_startRecording: timer with timerId=%d not found" % ( timerId ) )
 
     def _stopRecording( self, eventType, timerId ):
         """

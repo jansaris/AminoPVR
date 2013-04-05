@@ -751,7 +751,7 @@ class ProgramAbstract( object ):
                 whereValue.append( title )
 
             where.append( "(" + " OR ".join( search ) + ")" )
-            query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where )
+            query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY start_time ASC"
             rows = conn.execute( query, whereValue ).fetchall()
             for row in rows:
                 program = cls._createProgramFromDbDict( conn, row )
