@@ -40,8 +40,7 @@ class ChannelUrlAbstract( object ):
         self._logger.debug( 'ChannelUrl.__init__( channelType=%s, protocol=%s, ip=%s, port=%i, arguments=%s )' % ( channelType, protocol, ip, port, arguments ) )
 
     def __hash__( self ):
-        return ( hash( self._channelType + self._protocol + self._ip + self._arguments ) +
-                 hash( self._port ) )
+        return ( hash( self._channelType ) )
 
     def __eq__( self, other ):
         return ( self._protocol  == other._protocol  and
@@ -203,9 +202,7 @@ class ChannelAbstract( object ):
         self._logger.debug( 'ChannelAbstract.__init__( id=%i, number=%s, epgId=%s, name=%s, nameShort=%s, logo=%s, thumbnail=%s, radio=%i, inactive=%i )' % ( id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ) )
 
     def __hash__( self ):
-        return ( hash( self._number + self._radio + self._inactive ) +
-                 hash( self._epgId + self._name + self._nameShort ) +
-                 hash( os.path.basename( self._logo ) + os.path.basename( self._thumbnail ) ) )
+        return ( hash( self._number ) )
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.

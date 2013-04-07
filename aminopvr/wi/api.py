@@ -150,8 +150,6 @@ class STBAPI( API ):
             currentChannels = PendingChannel.getAllFromDb( conn )
 
             removedChannels = set( currentChannels ).difference( set( newChannels ) )
-            self._logger.info( "setChannelList: currentChannels=%r" % ( currentChannels ) )
-            self._logger.info( "setChannelList: newChannels    =%r" % ( newChannels ) )
             for channel in removedChannels:
                 self._logger.info( "setChannelList: remove channel: %i - %s" % ( channel.number, channel.name ) )
                 channel.deleteFromDb( conn )

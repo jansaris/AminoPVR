@@ -121,7 +121,6 @@ class WebInterface( aminopvr.wi.WebInterface ):
                     arguments[itemArray[0]] = itemArray[1]
                 else:
                     arguments[itemArray[0]] = ""
-#            arguments = dict( item.split( '=' ) for item in queryString.split( '&' ) )
             for key in arguments:
                 if key in kwargs:
                     del kwargs[key]
