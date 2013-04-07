@@ -191,11 +191,25 @@ class RecordingAbstract( object ):
         self._rerecord = rerecord
 
     @classmethod
-    def getAllFromDb( cls, conn ):
+    def getAllFromDb( cls, conn, finishedOnly=True, offset=None, count=None, sort=None ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s ORDER BY start_time ASC" % ( cls._tableName ) ).fetchall()
+            limit = ""
+            where = ""
+
+            if offset != None and count != None:
+                limit = " LIMIT %d, %d" % ( offset, count )
+
+            if sort != None:
+                sort = "%s ASC" % ( sort )
+            else:
+                sort = "start_time DESC"
+
+            if finishedOnly:
+                where = " WHERE status = %d" % ( RecordingState.RECORDING_FINISHED )
+
+            rows = conn.execute( "SELECT * FROM %s%s ORDER BY %s%s" % ( cls._tableName, where, sort, limit ) ).fetchall()
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -388,6 +402,17 @@ class RecordingAbstract( object ):
                                     self._rerecord ) )
                 if id:
                     self._id = id
+
+    def toDict( self ):
+        return { "id":           self.id,
+                 "start_time":   self.startTime,
+                 "end_time":     self.endTime,
+                 "title":        self.epgProgram.title,
+                 "subtitle":     self.epgProgram.subtitle,
+                 "channel_id":   self.channelId,
+                 "channel_name": self.channelName,
+                 "url":          "",
+                 "marker":       self.marker }
 
     def _generateFilename( self, conn ):
         channel  = Channel.getFromDb( conn, self._channelId )

@@ -114,7 +114,14 @@ class WebInterface( aminopvr.wi.WebInterface ):
         if method == "POST":
             queryString = cherrypy.request.query_string
             url = url + "?" + queryString
-            arguments = dict( item.split( '=' ) for item in queryString.split( '&' ) )
+            arguments = {}
+            for item in queryString.split( '&' ):
+                itemArray = item.split( '=' )
+                if len( itemArray ) == 2:
+                    arguments[itemArray[0]] = itemArray[1]
+                else:
+                    arguments[itemArray[0]] = ""
+#            arguments = dict( item.split( '=' ) for item in queryString.split( '&' ) )
             for key in arguments:
                 if key in kwargs:
                     del kwargs[key]

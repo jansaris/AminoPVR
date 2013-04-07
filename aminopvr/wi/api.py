@@ -15,11 +15,16 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel
+from aminopvr import schedule
+from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel, \
+    ChannelUrl
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
+from aminopvr.recording import Recording
+from aminopvr.schedule import Schedule
+from aminopvr.scheduler import Scheduler
 import aminopvr.providers
 import cherrypy
 import json
@@ -145,6 +150,8 @@ class STBAPI( API ):
             currentChannels = PendingChannel.getAllFromDb( conn )
 
             removedChannels = set( currentChannels ).difference( set( newChannels ) )
+            self._logger.info( "setChannelList: currentChannels=%r" % ( currentChannels ) )
+            self._logger.info( "setChannelList: newChannels    =%r" % ( newChannels ) )
             for channel in removedChannels:
                 self._logger.info( "setChannelList: remove channel: %i - %s" % ( channel.number, channel.name ) )
                 channel.deleteFromDb( conn )
@@ -169,6 +176,7 @@ class STBAPI( API ):
     def setActiveChannel( self, channel ):
         self._logger.debug( "setActiveChannel( %s )" % ( channel ) )
         return self._createResponse( API.STATUS_SUCCESS )
+
 
     def _getChannelFromJson( self, json, channelId=-1 ):
         channel = PendingChannel( channelId, json["id"], json["epg_id"], json["name"], json["name_short"], json["logo"], json["thumbnail"], json["radio"], False )
@@ -251,9 +259,92 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def getRecordingList( self ):
-        self._logger.debug( "getRecordingList" )
+    # TODO: this is still very STB oriented --> define proper API here and in JavaScript
+    def getRecordingList( self, offset=None, count=None, sort=None ):
+        self._logger.debug( "getRecordingList()" )
+        conn            = DBConnection()
+        recordings      = Recording.getAllFromDb( conn, offset=offset, count=count, sort=sort )
+        recordingsArray = []
+        for recording in recordings:
+            recordingJson = recording.toDict()
+            if recordingJson:
+                recordingsArray.append( recordingJson )
+        return self._createResponse( API.STATUS_SUCCESS, recordingsArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    # TODO: this is still very STB oriented --> define proper API here and in JavaScript
+    def getScheduleList( self ):
+        self._logger.debug( "getScheduleList()" )
         return self._createResponse( API.STATUS_SUCCESS, [] )
+
+    @cherrypy.expose
+    @API._grantAccess
+    # TODO: this is still very STB oriented --> define proper API here and in JavaScript
+    def addSchedule( self, url, titleId, startTime, endTime, aa ):
+        self._logger.debug( "addSchedule( %s, %s, %d, %d, %s )" % ( url, titleId, startTime, endTime, aa ) )
+        conn      = DBConnection()
+
+        # Split title and programId
+        title, programId = titleId.split( "||[", 2 )
+
+        # Find the program we would like to record
+        program   = EpgProgram.getByOriginalIdFromDb( conn, programId )
+        if program:
+            urlRe = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
+            urlMatch = urlRe.search( url )
+
+            # Decode url into ip and port
+            if urlMatch:
+                ip   = urlMatch.group( "ip" )
+                port = int( urlMatch.group( "port" ) )
+
+                # Find channelId which uses this ip/port combination
+                channelId = ChannelUrl.getChannelByIpPortFromDb( conn, ip, port )
+                if channelId:
+                    # Get the associated channel
+                    channel = Channel.getFromDb( conn, channelId )
+                    if channel:
+                        # See if we already have a schedule to record this program
+                        schedule = Schedule.getByTitleAndChannelIdFromDb( conn, title, channel.id )
+                        if schedule:
+                            timeDiff = startTime - schedule.startTime
+                            if schedule.type != Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY and \
+                               schedule.type != Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK:
+                                # If the time diff is a week, then we seem to want to record once every week 
+                                if timeDiff >= (7 * 24 * 60 * 60):
+                                    schedule.type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK
+                                # If the time diff is a week, then we seem to want to record once every day 
+                                elif timeDiff >= (1 * 24 * 60 * 60):
+                                    schedule.type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
+                                schedule.addToDb( conn )
+                                Scheduler.requestReschedule()
+                        else:
+                            schedule = Schedule( -1,
+                                                 Schedule.SCHEDULE_TYPE_ONCE,
+                                                 channelId,
+                                                 startTime,
+                                                 endTime,
+                                                 title,
+                                                 True,      # TODO
+                                                 False,     # TODO
+                                                 Schedule.DUPLICATION_METHOD_TITLE | Schedule.DUPLICATION_METHOD_SUBTITLE,
+                                                 0,
+                                                 0 )
+                            schedule.addToDb( conn )
+                            Scheduler.requestReschedule()
+
+                        return self._createResponse( API.STATUS_SUCCESS, schedule.id )
+                    else:
+                        self._logger.warning( "addSchedule: Unable to find channel with channelId=%d" % ( channelId ) )
+                else:
+                    self._logger.warning( "addSchedule: Unable to find channel from ip=%s, port=%d" % ( ip, port ) )
+            else:
+                self._logger.warning( "addSchedule: Unable to match url=%s" % ( url ) )
+        else:
+            self._logger.warning( "addSchedule: Unable to find recording with originalId=%s" % ( programId ) )
+
+        return self._createResponse( API.STATUS_FAIL, "Unknown" )
 
     @cherrypy.expose
     @API._grantAccess
@@ -265,18 +356,6 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     def setRecordingMeta( self, id, marker ):
         self._logger.debug( "setRecordingMeta( %s, %s )" % ( id, marker ) )
-        return self._createResponse( API.STATUS_SUCCESS )
-
-    @cherrypy.expose
-    @API._grantAccess
-    def getScheduleList( self ):
-        self._logger.debug( "getScheduleList" )
-        return self._createResponse( API.STATUS_SUCCESS, [] )
-
-    @cherrypy.expose
-    @API._grantAccess
-    def addSchedule( self, schedule ):
-        self._logger.debug( "addSchedule( %s )" % ( schedule ) )
         return self._createResponse( API.STATUS_SUCCESS )
 
     @cherrypy.expose

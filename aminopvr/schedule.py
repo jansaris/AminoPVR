@@ -177,8 +177,8 @@ class Schedule( object ):
     def inactive( self, inactive ):
         self._inactive = inactive
 
-    @staticmethod
-    def getAllFromDb( conn, includeInactive=False ):
+    @classmethod
+    def getAllFromDb( cls, conn, includeInactive=False ):
         schedules = []
         if conn:
             rows = []
@@ -187,36 +187,44 @@ class Schedule( object ):
             else:
                 rows = conn.execute( "SELECT * FROM schedules WHERE inactive = 0" ).fetchall()
             for row in rows:
-                schedule = Schedule._createScheduleFromDbDict( conn, row )
+                schedule = cls._createScheduleFromDbDict( row )
                 schedules.append( schedule )
 
         return schedules
 
-    @staticmethod
-    def getFromDb( conn, id ):
+    @classmethod
+    def getFromDb( cls, conn, id ):
         schedule = None
         if conn:
             row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) ).fetchone()
-            schedule = Schedule._createScheduleFromDbDict( conn, row )
+            schedule = cls._createScheduleFromDbDict( row )
 
         return schedule
 
-    @staticmethod
-    def _createScheduleFromDbDict( conn, data ):
+    @classmethod
+    def getByTitleAndChannelIdFromDb( cls, conn, title, channelId ):
+        schedule = None
+        if conn:
+            row = conn.execute( "SELECT * FROM schedules WHERE title = ? AND channel_id = ?", ( title, channelId ) ).fetchone()
+            schedule = cls._createScheduleFromDbDict( row )
+        return schedule
+
+    @classmethod
+    def _createScheduleFromDbDict( cls, data ):
         schedule = None
         if data:
-            schedule = Schedule( id                = data["id"],
-                                 type              = data["type"],
-                                 channelId         = data["channel_id"],
-                                 startTime         = data["start_time"],
-                                 endTime           = data["end_time"],
-                                 title             = data["title"],
-                                 preferHd          = data["prefer_hd"],
-                                 preferUnscrambled = data["prefer_unscrambled"],
-                                 dupMethod         = data["dup_method"],
-                                 startEarly        = data["start_early"],
-                                 endLate           = data["end_late"],
-                                 inactive          = data["inactive"] )
+            schedule = cls( id                = data["id"],
+                            type              = data["type"],
+                            channelId         = data["channel_id"],
+                            startTime         = data["start_time"],
+                            endTime           = data["end_time"],
+                            title             = data["title"],
+                            preferHd          = data["prefer_hd"],
+                            preferUnscrambled = data["prefer_unscrambled"],
+                            dupMethod         = data["dup_method"],
+                            startEarly        = data["start_early"],
+                            endLate           = data["end_late"],
+                            inactive          = data["inactive"] )
         return schedule
 
     def deleteFromDB( self, conn ):

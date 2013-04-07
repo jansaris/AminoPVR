@@ -130,6 +130,15 @@ class ChannelUrlAbstract( object ):
         return url
 
     @classmethod
+    def getChannelByIpPortFromDb( cls, conn, ip, port ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        if conn:
+            row = conn.execute( "SELECT channel_id FROM %s WHERE ip=? AND port=?" % ( cls._tableName ), ( ip, port ) ).fetchone()
+            if row:
+                return row["channel_id"]
+        return None
+
+    @classmethod
     def _createChannelUrlFromDbDict( cls, channelUrlData ):
         url = None
         if channelUrlData:
