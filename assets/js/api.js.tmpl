@@ -18,39 +18,39 @@
 
 function APIClass()
 {
-    this.SetChannelInstance = function()
+    this.setChannelInstance = function()
     {
         return ${set_channel_instance};
     };
-    this.PlayStreamAction1  = function( channel )
+    this.playStreamAction1  = function( channel )
     {
         ${play_action_1}( channel );
     };
-    this.PlayStreamClass    = function( url, aa, local )
+    this.playStreamClass    = function( url, aa, local )
     {
         return new ${play_stream_class}( url, aa, local );
     };
-    this.PlayStreamAction2  = function( stream )
+    this.playStreamAction2  = function( stream )
     {
         ${play_action_2}( stream );
     };
-    this.SetChannelFunction = function( channel, aa )
+    this.setChannelFunction = function( channel, aa )
     {
         ${set_channel_instance}.${set_channel_function}( channel, aa )
     };
-    this.DebugFunction      = function( debug )
+    this.debugFunction      = function( debug )
     {
         ${debug_function}( debug );
     };
-    this.KeyEventFunction   = function( key )
+    this.keyEventFunction   = function( key )
     {
         ${key_event_function}( key );
     };
-    this.KeyEventFunctionPtr = function()
+    this.keyEventFunctionPtr = function()
     {
         return ${key_event_function};
     };
-    this.ChannelList        = function()
+    this.channelList        = function()
     {
         return ${channel_list};
     };
@@ -74,7 +74,7 @@ function API_ChannelClass()
     this.URL       = "";
     this.URLHD     = "";
 
-    this.GetChannel = function( channel )
+    this.getChannel = function( channel )
     {
         if ( channel != null )
         {

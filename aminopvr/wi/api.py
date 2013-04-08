@@ -167,7 +167,16 @@ class STBAPI( API ):
         self._logger.debug( "postLog( %s )" % ( logData ) )
         logs = json.loads( logData )
         for log in logs:
-            self._logger.info( "[%d] %d %s" % ( log["level"], log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            if log["level"] == 0:
+                self._logger.debug( "STB: %d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 1:
+                self._logger.info( "STB: %d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 2:
+                self._logger.warning( "STB: %d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 3:
+                self._logger.error( "STB: %d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 4:
+                self._logger.critical( "STB: %d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
         return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )
 
     @cherrypy.expose
