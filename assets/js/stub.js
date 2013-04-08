@@ -20,15 +20,15 @@ function ASTBClass()
 {
     this.powerState = 0;
 
-    this.DefaultKeys = function( keys ) { DebugLog( "ASTBClass.DefaultKeys( " + keys + " )" ); };
-    this.WithChannels = function( channels ) { DebugLog( "ASTBClass.WithChannels( " + channels + " )" ); };
-    this.SetMouseState = function( state ) { DebugLog( "ASTBClass.SetMouseState( " + state + " )" ); };
-    this.SetKeyFunction = function( key, func ) { DebugLog( "ASTBClass.SetKeyFunction( " + key + ", " + func + " )" ); };
+    this.DefaultKeys = function( keys ) { logger.info( "ASTBClass.DefaultKeys( " + keys + " )" ); };
+    this.WithChannels = function( channels ) { logger.info( "ASTBClass.WithChannels( " + channels + " )" ); };
+    this.SetMouseState = function( state ) { logger.info( "ASTBClass.SetMouseState( " + state + " )" ); };
+    this.SetKeyFunction = function( key, func ) { logger.info( "ASTBClass.SetKeyFunction( " + key + ", " + func + " )" ); };
     this.GetConfig = function( key )
     {
         var config = "";
 
-        DebugLog( "ASTBClass.GetConfig( " + key + " )" );
+        logger.info( "ASTBClass.GetConfig( " + key + " )" );
 
         switch ( key )
         {
@@ -41,7 +41,7 @@ function ASTBClass()
     };
     this.GetSystemModel = function()
     {
-        DebugLog( "ASTBClass.GetSystemModel()" );
+        logger.info( "ASTBClass.GetSystemModel()" );
         return "aminet130";
     };
     this.GetSystemSubmodel = function()
@@ -55,24 +55,24 @@ function ASTBClass()
     };
     this.GetPowerState = function()
     {
-        DebugLog( "ASTBClass.GetPowerState()" );
+        logger.info( "ASTBClass.GetPowerState()" );
         return 4;
     };
     this.SetPowerState = function( state )
     {
-        DebugLog( "ASTBClass.SetPowerState( " + state + " )" );
+        logger.info( "ASTBClass.SetPowerState( " + state + " )" );
         this.powerState = state;
     };
-    this.Reboot = function() { DebugLog( "ASTBClass.Reboot()" ); };
-    this.Upgrade = function( aa, bb ) { DebugLog( "ASTBClass.Upgrade( " + aa + ", " + bb + " )" ); };
+    this.Reboot = function() { logger.info( "ASTBClass.Reboot()" ); };
+    this.Upgrade = function( aa, bb ) { logger.info( "ASTBClass.Upgrade( " + aa + ", " + bb + " )" ); };
     this.SetLEDState = function( led, state ) {};
-    this.DebugString = function( debug ) { DebugLog( "ASTBClass.DebugString( " + debug + " )" ); };
-    this.ErrorString = function( error ) { DebugLog( "ASTBClass.ErrorString( " + error + " )" ); };
-    this.SetConfig = function( key, value, cc ) { DebugLog( "ASTBClass.SetConfig( " + key + ", " + value + ", " + cc + " )" ); };
-    this.CommitConfig = function() { DebugLog( "ASTBClass.CommitConfig()" ); };
-    this.GetIPAddress = function() { DebugLog( "ASTBClass.GetIPAddress()" ); };
-    this.GetSystemManufacturer = function() { DebugLog( "ASTBClass.GetSystemManufacturer()" ); };
-    this.GetHardwareVersion = function() { DebugLog( "ASTBClass.GetHardwareVersion()" ); };
+    this.DebugString = function( debug ) { logger.info( "ASTBClass.DebugString( " + debug + " )" ); };
+    this.ErrorString = function( error ) { logger.info( "ASTBClass.ErrorString( " + error + " )" ); };
+    this.SetConfig = function( key, value, cc ) { logger.info( "ASTBClass.SetConfig( " + key + ", " + value + ", " + cc + " )" ); };
+    this.CommitConfig = function() { logger.info( "ASTBClass.CommitConfig()" ); };
+    this.GetIPAddress = function() { logger.info( "ASTBClass.GetIPAddress()" ); };
+    this.GetSystemManufacturer = function() { logger.info( "ASTBClass.GetSystemManufacturer()" ); };
+    this.GetHardwareVersion = function() { logger.info( "ASTBClass.GetHardwareVersion()" ); };
     this.GetSoftwareVersion = function()
     {
         return "0.18.6-Ax3x-opera9";
@@ -81,32 +81,32 @@ function ASTBClass()
     {
         return "<xml><aminoVersion>0.18.6-Ax3x-opera9</aminoVersion><aminoCVersion>0.18.6-Ax3x-opera9</aminoCVersion><oemVersion>zt6-ax3x-0.18.6.1</oemVersion></xml>";
     };
-    this.GetSerialNumber = function() { DebugLog( "ASTBClass.GetSerialNumber()" ); };
+    this.GetSerialNumber = function() { logger.info( "ASTBClass.GetSerialNumber()" ); };
 }
 
 function VideoDisplayClass()
 {
-    this.SetChromaKey = function( key ) { DebugLog( "VideoDisplayClass.SetChromaKey( " + key + " )" ); };
-    this.SetAlphaLevel = function( level ) { DebugLog( "VideoDisplayClass.SetAlphaLevel( " + level + " )" ); };
-    this.RetainMouseState = function( state ) { DebugLog( "VideoDisplayClass.RetainMouseState( " + state + " )" ); };
-    this.RetainAlphaLevel = function( level ) { DebugLog( "VideoDisplayClass.RetainAlphaLevel( " + level + " )" ); };
-    this.SetAVAspectSwitching = function( switching ) { DebugLog( "VideoDisplayClass.SetAVAspectSwitching( " + switching + " )" ); };
-    this.SetAVAspect = function( aspect ) { DebugLog( "VideoDisplayClass.SetAVAspect( " + aspect + " )" ); };
-    this.SetSubtitles = function( aa, bb ) { DebugLog( "VideoDisplayClass.SetSubtitles( " + aa + ", " + bb + " )" ); };
-    this.SetTeletextFullscreen = function( fullscreen ) { DebugLog( "VideoDisplayClass.SetTeletextFullscreen( " + fullscreen + " )" ); };
-    this.SetOutputFmt = function( format ) { DebugLog( "VideoDisplayClass.SetOutputFmt( " + format + " )" ); };
-    this.SetAspect = function( aspect ) { DebugLog( "VideoDisplayClass.SetAspect( " + aspect + " )" ); };
-    this.SetOutputResolution = function( resolution ) { DebugLog( "VideoDisplayClass.SetOutputResolution( " + resolution + " )" ); };
-    this.SetPreferredHDRes = function( resolution ) { DebugLog( "VideoDisplayClass.SetPreferredHDRes( " + resolution + " )" ); };
+    this.SetChromaKey = function( key ) { logger.info( "VideoDisplayClass.SetChromaKey( " + key + " )" ); };
+    this.SetAlphaLevel = function( level ) { logger.info( "VideoDisplayClass.SetAlphaLevel( " + level + " )" ); };
+    this.RetainMouseState = function( state ) { logger.info( "VideoDisplayClass.RetainMouseState( " + state + " )" ); };
+    this.RetainAlphaLevel = function( level ) { logger.info( "VideoDisplayClass.RetainAlphaLevel( " + level + " )" ); };
+    this.SetAVAspectSwitching = function( switching ) { logger.info( "VideoDisplayClass.SetAVAspectSwitching( " + switching + " )" ); };
+    this.SetAVAspect = function( aspect ) { logger.info( "VideoDisplayClass.SetAVAspect( " + aspect + " )" ); };
+    this.SetSubtitles = function( aa, bb ) { logger.info( "VideoDisplayClass.SetSubtitles( " + aa + ", " + bb + " )" ); };
+    this.SetTeletextFullscreen = function( fullscreen ) { logger.info( "VideoDisplayClass.SetTeletextFullscreen( " + fullscreen + " )" ); };
+    this.SetOutputFmt = function( format ) { logger.info( "VideoDisplayClass.SetOutputFmt( " + format + " )" ); };
+    this.SetAspect = function( aspect ) { logger.info( "VideoDisplayClass.SetAspect( " + aspect + " )" ); };
+    this.SetOutputResolution = function( resolution ) { logger.info( "VideoDisplayClass.SetOutputResolution( " + resolution + " )" ); };
+    this.SetPreferredHDRes = function( resolution ) { logger.info( "VideoDisplayClass.SetPreferredHDRes( " + resolution + " )" ); };
 }
 
 function BrowserClass()
 {
-    this.SetToolbarState = function( state ) { DebugLog( "BrowserClass.SetToolbarState( " + state + " )" ); };
-    this.FrameLoadResetsState = function( state ) { DebugLog( "BrowserClass.FrameLoadResetsState( " + state + " )" ); };
-    this.Lower = function() { DebugLog( "BrowserClass.Lower()" ); };
-    this.Raise = function() { DebugLog( "BrowserClass.Raise()" ); };
-    this.Action = function( action ) { DebugLog( "BrowserClass.Action( " + action + " )" ); };
+    this.SetToolbarState = function( state ) { logger.info( "BrowserClass.SetToolbarState( " + state + " )" ); };
+    this.FrameLoadResetsState = function( state ) { logger.info( "BrowserClass.FrameLoadResetsState( " + state + " )" ); };
+    this.Lower = function() { logger.info( "BrowserClass.Lower()" ); };
+    this.Raise = function() { logger.info( "BrowserClass.Raise()" ); };
+    this.Action = function( action ) { logger.info( "BrowserClass.Action( " + action + " )" ); };
 }
 
 function AVMediaClass()
@@ -114,16 +114,16 @@ function AVMediaClass()
     this.onEvent = null;
     this.Event   = 0;
 
-    this.Kill = function() { DebugLog( "AVMedia.Kill()" ); };
-    this.Play = function( url ) { DebugLog( "AVMedia.Play( " + url + " )" ); };
-    this.Pause = function() { DebugLog( "AVMedia.Play()" ) };
-    this.Continue = function() { DebugLog( "AVMedia.Continue()" ) };
+    this.Kill = function() { logger.info( "AVMedia.Kill()" ); };
+    this.Play = function( url ) { logger.info( "AVMedia.Play( " + url + " )" ); };
+    this.Pause = function() { logger.info( "AVMedia.Play()" ) };
+    this.Continue = function() { logger.info( "AVMedia.Continue()" ) };
     this.GetMSecPosition = function() { return 0; };
     this.SetMSecPosition = function( pos ) { return pos; };
-    this.SetSpeed = function( speed ) { DebugLog( "AVMedia.SetSpeed( " + speed + " )" ); };
-    this.GetCurrentSpeed = function() { DebugLog( "AVMedia.GetCurrentSpeed()" ); return 0; };
-    this.SetAudioPID = function( pid ) { DebugLog( "AVMedia.SetAudioPID( " + pid + " )" ); };
-    this.SetPrimarySubtitleLanguage = function( lang, bb ) { DebugLog( "AVMedia.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" ); };
+    this.SetSpeed = function( speed ) { logger.info( "AVMedia.SetSpeed( " + speed + " )" ); };
+    this.GetCurrentSpeed = function() { logger.info( "AVMedia.GetCurrentSpeed()" ); return 0; };
+    this.SetAudioPID = function( pid ) { logger.info( "AVMedia.SetAudioPID( " + pid + " )" ); };
+    this.SetPrimarySubtitleLanguage = function( lang, bb ) { logger.info( "AVMedia.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" ); };
 }
 
 function StorageInfo()
@@ -174,7 +174,7 @@ function RecordingAsset()
 						{
                         	asset.marker = responseItem["data"]["marker"];
 
-                        	DebugLog( "RecordingAsset.ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
+                        	logger.info( "RecordingAsset.ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
                         }
                     }
                 }
@@ -188,7 +188,7 @@ function RecordingAsset()
     }
     this.WriteMeta = function( meta )
     {
-        DebugLog( "RecordingAsset.WriteMeta( " + meta + " )" );
+        logger.info( "RecordingAsset.WriteMeta( " + meta + " )" );
 
         var meta = eval( "(" + meta + ")" );
         this.marker = meta.marker;
@@ -201,7 +201,7 @@ function RecordingAsset()
             {
                 if ( this.status == 200 )
                 {
-                    DebugLog( "RecordingAsset.WriteMeta: onreadystatechange: saved meta data" );
+                    logger.info( "RecordingAsset.WriteMeta: onreadystatechange: saved meta data" );
                 }
             }
         };
@@ -233,7 +233,7 @@ function PVRClass()
             var pvr             = this;
             var storageRequest = new XMLHttpRequest();
 
-            DebugLog( "PVRClass.GetStorageInfo: Downloading storage info" );
+            logger.info( "PVRClass.GetStorageInfo: Downloading storage info" );
 
             storageRequest.onreadystatechange = function()
             {
@@ -252,16 +252,16 @@ function PVRClass()
                             	pvr.storage_info.availableSize = responseItem["data"]["available_size"];
                             	pvr.storage_info.totalSize     = responseItem["data"]["total_size"];
 
-                            	DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: Downloaded storage info" );
+                            	logger.info( "PVRClass.GetStorageInfo: onreadystatechange: Downloaded storage info" );
                             }
                             else
                             {
-                            	DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
+                            	logger.error( "PVRClass.GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
                             }
                         }
                         catch ( e )
                         {
-                            DebugLog( "PVRClass.GetStorageInfo: onreadystatechange: exception: " + e );
+                            logger.error( "PVRClass.GetStorageInfo: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -296,7 +296,7 @@ function PVRClass()
             var pvr               = this;
             var recordingsRequest = new XMLHttpRequest();
 
-            DebugLog( "PVRClass.GetAssetIdList: Downloading recording list" );
+            logger.info( "PVRClass.GetAssetIdList: Downloading recording list" );
 
             recordingsRequest.onreadystatechange = function()
             {
@@ -336,11 +336,11 @@ function PVRClass()
 	                            pvr.recording_ids.count = i - 1;
 	                        }
 
-                            DebugLog( "PVRClass.GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
+                            logger.info( "PVRClass.GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
                         }
                         catch ( e )
                         {
-                            DebugLog( "PVRClass.GetAssetIdList: onreadystatechange: exception: " + e );
+                            logger.error( "PVRClass.GetAssetIdList: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -358,7 +358,7 @@ function PVRClass()
             var pvr             = this;
             var scheduleRequest = new XMLHttpRequest();
 
-            DebugLog( "PVRClass.GetScheduleList: Downloading schedule list" );
+            logger.info( "PVRClass.GetScheduleList: Downloading schedule list" );
 
             scheduleRequest.onreadystatechange = function()
             {
@@ -389,11 +389,11 @@ function PVRClass()
             	                pvr.schedule_list.count = i - 1;
             	            }
 
-                            DebugLog( "PVRClass.GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
+                            logger.info( "PVRClass.GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
                         }
                         catch ( e )
                         {
-                            DebugLog( "PVRClass.GetScheduleList: onreadystatechange: exception: " + e );
+                            logger.error( "PVRClass.GetScheduleList: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -414,7 +414,7 @@ function PVRClass()
         {
             if ( (this.readyState == 4) && (this.status == 200) )
             {
-                DebugLog( "PVRClass.AddSchedule.onreadystatechange: done: " + this.responseText );
+                logger.info( "PVRClass.AddSchedule.onreadystatechange: done: " + this.responseText );
             }
         };
         scheduleRequest.open( "POST", "/aminopvr/api/addSchedule", false );
@@ -454,5 +454,5 @@ try
 }
 catch ( e )
 {
-    DebugLog( e );
+    logger.critical( e );
 }

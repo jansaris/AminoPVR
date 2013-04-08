@@ -32,11 +32,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.DefaultKeys( keys );
             }
-            DebugLog( "ASTBProxyClass.DefaultKeys( " + keys + " )" );
+            logger.info( "ASTBProxyClass.DefaultKeys( " + keys + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.DefaultKeys: exception: " + e );
+            logger.error( "ASTBProxyClass.DefaultKeys: exception: " + e );
         }
     };
     this.WithChannels = function( channels )
@@ -47,11 +47,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.WithChannels( channels );
             }
-            DebugLog( "ASTBProxyClass.WithChannels( " + channels + " )" );
+            logger.info( "ASTBProxyClass.WithChannels( " + channels + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.WithChannels: exception: " + e );
+            logger.error( "ASTBProxyClass.WithChannels: exception: " + e );
         }
     };
     this.SetMouseState = function( state )
@@ -62,11 +62,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetMouseState( state );
             }
-            DebugLog( "ASTBProxyClass.SetMouseState( " + state + " )" );
+            logger.info( "ASTBProxyClass.SetMouseState( " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.SetMouseState: exception: " + e );
+            logger.error( "ASTBProxyClass.SetMouseState: exception: " + e );
         }
     };
     this.SetKeyFunction = function( key, func )
@@ -77,11 +77,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetKeyFunction( key, func );
             }
-            DebugLog( "ASTBProxyClass.SetKeyFunction( " + key + ", " + func + " )" );
+            logger.info( "ASTBProxyClass.SetKeyFunction( " + key + ", " + func + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.SetKeyFunction: exception: " + e );
+            logger.error( "ASTBProxyClass.SetKeyFunction: exception: " + e );
         }
     };
     this.GetConfig = function( key )
@@ -93,11 +93,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetConfig( key );
             }
-            DebugLog( "ASTBProxyClass.GetConfig( " + key + " ) = " + retval );
+            logger.info( "ASTBProxyClass.GetConfig( " + key + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetConfig: exception: " + e );
+            logger.error( "ASTBProxyClass.GetConfig: exception: " + e );
         }
         return retval;
     };
@@ -110,11 +110,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemModel();
             }
-            DebugLog( "ASTBProxyClass.GetSystemModel() = " + retval );
+            logger.info( "ASTBProxyClass.GetSystemModel() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSystemModel: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSystemModel: exception: " + e );
         }
         return retval;
     };
@@ -127,11 +127,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemSubmodel();
             }
-            DebugLog( "ASTBProxyClass.GetSystemSubmodel() = " + retval );
+            logger.info( "ASTBProxyClass.GetSystemSubmodel() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSystemSubmodel: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSystemSubmodel: exception: " + e );
         }
         return retval;
     };
@@ -144,11 +144,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetMacAddress();
             }
-            DebugLog( "ASTBProxyClass.GetMacAddress() = " + retval );
+            logger.info( "ASTBProxyClass.GetMacAddress() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetMacAddress: exception: " + e );
+            logger.error( "ASTBProxyClass.GetMacAddress: exception: " + e );
         }
         return retval;
     };
@@ -161,11 +161,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetPowerState();
             }
-            DebugLog( "ASTBProxyClass.GetPowerState() = " + retval );
+            logger.info( "ASTBProxyClass.GetPowerState() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetPowerState: exception: " + e );
+            logger.error( "ASTBProxyClass.GetPowerState: exception: " + e );
         }
         return retval;
     };
@@ -177,11 +177,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetPowerState( state );
             }
-            DebugLog( "ASTBProxyClass.SetPowerState( " + state + " )" );
+            logger.info( "ASTBProxyClass.SetPowerState( " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.SetPowerState: exception: " + e );
+            logger.error( "ASTBProxyClass.SetPowerState: exception: " + e );
         }
     };
     this.Reboot = function()
@@ -192,11 +192,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.Reboot();
             }
-            DebugLog( "ASTBProxyClass.Reboot()" );
+            logger.info( "ASTBProxyClass.Reboot()" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.Reboot: exception: " + e );
+            logger.error( "ASTBProxyClass.Reboot: exception: " + e );
         }
     };
     this.Upgrade = function( aa, bb )
@@ -207,11 +207,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.Upgrade( aa, bb );
             }
-            DebugLog( "ASTBProxyClass.Upgrade( " + aa + ", " + bb + " )" );
+            logger.info( "ASTBProxyClass.Upgrade( " + aa + ", " + bb + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.Upgrade: exception: " + e );
+            logger.error( "ASTBProxyClass.Upgrade: exception: " + e );
         }
     };
     this.SetLEDState = function( led, state )
@@ -222,20 +222,20 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetLEDState( led, state );
             }
-//            DebugLog( "ASTBProxyClass.SetLEDState( " + led + ", " + state + " )" );
+//            logger.info( "ASTBProxyClass.SetLEDState( " + led + ", " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.SetLEDState: exception: " + e );
+            logger.error( "ASTBProxyClass.SetLEDState: exception: " + e );
         }
     };
     this.DebugString = function( debug )
     {
-        DebugLog( debug );
+        logger.info( debug );
     };
     this.ErrorString = function( error )
     {
-        DebugLog( error );
+        logger.error( error );
     };
     this.SetConfig = function( key, value, cc )
     {
@@ -245,11 +245,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetConfig( key, value, cc );
             }
-            DebugLog( "ASTBProxyClass.SetConfig( " + key + ", " + value + ", " + cc + " )" );
+            logger.info( "ASTBProxyClass.SetConfig( " + key + ", " + value + ", " + cc + " )" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.SetConfig: exception: " + e );
+            logger.error( "ASTBProxyClass.SetConfig: exception: " + e );
         }
     };
     this.CommitConfig = function()
@@ -260,11 +260,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.CommitConfig();
             }
-            DebugLog( "ASTBProxyClass.CommitConfig()" );
+            logger.info( "ASTBProxyClass.CommitConfig()" );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.CommitConfig: exception: " + e );
+            logger.error( "ASTBProxyClass.CommitConfig: exception: " + e );
         }
     };
     this.GetIPAddress = function()
@@ -276,11 +276,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetIPAddress();
             }
-            DebugLog( "ASTBProxyClass.GetIPAddress() = " + retval );
+            logger.info( "ASTBProxyClass.GetIPAddress() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetIPAddress: exception: " + e );
+            logger.error( "ASTBProxyClass.GetIPAddress: exception: " + e );
         }
         return retval;
     };
@@ -293,11 +293,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemManufacturer();
             }
-            DebugLog( "ASTBProxyClass.GetSystemManufacturer() = " + retval );
+            logger.info( "ASTBProxyClass.GetSystemManufacturer() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSystemManufacturer: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSystemManufacturer: exception: " + e );
         }
         return retval;
     };
@@ -310,11 +310,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetHardwareVersion();
             }
-            DebugLog( "ASTBProxyClass.GetHardwareVersion() = " + retval );
+            logger.info( "ASTBProxyClass.GetHardwareVersion() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetHardwareVersion: exception: " + e );
+            logger.error( "ASTBProxyClass.GetHardwareVersion: exception: " + e );
         }
         return retval;
     };
@@ -327,11 +327,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSoftwareVersion();
             }
-            DebugLog( "ASTBProxyClass.GetSoftwareVersion() = " + retval );
+            logger.info( "ASTBProxyClass.GetSoftwareVersion() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSoftwareVersion: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSoftwareVersion: exception: " + e );
         }
         return retval;
     };
@@ -344,11 +344,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemInfo();
             }
-            DebugLog( "ASTBProxyClass.GetSystemInfo() = " + retval );
+            logger.info( "ASTBProxyClass.GetSystemInfo() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSystemInfo: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSystemInfo: exception: " + e );
         }
         return retval;
     };
@@ -361,11 +361,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSerialNumber();
             }
-            DebugLog( "ASTBProxyClass.GetSerialNumber() = " + retval );
+            logger.info( "ASTBProxyClass.GetSerialNumber() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "ASTBProxyClass.GetSerialNumber: exception: " + e );
+            logger.error( "ASTBProxyClass.GetSerialNumber: exception: " + e );
         }
         return retval;
     };
@@ -381,11 +381,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetChromaKey( key );
             }
-            DebugLog( "VideoDisplayProxyClass.SetChromaKey( " + key + " )" );
+            logger.info( "VideoDisplayProxyClass.SetChromaKey( " + key + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetChromaKey: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetChromaKey: exception: " + e );
         }
     };
     this.SetAlphaLevel = function( level )
@@ -396,11 +396,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAlphaLevel( level );
             }
-            DebugLog( "VideoDisplayProxyClass.SetAlphaLevel( " + level + " )" );
+            logger.info( "VideoDisplayProxyClass.SetAlphaLevel( " + level + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetAlphaLevel: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetAlphaLevel: exception: " + e );
         }
     };
     this.RetainMouseState = function( state )
@@ -411,11 +411,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.RetainMouseState( state );
             }
-            DebugLog( "VideoDisplayProxyClass.RetainMouseState( " + state + " )" );
+            logger.info( "VideoDisplayProxyClass.RetainMouseState( " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.RetainMouseState: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.RetainMouseState: exception: " + e );
         }
     };
     this.RetainAlphaLevel = function( level )
@@ -426,11 +426,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.RetainAlphaLevel( level );
             }
-            DebugLog( "VideoDisplayProxyClass.RetainAlphaLevel( " + level + " )" );
+            logger.info( "VideoDisplayProxyClass.RetainAlphaLevel( " + level + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.RetainAlphaLevel: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.RetainAlphaLevel: exception: " + e );
         }
     };
     this.SetAVAspectSwitching = function( switching )
@@ -441,11 +441,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAVAspectSwitching( switching );
             }
-            DebugLog( "VideoDisplayProxyClass.SetAVAspectSwitching( " + switching + " )" );
+            logger.info( "VideoDisplayProxyClass.SetAVAspectSwitching( " + switching + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetAVAspectSwitching: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetAVAspectSwitching: exception: " + e );
         }
     };
     this.SetAVAspect = function( aspect )
@@ -456,11 +456,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAVAspect( aspect );
             }
-            DebugLog( "VideoDisplayProxyClass.SetAVAspect( " + aspect + " )" );
+            logger.info( "VideoDisplayProxyClass.SetAVAspect( " + aspect + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetAVAspect: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetAVAspect: exception: " + e );
         }
     };
     this.SetSubtitles = function( aa, bb )
@@ -471,11 +471,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetSubtitles( aa, bb );
             }
-            DebugLog( "VideoDisplayProxyClass.SetSubtitles( " + aa + ", " + bb + " )" );
+            logger.info( "VideoDisplayProxyClass.SetSubtitles( " + aa + ", " + bb + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetSubtitles: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetSubtitles: exception: " + e );
         }
     };
     this.SetTeletextFullscreen = function( fullscreen )
@@ -486,11 +486,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetTeletextFullscreen( fullscreen );
             }
-            DebugLog( "VideoDisplayProxyClass.SetTeletextFullscreen( " + fullscreen + " )" );
+            logger.info( "VideoDisplayProxyClass.SetTeletextFullscreen( " + fullscreen + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetTeletextFullscreen: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetTeletextFullscreen: exception: " + e );
         }
     };
     this.SetOutputFmt = function( format )
@@ -501,11 +501,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetOutputFmt( format );
             }
-            DebugLog( "VideoDisplayProxyClass.SetOutputFmt( " + format + " )" );
+            logger.info( "VideoDisplayProxyClass.SetOutputFmt( " + format + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetOutputFmt: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetOutputFmt: exception: " + e );
         }
     };
     this.SetAspect = function( aspect )
@@ -516,11 +516,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAspect( aspect );
             }
-            DebugLog( "VideoDisplayProxyClass.SetAspect( " + aspect + " )" );
+            logger.info( "VideoDisplayProxyClass.SetAspect( " + aspect + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetAspect: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetAspect: exception: " + e );
         }
     };
     this.SetOutputResolution = function( resolution )
@@ -531,11 +531,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetOutputResolution( resolution );
             }
-            DebugLog( "VideoDisplayProxyClass.SetOutputResolution( " + resolution + " )" );
+            logger.info( "VideoDisplayProxyClass.SetOutputResolution( " + resolution + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetOutputResolution: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetOutputResolution: exception: " + e );
         }
     };
     this.SetPreferredHDRes = function( resolution )
@@ -546,11 +546,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetPreferredHDRes( resolution );
             }
-            DebugLog( "VideoDisplayProxyClass.SetPreferredHDRes( " + resolution + " )" );
+            logger.info( "VideoDisplayProxyClass.SetPreferredHDRes( " + resolution + " )" );
         }
         catch ( e )
         {
-            DebugLog( "VideoDisplayProxyClass.SetPreferredHDRes: exception: " + e );
+            logger.error( "VideoDisplayProxyClass.SetPreferredHDRes: exception: " + e );
         }
     };
 }
@@ -565,11 +565,11 @@ function BrowserProxyClass()
             {
                 window.Browser.SetToolbarState( state );
             }
-            DebugLog( "BrowserProxyClass.SetToolbarState( " + state + " )" );
+            logger.info( "BrowserProxyClass.SetToolbarState( " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "BrowserProxyClass.SetToolbarState: exception: " + e );
+            logger.error( "BrowserProxyClass.SetToolbarState: exception: " + e );
         }
     };
     this.FrameLoadResetsState = function( state )
@@ -580,11 +580,11 @@ function BrowserProxyClass()
             {
                 window.Browser.FrameLoadResetsState( state );
             }
-            DebugLog( "BrowserProxyClass.FrameLoadResetsState( " + state + " )" );
+            logger.info( "BrowserProxyClass.FrameLoadResetsState( " + state + " )" );
         }
         catch ( e )
         {
-            DebugLog( "BrowserProxyClass.FrameLoadResetsState: exception: " + e );
+            logger.error( "BrowserProxyClass.FrameLoadResetsState: exception: " + e );
         }
     };
     this.Lower = function()
@@ -595,11 +595,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Lower();
             }
-            DebugLog( "BrowserProxyClass.Lower()" );
+            logger.info( "BrowserProxyClass.Lower()" );
         }
         catch ( e )
         {
-            DebugLog( "BrowserProxyClass.Lower: exception: " + e );
+            logger.error( "BrowserProxyClass.Lower: exception: " + e );
         }
     };
     this.Raise = function()
@@ -610,11 +610,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Raise();
             }
-            DebugLog( "BrowserProxyClass.Raise()" );
+            logger.info( "BrowserProxyClass.Raise()" );
         }
         catch ( e )
         {
-            DebugLog( "BrowserProxyClass.Raise: exception: " + e );
+            logger.error( "BrowserProxyClass.Raise: exception: " + e );
         }
     };
     this.Action = function( action )
@@ -625,11 +625,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Action( action );
             }
-            DebugLog( "BrowserProxyClass.Action( " + action + " )" );
+            logger.info( "BrowserProxyClass.Action( " + action + " )" );
         }
         catch ( e )
         {
-            DebugLog( "BrowserProxyClass.Action: exception: " + e );
+            logger.error( "BrowserProxyClass.Action: exception: " + e );
         }
     };
 }
@@ -655,13 +655,13 @@ function AVMediaProxyClass()
                 }
                 catch ( e )
                 {
-                    DebugLog( "AVMediaProxyClass.onEvent: exception: " + e );
+                    logger.error( "AVMediaProxyClass.onEvent: exception: " + e );
                 }
             }
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass: exception: " + e );
+            logger.error( "AVMediaProxyClass: exception: " + e );
         }
     }
 
@@ -673,11 +673,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Kill();
             }
-            DebugLog( "AVMediaProxyClass.Kill()" );
+            logger.info( "AVMediaProxyClass.Kill()" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.Kill: exception: " + e );
+            logger.error( "AVMediaProxyClass.Kill: exception: " + e );
         }
     };
     this.Play = function( url )
@@ -688,11 +688,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Play( url );
             }
-            DebugLog( "AVMediaProxyClass.Play( " + url + " )" );
+            logger.info( "AVMediaProxyClass.Play( " + url + " )" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.Play: exception: " + e );
+            logger.error( "AVMediaProxyClass.Play: exception: " + e );
         }
     };
     this.Pause = function()
@@ -703,11 +703,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Pause();
             }
-            DebugLog( "AVMediaProxyClass.Play()" );
+            logger.info( "AVMediaProxyClass.Play()" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.Play: exception: " + e );
+            logger.error( "AVMediaProxyClass.Play: exception: " + e );
         }
     };
     this.Continue = function()
@@ -718,11 +718,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Continue();
             }
-            DebugLog( "AVMediaProxyClass.Continue()" );
+            logger.info( "AVMediaProxyClass.Continue()" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.Continue: exception: " + e );
+            logger.error( "AVMediaProxyClass.Continue: exception: " + e );
         }
     };
     this.GetMSecPosition = function()
@@ -734,11 +734,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.GetMSecPosition();
             }
-//            DebugLog( "AVMediaProxyClass.GetMSecPosition() = " + retval );
+//            logger.info( "AVMediaProxyClass.GetMSecPosition() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.GetMSecPosition: exception: " + e );
+            logger.error( "AVMediaProxyClass.GetMSecPosition: exception: " + e );
         }
         return retval;
     };
@@ -751,11 +751,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.SetMSecPosition( pos );
             }
-            DebugLog( "AVMediaProxyClass.SetMSecPosition( " + pos + " ) = " + retval );
+            logger.info( "AVMediaProxyClass.SetMSecPosition( " + pos + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.SetMSecPosition: exception: " + e );
+            logger.error( "AVMediaProxyClass.SetMSecPosition: exception: " + e );
         }
         return retval;
     };
@@ -767,11 +767,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetSpeed( speed );
             }
-            DebugLog( "AVMediaProxyClass.SetSpeed( " + speed + " )" );
+            logger.info( "AVMediaProxyClass.SetSpeed( " + speed + " )" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.SetSpeed: exception: " + e );
+            logger.error( "AVMediaProxyClass.SetSpeed: exception: " + e );
         }
     };
     this.GetCurrentSpeed = function()
@@ -783,11 +783,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.GetCurrentSpeed();
             }
-            DebugLog( "AVMediaProxyClass.GetCurrentSpeed() = " + retval );
+            logger.info( "AVMediaProxyClass.GetCurrentSpeed() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.GetCurrentSpeed: exception: " + e );
+            logger.error( "AVMediaProxyClass.GetCurrentSpeed: exception: " + e );
         }
         return retval;
     };
@@ -799,11 +799,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetAudioPID( pid );
             }
-            DebugLog( "AVMediaProxyClass.SetAudioPID( " + pid + " )" );
+            logger.info( "AVMediaProxyClass.SetAudioPID( " + pid + " )" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.SetAudioPID: exception: " + e );
+            logger.error( "AVMediaProxyClass.SetAudioPID: exception: " + e );
         }
     };
     this.SetPrimarySubtitleLanguage = function( lang, bb )
@@ -814,11 +814,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetPrimarySubtitleLanguage( lang, bb );
             }
-            DebugLog( "AVMediaProxyClass.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" );
+            logger.info( "AVMediaProxyClass.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" );
         }
         catch ( e )
         {
-            DebugLog( "AVMediaProxyClass.SetPrimarySubtitleLanguage: exception: " + e );
+            logger.error( "AVMediaProxyClass.SetPrimarySubtitleLanguage: exception: " + e );
         }
     };
 }
@@ -834,11 +834,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetPltInfo();
             }
-            DebugLog( "PVRProxyClass.GetPltInfo() = " + retval );
+            logger.info( "PVRProxyClass.GetPltInfo() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetPltInfo: exception: " + e );
+            logger.error( "PVRProxyClass.GetPltInfo: exception: " + e );
         }
         return retval;
     };
@@ -851,11 +851,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetStorageInfo();
             }
-            DebugLog( "PVRProxyClass.GetStorageInfo() = " + retval );
+            logger.info( "PVRProxyClass.GetStorageInfo() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetStorageInfo: exception: " + e );
+            logger.error( "PVRProxyClass.GetStorageInfo: exception: " + e );
         }
         return retval;
     };
@@ -868,11 +868,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetDeviceInfo();
             }
-            DebugLog( "PVRProxyClass.GetDeviceInfo() = " + retval );
+            logger.info( "PVRProxyClass.GetDeviceInfo() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetDeviceInfo: exception: " + e );
+            logger.error( "PVRProxyClass.GetDeviceInfo: exception: " + e );
         }
         return retval;
     };
@@ -885,11 +885,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetDeviceStatus( deviceId );
             }
-            DebugLog( "PVRProxyClass.GetDeviceStatus( " + deviceId + " ) = " + retval );
+            logger.info( "PVRProxyClass.GetDeviceStatus( " + deviceId + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetDeviceStatus: exception: " + e );
+            logger.error( "PVRProxyClass.GetDeviceStatus: exception: " + e );
         }
         return retval;
     };
@@ -902,11 +902,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetAssetById( assetId );
             }
-//            DebugLog( "PVRProxyClass.GetAssetById( " + assetId + " ) = " + retval );
+//            logger.info( "PVRProxyClass.GetAssetById( " + assetId + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetAssetById: exception: " + e );
+            logger.error( "PVRProxyClass.GetAssetById: exception: " + e );
         }
         return retval;
     };
@@ -919,11 +919,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetAssetIdList();
             }
-//            DebugLog( "PVRProxyClass.GetAssetIdList() = " + retval );
+//            logger.info( "PVRProxyClass.GetAssetIdList() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetAssetIdList: exception: " + e );
+            logger.error( "PVRProxyClass.GetAssetIdList: exception: " + e );
         }
         return retval;
     };
@@ -936,11 +936,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetScheduleList();
             }
-//            DebugLog( "PVRProxyClass.GetScheduleList() = " + retval );
+//            logger.info( "PVRProxyClass.GetScheduleList() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.GetScheduleList: exception: " + e );
+            logger.error( "PVRProxyClass.GetScheduleList: exception: " + e );
         }
         return retval;
     };
@@ -952,11 +952,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.DeleteAsset( aa );
             }
-            DebugLog( "PVRProxyClass.DeleteAsset( " + aa + " ) = " + retval );
+            logger.info( "PVRProxyClass.DeleteAsset( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.DeleteAsset: exception: " + e );
+            logger.error( "PVRProxyClass.DeleteAsset: exception: " + e );
         }
         return retval;
     };
@@ -969,11 +969,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.AddSchedule( aa, bb, ff, gg, dd );
             }
-            DebugLog( "PVRProxyClass.AddSchedule( " + aa + ", " + bb + ", " + ff + ", " + gg + ", " + dd + " ) = " + retval );
+            logger.info( "PVRProxyClass.AddSchedule( " + aa + ", " + bb + ", " + ff + ", " + gg + ", " + dd + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.AddSchedule: exception: " + e );
+            logger.error( "PVRProxyClass.AddSchedule: exception: " + e );
         }
         return retval;
     };
@@ -986,11 +986,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.DeleteSchedule();
             }
-            DebugLog( "PVRProxyClass.DeleteSchedule() = " + retval );
+            logger.info( "PVRProxyClass.DeleteSchedule() = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.DeleteSchedule: exception: " + e );
+            logger.error( "PVRProxyClass.DeleteSchedule: exception: " + e );
         }
         return retval;
     };
@@ -1003,11 +1003,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.RequestDeviceReformat( aa );
             }
-            DebugLog( "PVRProxyClass.RequestDeviceReformat( " + aa + " ) = " + retval );
+            logger.info( "PVRProxyClass.RequestDeviceReformat( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.RequestDeviceReformat: exception: " + e );
+            logger.error( "PVRProxyClass.RequestDeviceReformat: exception: " + e );
         }
         return retval;
     };
@@ -1020,11 +1020,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.FormatDevice( aa );
             }
-            DebugLog( "PVRProxyClass.FormatDevice( " + aa + " ) = " + retval );
+            logger.info( "PVRProxyClass.FormatDevice( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.FormatDevice: exception: " + e );
+            logger.error( "PVRProxyClass.FormatDevice: exception: " + e );
         }
         return retval;
     };
@@ -1037,11 +1037,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.StopRecording( aa );
             }
-            DebugLog( "PVRProxyClass.StopRecording( " + aa + " ) = " + retval );
+            logger.info( "PVRProxyClass.StopRecording( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            DebugLog( "PVRProxyClass.StopRecording: exception: " + e );
+            logger.error( "PVRProxyClass.StopRecording: exception: " + e );
         }
         return retval;
     };
@@ -1057,5 +1057,5 @@ try
 }
 catch ( e )
 {
-    DebugLog( e );
+    logger.error( e );
 }
