@@ -225,7 +225,7 @@ class Scheduler( threading.Thread ):
             for untouchedTimer in untouchedTimers:
                 timer = self._timers[untouchedTimer]
                 self._logger.warning( "Removing timer with id=%d (recording @ %s from %s with title %s." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName, timer["recording"].title ) )
-                timer.cancel()
+                timer["timer"].cancel()
                 del self._timers[untouchedTimer]
             
     def _handleSchedule( self, conn, schedule, newRecordings ):
