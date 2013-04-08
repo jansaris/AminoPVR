@@ -138,6 +138,7 @@ class STBAPI( API ):
                     channelId = channelOld.id
                 channelNew = self._getChannelFromJson( channel, channelId )
                 newChannels.append( channelNew )
+                self._logger.info( "setChannelList: processing channel: %s" % ( channelNew.dump() ) )
                 if not channelNew:
                     self._logger.error( "setChannelList: unable to create channel for channel=%s", ( channel ) )
                 elif not channelOld:
@@ -147,7 +148,7 @@ class STBAPI( API ):
                     self._logger.info( "setChannelList: updating channel: %i - %s" % ( channelNew.number, channelNew.name ) )
                     channelNew.addToDb( conn )
 
-            currentChannels = PendingChannel.getAllFromDb( conn )
+            currentChannels = PendingChannel.getAllFromDb( conn, includeRadio=True, tv=True )
 
             removedChannels = set( currentChannels ).difference( set( newChannels ) )
             for channel in removedChannels:
@@ -166,7 +167,7 @@ class STBAPI( API ):
         self._logger.debug( "postLog( %s )" % ( logData ) )
         logs = json.loads( logData )
         for log in logs:
-            self._logger.debug( "[%d] %d %s" % ( log["level"], log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            self._logger.info( "[%d] %d %s" % ( log["level"], log["timestamp"], urllib.unquote( log["log_text"] ) ) )
         return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )
 
     @cherrypy.expose
