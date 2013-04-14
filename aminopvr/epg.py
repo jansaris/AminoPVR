@@ -58,7 +58,7 @@ class EpgId( object ):
     def getAllFromDb( cls, conn, includeRadio=False ):
         epgids = []
         if conn:
-            rows = conn.execute( "SELECT * FROM epg_ids" ).fetchall()
+            rows = conn.execute( "SELECT * FROM epg_ids" )
             for row in rows:
                 channels = channel.Channel.getAllByEpgIdFromDb( conn, row["epg_id"], includeRadio=includeRadio )
                 if len( channels ) > 0:
@@ -76,9 +76,9 @@ class EpgId( object ):
     def getFromDb( cls, conn, epgID ):
         epgid = None
         if conn:
-            row = conn.execute( "SELECT * FROM epg_ids WHERE epg_id=?", ( epgID, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM epg_ids WHERE epg_id=?", ( epgID, ) )
             if row:
-                epgid = cls( row["epg_id"], row["strategy"] )
+                epgid = cls( row[0]["epg_id"], row[0]["strategy"] )
 
         return epgid
 
@@ -127,9 +127,9 @@ class Genre( object ):
     def getFromDb( cls, conn, id ):
         genre = None
         if conn:
-            row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) )
             if row:
-                genre = cls( row["id"], row["genre"] )
+                genre = cls( row[0]["id"], row[0]["genre"] )
 
         return genre
 
@@ -137,7 +137,7 @@ class Genre( object ):
     def getAllFromDb( cls, conn ):
         genres = []
         if conn:
-            rows = conn.execute( "SELECT * FROM genres" ).fetchall()
+            rows = conn.execute( "SELECT * FROM genres" )
             for row in rows:
                 genres.append( cls( row["id"], row["genre"] ) )
 
@@ -147,9 +147,9 @@ class Genre( object ):
     def getByGenreFromDb( cls, conn, genre ):
         dbGenre = None
         if conn:
-            row = conn.execute( "SELECT * FROM genres WHERE genre=?", ( genre, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM genres WHERE genre=?", ( genre, ) )
             if row:
-                dbGenre = cls( row["id"], row["genre"] )
+                dbGenre = cls( row[0]["id"], row[0]["genre"] )
 
         return dbGenre
 
@@ -193,9 +193,9 @@ class Person( object ):
     def getFromDb( cls, conn, id ):
         person = None
         if conn:
-            row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) )
             if row:
-                person = cls( row["id"], row["person"] )
+                person = cls( row[0]["id"], row[0]["person"] )
 
         return person
 
@@ -203,7 +203,7 @@ class Person( object ):
     def getAllFromDb( cls, conn ):
         persons = []
         if conn:
-            rows = conn.execute( "SELECT * FROM persons" ).fetchall()
+            rows = conn.execute( "SELECT * FROM persons" )
             for row in rows:
                 persons.append( cls( row["id"], row["person"] ) )
 
@@ -213,9 +213,9 @@ class Person( object ):
     def getByPersonFromDB( cls, conn, person ):
         dbPerson = None
         if conn:
-            row = conn.execute( "SELECT * FROM persons WHERE person=?", ( person, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM persons WHERE person=?", ( person, ) )
             if row:
-                dbPerson = cls( row["id"], row["person"] )
+                dbPerson = cls( row[0]["id"], row[0]["person"] )
 
         return dbPerson
 
@@ -291,14 +291,14 @@ class ProgramGenreAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programGenre = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND genre_id=?" % ( cls._tableName ), ( programId, genreId ) ).fetchone()
+            row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND genre_id=?" % ( cls._tableName ), ( programId, genreId ) )
             if row:
-                genre = Genre.getFromDb( conn, row["genre_id"] )
+                genre = Genre.getFromDb( conn, row[0]["genre_id"] )
                 if genre:
-                    programGenre = cls( row["program_id"], row["genre_id"], genre )
+                    programGenre = cls( row[0]["program_id"], row[0]["genre_id"], genre )
                 else:
-                    cls._logger.warning( "ProgramGenreAbstract.getFromDb: Genre with id %s not in database." % ( row["genre_id"] ) )
-                    programGenre = cls( row["program_id"], row["genre_id"] )
+                    cls._logger.warning( "ProgramGenreAbstract.getFromDb: Genre with id %s not in database." % ( row[0]["genre_id"] ) )
+                    programGenre = cls( row[0]["program_id"], row[0]["genre_id"] )
 
         return programGenre
 
@@ -307,7 +307,7 @@ class ProgramGenreAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programGenres = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
             for row in rows:
                 genre = Genre.getFromDb( conn, row["genre_id"] )
                 if genre:
@@ -405,14 +405,14 @@ class ProgramPersonAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programPerson = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND person_id=?" % ( cls._tableName ), ( programId, personId ) ).fetchone()
+            row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND person_id=?" % ( cls._tableName ), ( programId, personId ) )
             if row:
-                person = Person.getFromDb( conn, row["person_id"] )
+                person = Person.getFromDb( conn, row[0]["person_id"] )
                 if person:
-                    programPerson = cls( row["program_id"], row["person_id"], person )
+                    programPerson = cls( row[0]["program_id"], row[0]["person_id"], person )
                 else:
-                    cls._logger.warning( "ProgramPersonAbstract.getFromDb: Person with id %s not in database." % ( row["person_id"] ) )
-                    programPerson = cls( row["program_id"], row["person_id"] )
+                    cls._logger.warning( "ProgramPersonAbstract.getFromDb: Person with id %s not in database." % ( row[0]["person_id"] ) )
+                    programPerson = cls( row[0]["program_id"], row[0]["person_id"] )
 
         return programPerson
 
@@ -421,7 +421,7 @@ class ProgramPersonAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programPersons = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
             for row in rows:
                 person = Person.getFromDb( conn, row["person_id"] )
                 if person:
@@ -682,9 +682,9 @@ class ProgramAbstract( object ):
         if conn:
             rows = None
             if startTime == None:
-                rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ) ).fetchall()
+                rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ) )
             else:
-                rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) ).fetchall()
+                rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) )
             for row in rows:
                 program = cls._createProgramFromDbDict( conn, row )
                 programs.append( program )
@@ -699,14 +699,14 @@ class ProgramAbstract( object ):
             rows = None
             if startTime == None:
                 if endTime == None:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) ).fetchall()
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) )
                 else:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) ).fetchall()
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) )
             else:
                 if endTime == None:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) ).fetchall()
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) )
                 else:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime ) ).fetchall()
+                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime ) )
             for row in rows:
                 program = cls._createProgramFromDbDict( conn, row )
                 programs.append( program )
@@ -718,8 +718,9 @@ class ProgramAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         program = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) ).fetchone()
-            program = cls._createProgramFromDbDict( conn, row )
+            row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) )
+            if row:
+                program = cls._createProgramFromDbDict( conn, row[0] )
 
         return program
 
@@ -752,7 +753,7 @@ class ProgramAbstract( object ):
 
             where.append( "(" + " OR ".join( search ) + ")" )
             query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY start_time ASC"
-            rows = conn.execute( query, whereValue ).fetchall()
+            rows = conn.execute( query, whereValue )
             for row in rows:
                 program = cls._createProgramFromDbDict( conn, row )
                 programs.append( program )
@@ -793,8 +794,9 @@ class EpgProgram( ProgramAbstract ):
     def getByOriginalIdFromDb( cls, conn, originalId ):
         program = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE original_id=?" % ( cls._tableName ), ( originalId, ) ).fetchone()
-            program = cls._createProgramFromDbDict( conn, row )
+            row = conn.execute( "SELECT * FROM %s WHERE original_id=?" % ( cls._tableName ), ( originalId, ) )
+            if row:
+                program = cls._createProgramFromDbDict( conn, row[0] )
 
         return program
 

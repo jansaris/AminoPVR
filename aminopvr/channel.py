@@ -118,7 +118,7 @@ class ChannelUrlAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         urls = {}
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE channel_id=?" % ( cls._tableName ), ( channelId, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE channel_id=?" % ( cls._tableName ), ( channelId, ) )
             for row in rows:
                 urls[unicode( row["type"] )] = cls._createChannelUrlFromDbDict( row )
 
@@ -129,8 +129,9 @@ class ChannelUrlAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         url = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE channel_id=? AND type=?" % ( cls._tableName ), ( channelId, channelType ) ).fetchone()
-            url = cls._createChannelUrlFromDbDict( row )
+            row = conn.execute( "SELECT * FROM %s WHERE channel_id=? AND type=?" % ( cls._tableName ), ( channelId, channelType ) )
+            if row:
+                url = cls._createChannelUrlFromDbDict( row[0] )
 
         return url
 
@@ -138,9 +139,9 @@ class ChannelUrlAbstract( object ):
     def getChannelByIpPortFromDb( cls, conn, ip, port ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         if conn:
-            row = conn.execute( "SELECT channel_id FROM %s WHERE ip=? AND port=?" % ( cls._tableName ), ( ip, port ) ).fetchone()
+            row = conn.execute( "SELECT channel_id FROM %s WHERE ip=? AND port=?" % ( cls._tableName ), ( ip, port ) )
             if row:
-                return row["channel_id"]
+                return row[0]["channel_id"]
         return None
 
     @classmethod
@@ -348,7 +349,7 @@ class ChannelAbstract( object ):
                 whereCondition.append( "inactive=0" )
             if not includeRadio:
                 whereCondition.append( "radio=0" )
-            rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ), ( epgId, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ), ( epgId, ) )
             for row in rows:
                 channel = cls._createChannelFromDbDict( conn, row )
                 channels.append( channel )
@@ -369,9 +370,9 @@ class ChannelAbstract( object ):
             if not tv and includeRadio:
                 whereCondition.append( "radio=1" )
             if len( whereCondition ) > 0:
-                rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) ).fetchall()
+                rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) )
             else:
-                rows = conn.execute( "SELECT * FROM %s ORDER BY number ASC" % ( cls._tableName ) ).fetchall()
+                rows = conn.execute( "SELECT * FROM %s ORDER BY number ASC" % ( cls._tableName ) )
             for row in rows:
                 channel = cls._createChannelFromDbDict( conn, row )
                 channels.append( channel )
@@ -390,9 +391,9 @@ class ChannelAbstract( object ):
             if not includeRadio:
                 whereCondition.append( "radio=0" )
             if len( whereCondition ) > 0:
-                rows = conn.execute( "SELECT DISTINCT epg_id FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) ).fetchall()
+                rows = conn.execute( "SELECT DISTINCT epg_id FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) )
             else:
-                rows = conn.execute( "SELECT DISTINCT epg_id FROM %s ORDER BY number ASC" % ( cls._tableName ) ).fetchall()
+                rows = conn.execute( "SELECT DISTINCT epg_id FROM %s ORDER BY number ASC" % ( cls._tableName ) )
             for row in rows:
                 epgIds.append( row["epg_id"] )
 
@@ -403,8 +404,9 @@ class ChannelAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         channel = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) ).fetchone()
-            channel = cls._createChannelFromDbDict( conn, row )
+            row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) )
+            if row:
+                channel = cls._createChannelFromDbDict( conn, row[0] )
         return channel
 
     @classmethod
@@ -412,8 +414,9 @@ class ChannelAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         channel = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE number=?" % ( cls._tableName ), ( number, ) ).fetchone()
-            channel = cls._createChannelFromDbDict( conn, row )
+            row = conn.execute( "SELECT * FROM %s WHERE number=?" % ( cls._tableName ), ( number, ) )
+            if row:
+                channel = cls._createChannelFromDbDict( conn, row[0] )
         return channel
 
     @classmethod
@@ -428,10 +431,10 @@ class ChannelAbstract( object ):
             if not includeRadio:
                 whereCondition.append( "radio=0" )
             if len( whereCondition ) > 0:
-                rows = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s WHERE %s" % ( cls._tableName, " AND ".join( whereCondition ) ) ).fetchone()
+                row = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s WHERE %s" % ( cls._tableName, " AND ".join( whereCondition ) ) )
             else:
-                rows = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s" % ( cls._tableName ) ).fetchone()
-            numChannels = rows["num_channels"]
+                row = conn.execute( "SELECT COUNT(*) AS num_channels FROM %s" % ( cls._tableName ) )
+            numChannels = row[0]["num_channels"]
         return numChannels
 
     @classmethod
@@ -585,7 +588,7 @@ def main():
     conn = DBConnection( "aminopvr.db" )
 
     if conn:
-        rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] ).fetchall()
+        rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] )
         for row in rows:
             sys.stderr.write( "%s\n" % ( row["name"]) )
 

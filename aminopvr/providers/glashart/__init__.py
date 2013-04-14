@@ -123,25 +123,25 @@ class ContentProvider( threading.Thread ):
                     conn = DBConnection()
 
                     if conn:
-                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "index.xhtml", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "index.xhtml", ) )
                         if row:
                             conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( indexContent, "index.xhtml" ) )
                         else:
                             conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "index.xhtml", indexContent ) )
 
-                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "code.js", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "code.js", ) )
                         if row:
                             conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( codeJsContent, "code.js" ) )
                         else:
                             conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "code.js", codeJsContent ) )
 
-                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "style.css", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "style.css", ) )
                         if row:
                             conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( styleCssContent, "style.css" ) )
                         else:
                             conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "style.css", styleCssContent ) )
 
-                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "api.js", ) ).fetchone()
+                        row = conn.execute( "SELECT * FROM glashart_pages WHERE page=?", ( "api.js", ) )
                         if row:
                             conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( apiJsContent, "api.js" ) )
                         else:

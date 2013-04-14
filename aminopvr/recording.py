@@ -209,7 +209,7 @@ class RecordingAbstract( object ):
             if finishedOnly:
                 where = " WHERE status = %d" % ( RecordingState.RECORDING_FINISHED )
 
-            rows = conn.execute( "SELECT * FROM %s%s ORDER BY %s%s" % ( cls._tableName, where, sort, limit ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s%s ORDER BY %s%s" % ( cls._tableName, where, sort, limit ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -221,7 +221,7 @@ class RecordingAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE schedule_id = ? ORDER BY start_time ASC" % ( cls._tableName ), ( scheduleId, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE schedule_id = ? ORDER BY start_time ASC" % ( cls._tableName ), ( scheduleId, ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -234,7 +234,7 @@ class RecordingAbstract( object ):
         recordings = []
         title      = '%' + title + '%'
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( title, ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( title, ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -246,7 +246,7 @@ class RecordingAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE status > ? AND status < ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.STATUS_UNKNOWN, RecordingState.RECORDING_FINISHED ) ).fetchall()
+            rows = conn.execute( "SELECT * FROM %s WHERE status > ? AND status < ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.STATUS_UNKNOWN, RecordingState.RECORDING_FINISHED ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -258,8 +258,9 @@ class RecordingAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recording = None
         if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE id = ?" % ( cls._tableName ), ( id, ) ).fetchone()
-            recording = cls._createRecordingFromDbDict( conn, row )
+            row = conn.execute( "SELECT * FROM %s WHERE id = ?" % ( cls._tableName ), ( id, ) )
+            if row:
+                recording = cls._createRecordingFromDbDict( conn, row[0] )
 
         return recording
 

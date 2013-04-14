@@ -49,7 +49,7 @@ class PageSymbol( object ):
     def getAllFromDb( cls, conn ):
         symbols = {}
         if conn:
-            rows = conn.execute( "SELECT * FROM glashart_page_symbols" ).fetchall()
+            rows = conn.execute( "SELECT * FROM glashart_page_symbols" )
             for row in rows:
                 symbols[unicode( row["key"] )] = PageSymbol( row["key"], row["value"] )
 
@@ -59,9 +59,9 @@ class PageSymbol( object ):
     def getFromDb( cls, conn, key ):
         symbol = None
         if conn:
-            row = conn.execute( "SELECT * FROM glashart_page_symbols WHERE key=?", ( key, ) ).fetchone()
+            row = conn.execute( "SELECT * FROM glashart_page_symbols WHERE key=?", ( key, ) )
             if row:
-                symbol = PageSymbol( row["key"], row["value"] )
+                symbol = PageSymbol( row[0]["key"], row[0]["value"] )
 
         return symbol
 

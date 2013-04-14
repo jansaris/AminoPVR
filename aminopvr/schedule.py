@@ -183,9 +183,9 @@ class Schedule( object ):
         if conn:
             rows = []
             if includeInactive:
-                rows = conn.execute( "SELECT * FROM schedules" ).fetchall()
+                rows = conn.execute( "SELECT * FROM schedules" )
             else:
-                rows = conn.execute( "SELECT * FROM schedules WHERE inactive = 0" ).fetchall()
+                rows = conn.execute( "SELECT * FROM schedules WHERE inactive = 0" )
             for row in rows:
                 schedule = cls._createScheduleFromDbDict( row )
                 schedules.append( schedule )
@@ -196,8 +196,9 @@ class Schedule( object ):
     def getFromDb( cls, conn, id ):
         schedule = None
         if conn:
-            row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) ).fetchone()
-            schedule = cls._createScheduleFromDbDict( row )
+            row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) )
+            if row:
+                schedule = cls._createScheduleFromDbDict( row[0] )
 
         return schedule
 
@@ -205,8 +206,9 @@ class Schedule( object ):
     def getByTitleAndChannelIdFromDb( cls, conn, title, channelId ):
         schedule = None
         if conn:
-            row = conn.execute( "SELECT * FROM schedules WHERE title = ? AND channel_id = ?", ( title, channelId ) ).fetchone()
-            schedule = cls._createScheduleFromDbDict( row )
+            row = conn.execute( "SELECT * FROM schedules WHERE title = ? AND channel_id = ?", ( title, channelId ) )
+            if row:
+                schedule = cls._createScheduleFromDbDict( row[0] )
         return schedule
 
     @classmethod

@@ -132,7 +132,7 @@ class WebInterface( aminopvr.wi.WebInterface ):
         try:
             result = conn.execute( "SELECT content FROM glashart_pages WHERE page=?", [filename] )
             if result:
-                row = result.fetchone()
+                row = result[0]
                 if contentType:
                     cherrypy.response.headers["Content-Type"] = contentType
                 return row["content"]

@@ -57,6 +57,7 @@ class DBConnection:
                         sqlResult = self._cursor.execute( query, args )
                     self._conn.commit()
                     if query.lower().startswith( "select" ):
+                        sqlResult = sqlResult.fetchall()
                         ResourceMonitor.reportDb( "select", 1, self._cursor.rowcount )
                     elif query.lower().startswith( "update" ):
                         ResourceMonitor.reportDb( "update", 1, self._cursor.rowcount )
