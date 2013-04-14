@@ -142,7 +142,7 @@ class ResourceMonitor( object ):
 
         self._logger.warning( "Starting ResourceMonitor timer @ %s with interval %s" % ( grabTime, grabInterval ) )
 
-        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=60.0, recurrenceInterval=grabInterval )
+        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
     def stop( self ):
         self._logger.warning( "Stopping ResourceMonitor" )

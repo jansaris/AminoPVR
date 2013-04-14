@@ -75,11 +75,11 @@ function ASTBClass()
     this.GetHardwareVersion = function() { logger.info( "ASTBClass.GetHardwareVersion()" ); };
     this.GetSoftwareVersion = function()
     {
-        return "0.18.6-Ax3x-opera9";
+        return "0.18.7a3-Ax3x-opera10";
     };
     this.GetSystemInfo = function()
     {
-        return "<xml><aminoVersion>0.18.6-Ax3x-opera9</aminoVersion><aminoCVersion>0.18.6-Ax3x-opera9</aminoCVersion><oemVersion>zt6-ax3x-0.18.6.1</oemVersion></xml>";
+        return "<xml><aminoVersion>0.18.7a3-Ax3x-opera10</aminoVersion><aminoCVersion>0.18.7-Ax3x-opera10</aminoCVersion><oemVersion>zt6-ax3x-0.18.7a3.0</oemVersion></xml>";
     };
     this.GetSerialNumber = function() { logger.info( "ASTBClass.GetSerialNumber()" ); };
 }

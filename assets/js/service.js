@@ -16,9 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var _remoteServiceClassInst = null;
-var _loggerClassInst        = null;
-
 function LoggerClass()
 {
     this.DEBUG    = 0;
@@ -27,39 +24,42 @@ function LoggerClass()
     this.ERROR    = 3;
     this.CRITICAL = 4;
 
-    this.SEND_DEBUG_LOG_INTERVAL  = 5000;
-    this.SEND_DEBUG_LOG_LIMIT     = 10;
-    this.ONSCREEN_DEBUG_LOG_LIMIT = 20;
+    this._SEND_DEBUG_LOG_INTERVAL  = 5000;
+    this._SEND_DEBUG_LOG_LIMIT     = 10;
+    this._ONSCREEN_DEBUG_LOG_LIMIT = 20;
 
-    this.debugLog         = [];
-    this.debugDiv         = null;
-    this.remoteDebug      = false;
-    this.removeLogTimeout = null;
-    this.remoteLogRequest = null;
+    this._debugLog         = [];
+    this._debugDiv         = null;
+    this._remoteDebug      = false;
+    this._removeLogTimeout = null;
+    this._remoteLogRequest = null;
 
     this.init = function()
     {
         try
         {
-            this.debugDiv = document.createElement( 'div' );
-            this.debugDiv.setAttribute( 'id', 'debugLog' );
+            this._debugDiv = document.createElement( 'div' );
+            this._debugDiv.setAttribute( 'id', 'debugLog' );
 
-            this.debugDiv.style.width      = 710;
-            this.debugDiv.style.height     = 350;
-            this.debugDiv.style.position   = "absolute";
-            this.debugDiv.style.left       = 5;
-            this.debugDiv.style.top        = 5;
-            this.debugDiv.style.background = "#00000C";
-            this.debugDiv.style.border     = "1px solid #000000";
-            this.debugDiv.style.fontSize   = "12px";
-            this.debugDiv.style.display    = "none";
-            this.debugDiv.style.opacity    = 0.8;
+            this._debugDiv.style.width      = 710;
+            this._debugDiv.style.height     = 350;
+            this._debugDiv.style.position   = "absolute";
+            this._debugDiv.style.left       = 5;
+            this._debugDiv.style.top        = 5;
+            this._debugDiv.style.background = "#00000C";
+            this._debugDiv.style.border     = "1px solid #000000";
+            this._debugDiv.style.fontSize   = "12px";
+            this._debugDiv.style.display    = "none";
+            this._debugDiv.style.opacity    = 0.8;
 
-            document.body.appendChild( this.debugDiv );
+            document.body.appendChild( this._debugDiv );
         }
         catch ( e )
         {
-            stbApi.DebugFunction( "LoggerClass.init: exception: " + e );
+            if ( window.console )
+            {
+                window.console.log( "LoggerClass.init: exception: " + e );
+            }
         }
     };
 
@@ -88,32 +88,36 @@ function LoggerClass()
         this._print( this.CRITICAL, text );
     };
 
+    this.getRemoteDebugEnabled = function()
+    {
+        return this._remoteDebug;
+    }
+
     this.enableRemoteDebug = function( enable )
     {
-        this.remoteDebug = enable;
+        this._remoteDebug = enable;
 
         if ( enable )
         {
-            if ( (this.debugDiv != null) && (this.debugDiv !== undefined) )
+            if ( (this._debugDiv != null) && (this._debugDiv !== undefined) )
             {
-                if ( this.debugDiv.style.display == "block" )
+                if ( this._debugDiv.style.display == "block" )
                 {
                     this.info( "Disable Debug Logging." );
-                    this.debugDiv.style.display = "none";
+                    this._debugDiv.style.display = "none";
                 }
             }
 
-            _loggerClassInst = this;
-            this.remoteLogTimeout = window.setTimeout( function()
+            this._remoteLogTimeout = window.setTimeout( function()
             {
-                _loggerClassInst._sendDebugLog();
-            }, this.SEND_DEBUG_LOG_INTERVAL );
+                logger._sendDebugLog();
+            }, this._SEND_DEBUG_LOG_INTERVAL );
         }
         else
         {
-            if ( this.remoteLogTimeout )
+            if ( this._remoteLogTimeout )
             {
-                window.clearTimeout( this.remoteLogTimeout );
+                window.clearTimeout( this._remoteLogTimeout );
             }
         }
     };
@@ -122,22 +126,22 @@ function LoggerClass()
     {
         try
         {
-            if ( this.remoteDebug )
+            if ( this._remoteDebug )
             {
-                if ( this.debugLog.length > this.SEND_DEBUG_LOG_LIMIT )
+                if ( this._debugLog.length > this._SEND_DEBUG_LOG_LIMIT )
                 {
-                    if ( this.remoteLogTimeout )
+                    if ( this._remoteLogTimeout )
                     {
-                        window.clearTimeout( this.remoteLogTimeout );
+                        window.clearTimeout( this._remoteLogTimeout );
                     }
                     this._sendDebugLog();
                 }
             }
             else
             {
-                if ( this.debugLog.length >= this.ONSCREEN_DEBUG_LOG_LIMIT )
+                if ( this._debugLog.length >= this._ONSCREEN_DEBUG_LOG_LIMIT )
                 {
-                    this.debugLog.splice( 0, this.debugLog.length - (this.ONSCREEN_DEBUG_LOG_LIMIT - 1) );
+                    this._debugLog.splice( 0, this._debugLog.length - (this._ONSCREEN_DEBUG_LOG_LIMIT - 1) );
                 }
             }
 
@@ -147,84 +151,85 @@ function LoggerClass()
                               log_text:  text
                           };
 
-            this.debugLog.push( logItem );
+            this._debugLog.push( logItem );
 
-            if ( !this.remoteDebug )
+            if ( !this._remoteDebug )
             {
                 html = "";
 
-                for ( i = 0; i < this.debugLog.length; i++ )
+                for ( i = 0; i < this._debugLog.length; i++ )
                 {
-                    html += "[" + this.debugLog[i].level + "] " + this.debugLog[i].timestamp + ": " + this.debugLog[i].log_text + "<br\>";
+                    html += "[" + this._debugLog[i].level + "] " + this._debugLog[i].timestamp + ": " + this._debugLog[i].log_text + "<br\>";
                 }
 
-                if ( document.getElementById( 'debugLog' ) != null )
+                if ( (this._debugDiv != null) && (this._debugDiv !== undefined) )
                 {
-                    document.getElementById( 'debugLog' ).innerHTML = html;
+                    this._debugDiv.innerHTML = html;
                 }
             }
         }
         catch ( e )
         {
-//            if ( window.console )
-//            {
-//                window.console.log( "LoggerClass._print: exception: " + e );
-//                window.console.log( "[" + level + "] " + (new Date).getTime() + ": " + text )
-//            }
-            stbApi.debugFunction( "LoggerClass._print: exception: " + e );
-            stbApi.debugFunction( "[" + level + "] " + (new Date).getTime() + ": " + text );
+           if ( window.console )
+           {
+               window.console.log( "LoggerClass._print: exception: " + e );
+               window.console.log( "[" + level + "] " + (new Date).getTime() + ": " + text )
+           }
         }
     };
 
     this._sendDebugLog = function()
     {
-        if ( this.remoteDebug )
+        if ( this._remoteDebug )
         {
             try
             {
-                if ( this.debugLog.length > 0 )
+                if ( this._debugLog.length > 0 )
                 {
-                    debugLogText = "[";
-                    for ( i = 0; i < this.debugLog.length; i++ )
-                    {
-                        if ( i > 0 )
-                        {
-                            debugLogText += ",";
-                        }
-                        debugLogText += "{\"timestamp\":" + this.debugLog[i].timestamp + ",\"level\":" + this.debugLog[i].level + ",\"log_text\":\"" + encodeURIComponent( this.debugLog[i].log_text ) + "\"}";
-                    }
-                    debugLogText += "]";
-    
-                    this.debugLog.splice( 0, this.debugLog.length );
-    
-                    _loggerClassInst = this;
-                    this.remoteLogRequest = new XMLHttpRequest;
-                    this.remoteLogRequest.onreadystatechange = function()
+                    // debugLogText = "[";
+                    // for ( i = 0; i < this._debugLog.length; i++ )
+                    // {
+                        // if ( i > 0 )
+                        // {
+                            // debugLogText += ",";
+                        // }
+                        // debugLogText += "{\"timestamp\":" + this._debugLog[i].timestamp + ",\"level\":" + this._debugLog[i].level + ",\"log_text\":\"" + encodeURIComponent( this._debugLog[i].log_text ) + "\"}";
+                    // }
+                    // debugLogText += "]";
+
+                    debugLogText = Array2JSON( this._debugLog );
+
+                    this._debugLog.splice( 0, this._debugLog.length );
+
+                    this._remoteLogRequest = new XMLHttpRequest;
+                    this._remoteLogRequest.onreadystatechange = function()
                     {
                         if ( (this.readyState == 4) && (this.status == 200) )
                         {
-                            remoteLogTimeout = window.setTimeout( function()
+                            logger._remoteLogTimeout = window.setTimeout( function()
                             {
-                                _loggerClassInst._sendDebugLog();
-                            }, this.SEND_DEBUG_LOG_INTERVAL );
+                                logger._sendDebugLog();
+                            }, logger._SEND_DEBUG_LOG_INTERVAL );
                         }
                     };
-                    this.remoteLogRequest.open( "POST", "/aminopvr/api/stb/postLog", true );
-                    this.remoteLogRequest.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
-                    this.remoteLogRequest.send( "logData=" + encodeURIComponent( debugLogText ) );
+                    this._remoteLogRequest.open( "POST", "/aminopvr/api/stb/postLog", true );
+                    this._remoteLogRequest.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
+                    this._remoteLogRequest.send( "logData=" + encodeURIComponent( debugLogText ) );
                 }
                 else
                 {
-                    _loggerClassInst = this;
                     window.setTimeout( function()
                     {
-                        _loggerClassInst._sendDebugLog();
-                    }, this.SEND_DEBUG_LOG_INTERVAL );
+                        logger._sendDebugLog();
+                    }, logger._SEND_DEBUG_LOG_INTERVAL );
                 }
             }
             catch ( e )
             {
-                stbApi.debugFunction( "LoggerClass._sendDebugLog: exception: " + e );
+                if ( window.console )
+                {
+                    window.console.log( "LoggerClass._sendDebugLog: exception: " + e );
+                }
             }
         }
     };
@@ -232,23 +237,22 @@ function LoggerClass()
 
 function RemoteServiceClass()
 {
-    this.POLL_SHORT_INTERVAL = 100;
-    this.POLL_LONG_INTERVAL  = 5000;
+    this._POLL_SHORT_INTERVAL = 100;
+    this._POLL_LONG_INTERVAL  = 5000;
 
-    this.pollServiceActive = false;
+    this._pollServiceActive = false;
 
-    this.pollRequest = null;
-    this.statusRequest = null;
-    this.channelRequest = null;
+    this._pollRequest = null;
+    this._statusRequest = null;
+    this._channelRequest = null;
 
     this.init = function()
     {
         try
         {
-            _remoteServiceClassInst = this;
             window.addEventListener( "load", function()
             {
-                _remoteServiceClassInst._onLoad();
+                remoteService._onLoad();
             }, false );
 
             logger.enableRemoteDebug( true );
@@ -263,10 +267,9 @@ function RemoteServiceClass()
     {
         try
         {
-            _remoteServiceClassInst = this;
             window.addEventListener( "keypress", function( key )
             {
-                _remoteServiceClassInst._keyListener( key );
+                remoteService._keyListener( key );
             }, false );
             window.removeEventListener( "keypress", stbApi.keyEventFunctionPtr(), false );
         }
@@ -280,31 +283,29 @@ function RemoteServiceClass()
     {
         logger.init();
 
-        _remoteServiceClassInst = this;
         window.setTimeout( function()
         {
-            _remoteServiceClassInst._poll();
-        }, _remoteServiceClassInst.POLL_SHORT_INTERVAL );
+            remoteService._poll();
+        }, remoteService._POLL_SHORT_INTERVAL );
     };
 
     this._poll = function()
     {
-        if ( !this.pollServerActive )
+        if ( !this._pollServerActive )
         {
             logger.warning( "RemoteServiceClass.Poll: Starting polling service" );
-            this.pollServerActive = true;
+            this._pollServerActive = true;
 
             try
             {
-                _remoteServiceClassInst = this;
-                this.pollRequest = new XMLHttpRequest();
-                this.pollRequest.open( "GET", "/aminopvr/api/stb/poll?init", true );
-                this.pollRequest.onreadystatechange = this._pollStateChange;
-                this.pollRequest.send();
+                this._pollRequest = new XMLHttpRequest();
+                this._pollRequest.open( "GET", "/aminopvr/api/stb/poll?init", true );
+                this._pollRequest.onreadystatechange = this._pollStateChange;
+                this._pollRequest.send();
             }
             catch ( e )
             {
-                this.pollRequest = false;
+                this._pollRequest = false;
                 logger.critical( "RemoteServiceClass.Poll: exception: " + e );
             }
         }
@@ -312,15 +313,14 @@ function RemoteServiceClass()
         {
             try
             {
-                _remoteServiceClassInst = this;
-                this.pollRequest = new XMLHttpRequest();
-                this.pollRequest.open( "GET", "/aminopvr/api/stb/poll", true );
-                this.pollRequest.onreadystatechange = this._pollStateChange;
-                this.pollRequest.send();
+                this._pollRequest = new XMLHttpRequest();
+                this._pollRequest.open( "GET", "/aminopvr/api/stb/poll", true );
+                this._pollRequest.onreadystatechange = this._pollStateChange;
+                this._pollRequest.send();
             }
             catch ( e )
             {
-                this.pollRequest = false;
+                this._pollRequest = false;
                 logger.critical( "RemoteServiceClass.Poll: exception: " + e );
             }
         }
@@ -328,13 +328,13 @@ function RemoteServiceClass()
 
     this._pollStateChange = function()
     {
-        if ( _remoteServiceClassInst.pollRequest.readyState == 4 )
+        if ( remoteService._pollRequest.readyState == 4 )
         {
             try
             {
-                if ( _remoteServiceClassInst.pollRequest.responseText.length > 0 )
+                if ( remoteService._pollRequest.responseText.length > 0 )
                 {
-                    var responseItem = eval( '(' + _remoteServiceClassInst.pollRequest.responseText + ')' );
+                    var responseItem = eval( '(' + remoteService._pollRequest.responseText + ')' );
                     if ( responseItem['status'] == 'success' )
                     {
                     	if ( responseItem['data']['type'] == 'command' )
@@ -356,12 +356,12 @@ function RemoteServiceClass()
         	                {
             	                window.setTimeout( function()
                 	            {
-                    	            _remoteServiceClassInst._sendChannelList();
+                    	            remoteService._sendChannelList();
                         	    }, 5000 );
 	                        }
     	                    else if ( responseItem['data']['command'] == 'remote_debug' )
         	                {
-            	                if ( !logger.remoteDebug )
+            	                if ( !logger.getRemoteDebugEnabled() )
                 	            {
                     	            logger.enableRemoteDebug( true );
                         	    }
@@ -400,7 +400,7 @@ function RemoteServiceClass()
     	                    evt          = new API_KeyboardEvent;
         	                evt.keyCode  = responseItem['data']['key'];
             	            logger.info( "RemoteServiceClass._pollStateChange: key: " + responseItem['data']['key'] );
-                	        _remoteServiceClassInst._keyListener( evt );
+                	        remoteService._keyListener( evt );
                     	}
 	                    else if ( responseItem['data']['type'] == 'unknown_message' )
     	                {
@@ -419,19 +419,19 @@ function RemoteServiceClass()
 
                 window.setTimeout( function()
                 {
-                    _remoteServiceClassInst._poll();
-                }, _remoteServiceClassInst.POLL_SHORT_INTERVAL );
+                    remoteService._poll();
+                }, removeService._POLL_SHORT_INTERVAL );
             }
             catch ( e )
             {
-                logger.error( "RemoteServiceClass._pollStateChange: exception: " + e + ", responseText: " + _remoteServiceClassInst.pollRequest.responseText );
+                logger.error( "RemoteServiceClass._pollStateChange: exception: " + e + ", responseText: " + _remoteService._pollRequest.responseText );
                 window.setTimeout( function()
                 {
-                    _remoteServiceClassInst._poll();
-                } , _remoteServiceClassInst.POLL_LONG_INTERVAL );
+                    _remoteService._poll();
+                } , _remoteService._POLL_LONG_INTERVAL );
             }
 
-            _remoteServiceClassInst.pollRequest = false;
+            _remoteService._pollRequest = false;
         }
     };
 
@@ -441,20 +441,20 @@ function RemoteServiceClass()
         {
             logger.info( "RemoteServiceClass.setActiveChannel: " + channel );
 
-            this.statusRequest = new XMLHttpRequest();
-            this.statusRequest.onreadystatechange = function()
+            this._statusRequest = new XMLHttpRequest();
+            this._statusRequest.onreadystatechange = function()
             {
                 if ( (this.readyState == 4) && (this.status == 200) )
                 {
                     logger.info( "RemoteServiceClass.setActiveChannel.onreadystatechange: done: " + this.responseText );
                 }
             };
-            this.statusRequest.open( "GET", "/aminopvr/api/stb/setActiveChannel?channel=" + channel, true );
-            this.statusRequest.send();
+            this._statusRequest.open( "GET", "/aminopvr/api/stb/setActiveChannel?channel=" + channel, true );
+            this._statusRequest.send();
         }
         catch ( e )
         {
-            this.statusRequest = false;
+            this._statusRequest = false;
             logger.error( "RemoteServiceClass.setActiveChannel: exception: " + e );
         }
     };
@@ -494,21 +494,21 @@ function RemoteServiceClass()
 
             logger.debug( "RemoteServiceClass._sendChannelList" );
 
-            this.channelRequest = new XMLHttpRequest();
-            this.channelRequest.onreadystatechange = function()
+            this._channelRequest = new XMLHttpRequest();
+            this._channelRequest.onreadystatechange = function()
             {
                 if ( (this.readyState == 4) && (this.status == 200) )
                 {
                     logger.info( "RemoteServiceClass._sendChannelList.onreadystatechange: done: " + this.responseText );
                 }
             };
-            this.channelRequest.open( "POST", "/aminopvr/api/stb/setChannelList", true );
-            this.channelRequest.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-            this.channelRequest.send( "channelList=" + encodeURIComponent( channelList ) );
+            this._channelRequest.open( "POST", "/aminopvr/api/stb/setChannelList", true );
+            this._channelRequest.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+            this._channelRequest.send( "channelList=" + encodeURIComponent( channelList ) );
         }
         catch ( e )
         {
-            this.channelRequest = false;
+            this._channelRequest = false;
             logger.error( "RemoteServiceClass._sendChannelList: exception: " + e );
         }
     };

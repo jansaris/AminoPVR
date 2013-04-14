@@ -65,7 +65,7 @@ class ContentProvider( threading.Thread ):
         self._event   = threading.Event()
         self._event.clear()
 
-        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=60.0, recurrenceInterval=grabInterval )
+        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
     def requestContentUpdate( self, wait=False ):
         if not self._event.isSet():
