@@ -40,14 +40,20 @@ class ChannelUrlAbstract( object ):
         self._logger.debug( 'ChannelUrl.__init__( channelType=%s, protocol=%s, ip=%s, port=%i, arguments=%s )' % ( channelType, protocol, ip, port, arguments ) )
 
     def __hash__( self ):
-        return ( hash( self._channelType ) )
+        return ( hash( hash( self._channelType ) +
+                       hash( self._protocol ) +
+                       hash( self._ip ) +
+                       hash( self._port ) +
+                       hash( self._arguments ) +
+                       hash( self._scrambled ) ) )
 
     def __eq__( self, other ):
-        return ( self._protocol  == other._protocol  and
-                 self._ip        == other._ip        and
-                 self._port      == other._port      and
-                 self._arguments == other._arguments and
-                 self._scrambled == other._scrambled )
+        return ( self._channelType == other._channelType and
+                 self._protocol    == other._protocol    and
+                 self._ip          == other._ip          and
+                 self._port        == other._port        and
+                 self._arguments   == other._arguments   and
+                 self._scrambled   == other._scrambled )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
@@ -202,7 +208,15 @@ class ChannelAbstract( object ):
         self._logger.debug( 'ChannelAbstract.__init__( id=%i, number=%s, epgId=%s, name=%s, nameShort=%s, logo=%s, thumbnail=%s, radio=%i, inactive=%i )' % ( id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ) )
 
     def __hash__( self ):
-        return ( hash( self._number ) )
+        return ( hash( hash( self._number ) +
+                       hash( self._epgId ) +
+                       hash( self._name ) +
+                       hash( self._nameShort ) +
+                       hash( os.path.basename( self._logo ) ) +
+                       hash( os.path.basename( self._thumbnail ) ) +
+                       hash( self._radio ) +
+                       hash( frozenset( self._urls ) ) +
+                       hash( self._inactive ) ) )
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
