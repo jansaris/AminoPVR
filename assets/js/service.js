@@ -16,6 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var __module = "service."
+
 function LoggerClass()
 {
     this.DEBUG    = 0;
@@ -34,6 +36,10 @@ function LoggerClass()
     this._removeLogTimeout = null;
     this._remoteLogRequest = null;
 
+    this.__module = function()
+    {
+        return "service." + this.constructor.name;
+    };
     this.init = function()
     {
         try
@@ -63,29 +69,29 @@ function LoggerClass()
         }
     };
 
-    this.debug = function( text )
+    this.debug = function( module, text )
     {
-        this._print( this.DEBUG, text );
+        this._print( this.DEBUG, module, text );
     };
 
-    this.info = function( text )
+    this.info = function( module, text )
     {
-        this._print( this.INFO, text );
+        this._print( this.INFO, module, text );
     };
 
-    this.warning = function( text )
+    this.warning = function( module, text )
     {
-        this._print( this.WARNING, text );
+        this._print( this.WARNING, module, text );
     };
 
-    this.error = function( text )
+    this.error = function( module, text )
     {
-        this._print( this.ERROR, text );
+        this._print( this.ERROR, module, text );
     };
 
-    this.critical = function( text )
+    this.critical = function( module, text )
     {
-        this._print( this.CRITICAL, text );
+        this._print( this.CRITICAL, module, text );
     };
 
     this.getRemoteDebugEnabled = function()
@@ -103,7 +109,7 @@ function LoggerClass()
             {
                 if ( this._debugDiv.style.display == "block" )
                 {
-                    this.info( "Disable Debug Logging." );
+                    this.info( this.__module(), "Disable Debug Logging." );
                     this._debugDiv.style.display = "none";
                 }
             }
@@ -122,7 +128,7 @@ function LoggerClass()
         }
     };
 
-    this._print = function( level, text )
+    this._print = function( level, module, text )
     {
         try
         {
@@ -148,7 +154,8 @@ function LoggerClass()
             var logItem = {
                               timestamp: (new Date).getTime(),
                               level:     level,
-                              log_text:  text
+                              module:    module,
+                              log_text:  encodeURIComponent( text )
                           };
 
             this._debugLog.push( logItem );
@@ -159,7 +166,7 @@ function LoggerClass()
 
                 for ( i = 0; i < this._debugLog.length; i++ )
                 {
-                    html += "[" + this._debugLog[i].level + "] " + this._debugLog[i].timestamp + ": " + this._debugLog[i].log_text + "<br\>";
+                    html += "[" + this._debugLog[i].level + "] " + this._debugLog[i].timestamp + ": <" + this._debugLog[i].module + "> " + this._debugLog[i].log_text + "<br\>";
                 }
 
                 if ( (this._debugDiv != null) && (this._debugDiv !== undefined) )
@@ -173,7 +180,7 @@ function LoggerClass()
            if ( window.console )
            {
                window.console.log( "LoggerClass._print: exception: " + e );
-               window.console.log( "[" + level + "] " + (new Date).getTime() + ": " + text )
+               window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text )
            }
         }
     };
@@ -246,6 +253,10 @@ function RemoteServiceClass()
     this._statusRequest = null;
     this._channelRequest = null;
 
+    this.__module = function()
+    {
+        return "service." + this.constructor.name;
+    };
     this.init = function()
     {
         try
@@ -259,7 +270,7 @@ function RemoteServiceClass()
         }
         catch ( e )
         {
-            logger.critical( "RemoteServiceClass.Init: exception: " + e );
+            logger.critical( this.__module(), "Init: exception: " + e );
         }
     };
 
@@ -275,7 +286,7 @@ function RemoteServiceClass()
         }
         catch ( e )
         {
-            logger.critical( "RemoteServiceClass.PowerOn: exception: " + e );
+            logger.critical( this.__module(), "PowerOn: exception: " + e );
         }
     };
 
@@ -293,7 +304,7 @@ function RemoteServiceClass()
     {
         if ( !this._pollServerActive )
         {
-            logger.warning( "RemoteServiceClass.Poll: Starting polling service" );
+            logger.warning( this.__module(), "Poll: Starting polling service" );
             this._pollServerActive = true;
 
             try
@@ -306,7 +317,7 @@ function RemoteServiceClass()
             catch ( e )
             {
                 this._pollRequest = false;
-                logger.critical( "RemoteServiceClass.Poll: exception: " + e );
+                logger.critical( this.__module(), "Poll: exception: " + e );
             }
         }
         else
@@ -321,7 +332,7 @@ function RemoteServiceClass()
             catch ( e )
             {
                 this._pollRequest = false;
-                logger.critical( "RemoteServiceClass.Poll: exception: " + e );
+                logger.critical( this.__module(), "Poll: exception: " + e );
             }
         }
     };
@@ -341,12 +352,12 @@ function RemoteServiceClass()
                     	{
                         	if ( responseItem['data']['command'] == 'show_osd' )
                         	{
-                            	logger.info( "RemoteServiceClass._pollStateChange: command: show_osd." );
+                            	logger.info( this.__module(), "_pollStateChange: command: show_osd." );
 //                                stbApi.setChannelInstance().$(5000);
 	                        }
     	                    else if ( responseItem['data']['command'] == 'play_stream' )
         	                {
-            	                logger.warning( "RemoteServiceClass._pollStateChange: command: play_stream: url=" + responseItem['data']['url'] );
+            	                logger.warning( this.__module(), "_pollStateChange: command: play_stream: url=" + responseItem['data']['url'] );
 
                 	            stbApi.playStreamAction1( stbApi.setChannelInstance() );
                     	        b = new stbApi.playStreamClass( responseItem['data']['url'], "", true );
@@ -388,7 +399,7 @@ function RemoteServiceClass()
         	                // }
             	            else
                 	        {
-                    	        logger.warning( "RemoteServiceClass._pollStateChange: other command: " + responseItem['command'] );
+                    	        logger.warning( this.__module(), "_pollStateChange: other command: " + responseItem['command'] );
                         	}
 	                    }
     	                else if ( responseItem['data']['type'] == 'channel' )
@@ -399,12 +410,12 @@ function RemoteServiceClass()
 	                    {
     	                    evt          = new API_KeyboardEvent;
         	                evt.keyCode  = responseItem['data']['key'];
-            	            logger.info( "RemoteServiceClass._pollStateChange: key: " + responseItem['data']['key'] );
+            	            logger.info( this.__module(), "_pollStateChange: key: " + responseItem['data']['key'] );
                 	        remoteService._keyListener( evt );
                     	}
 	                    else if ( responseItem['data']['type'] == 'unknown_message' )
     	                {
-        	                logger.warning( "RemoteServiceClass._pollStateChange: unknown message received." );
+        	                logger.warning( this.__module(), "_pollStateChange: unknown message received." );
             	        }
                 	    else if ( responseItem['data']['type'] == 'timeout' )
                     	{
@@ -424,7 +435,7 @@ function RemoteServiceClass()
             }
             catch ( e )
             {
-                logger.error( "RemoteServiceClass._pollStateChange: exception: " + e + ", responseText: " + _remoteService._pollRequest.responseText );
+                logger.error( this.__module(), "_pollStateChange: exception: " + e + ", responseText: " + _remoteService._pollRequest.responseText );
                 window.setTimeout( function()
                 {
                     _remoteService._poll();
@@ -439,14 +450,14 @@ function RemoteServiceClass()
     {
         try
         {
-            logger.info( "RemoteServiceClass.setActiveChannel: " + channel );
+            logger.info( this.__module(), "setActiveChannel: " + channel );
 
             this._statusRequest = new XMLHttpRequest();
             this._statusRequest.onreadystatechange = function()
             {
                 if ( (this.readyState == 4) && (this.status == 200) )
                 {
-                    logger.info( "RemoteServiceClass.setActiveChannel.onreadystatechange: done: " + this.responseText );
+                    logger.info( this.__module(), "setActiveChannel.onreadystatechange: done: " + this.responseText );
                 }
             };
             this._statusRequest.open( "GET", "/aminopvr/api/stb/setActiveChannel?channel=" + channel, true );
@@ -455,7 +466,7 @@ function RemoteServiceClass()
         catch ( e )
         {
             this._statusRequest = false;
-            logger.error( "RemoteServiceClass.setActiveChannel: exception: " + e );
+            logger.error( this.__module(), "setActiveChannel: exception: " + e );
         }
     };
 
@@ -492,14 +503,14 @@ function RemoteServiceClass()
             }
             channelList = Array2JSON( channels );
 
-            logger.debug( "RemoteServiceClass._sendChannelList" );
+            logger.debug( this.__module(), "_sendChannelList" );
 
             this._channelRequest = new XMLHttpRequest();
             this._channelRequest.onreadystatechange = function()
             {
                 if ( (this.readyState == 4) && (this.status == 200) )
                 {
-                    logger.info( "RemoteServiceClass._sendChannelList.onreadystatechange: done: " + this.responseText );
+                    logger.info( this.__module(), "_sendChannelList.onreadystatechange: done: " + this.responseText );
                 }
             };
             this._channelRequest.open( "POST", "/aminopvr/api/stb/setChannelList", true );
@@ -509,14 +520,14 @@ function RemoteServiceClass()
         catch ( e )
         {
             this._channelRequest = false;
-            logger.error( "RemoteServiceClass._sendChannelList: exception: " + e );
+            logger.error( this.__module(), "_sendChannelList: exception: " + e );
         }
     };
 
     this._keyListener = function( b )
     {
         key = b.keyCode || b.charCode;
-        logger.info( "RemoteServiceClass.KeyListener: key=" + key );
+        logger.info( this.__module(), "_keyListener: key=" + key );
 
         try
         {
@@ -524,7 +535,7 @@ function RemoteServiceClass()
         }
         catch ( e )
         {
-            logger.error( "RemoteServiceClass.KeyListener: exception: " + e );
+            logger.error( this.__module(), "_keyListener: exception: " + e );
         }
     };
 

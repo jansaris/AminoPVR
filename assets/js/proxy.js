@@ -24,6 +24,10 @@ var VideoDisplayProxy;
 
 function ASTBProxyClass()
 {
+    this.__module = function()
+    {
+        return "proxy." + this.constructor.name;
+    };
     this.DefaultKeys = function( keys )
     {
         try
@@ -32,11 +36,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.DefaultKeys( keys );
             }
-            logger.info( "ASTBProxyClass.DefaultKeys( " + keys + " )" );
+            logger.info( this.__module(), "DefaultKeys( " + keys + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.DefaultKeys: exception: " + e );
+            logger.error( this.__module(), "DefaultKeys: exception: " + e );
         }
     };
     this.WithChannels = function( channels )
@@ -47,11 +51,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.WithChannels( channels );
             }
-            logger.info( "ASTBProxyClass.WithChannels( " + channels + " )" );
+            logger.info( this.__module(), "WithChannels( " + channels + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.WithChannels: exception: " + e );
+            logger.error( this.__module(), "WithChannels: exception: " + e );
         }
     };
     this.SetMouseState = function( state )
@@ -62,11 +66,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetMouseState( state );
             }
-            logger.info( "ASTBProxyClass.SetMouseState( " + state + " )" );
+            logger.info( this.__module(), "SetMouseState( " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.SetMouseState: exception: " + e );
+            logger.error( this.__module(), "SetMouseState: exception: " + e );
         }
     };
     this.SetKeyFunction = function( key, func )
@@ -77,11 +81,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetKeyFunction( key, func );
             }
-            logger.info( "ASTBProxyClass.SetKeyFunction( " + key + ", " + func + " )" );
+            logger.info( this.__module(), "SetKeyFunction( " + key + ", " + func + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.SetKeyFunction: exception: " + e );
+            logger.error( this.__module(), "SetKeyFunction: exception: " + e );
         }
     };
     this.GetConfig = function( key )
@@ -93,11 +97,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetConfig( key );
             }
-            logger.info( "ASTBProxyClass.GetConfig( " + key + " ) = " + retval );
+            logger.info( this.__module(), "GetConfig( " + key + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetConfig: exception: " + e );
+            logger.error( this.__module(), "GetConfig: exception: " + e );
         }
         return retval;
     };
@@ -110,11 +114,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemModel();
             }
-            logger.info( "ASTBProxyClass.GetSystemModel() = " + retval );
+            logger.info( this.__module(), "GetSystemModel() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSystemModel: exception: " + e );
+            logger.error( this.__module(), "GetSystemModel: exception: " + e );
         }
         return retval;
     };
@@ -127,11 +131,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemSubmodel();
             }
-            logger.info( "ASTBProxyClass.GetSystemSubmodel() = " + retval );
+            logger.info( this.__module(), "GetSystemSubmodel() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSystemSubmodel: exception: " + e );
+            logger.error( this.__module(), "GetSystemSubmodel: exception: " + e );
         }
         return retval;
     };
@@ -144,11 +148,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetMacAddress();
             }
-            logger.info( "ASTBProxyClass.GetMacAddress() = " + retval );
+            logger.info( this.__module(), "GetMacAddress() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetMacAddress: exception: " + e );
+            logger.error( this.__module(), "GetMacAddress: exception: " + e );
         }
         return retval;
     };
@@ -161,11 +165,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetPowerState();
             }
-            logger.info( "ASTBProxyClass.GetPowerState() = " + retval );
+            logger.info( this.__module(), "GetPowerState() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetPowerState: exception: " + e );
+            logger.error( this.__module(), "GetPowerState: exception: " + e );
         }
         return retval;
     };
@@ -177,11 +181,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetPowerState( state );
             }
-            logger.info( "ASTBProxyClass.SetPowerState( " + state + " )" );
+            logger.info( this.__module(), "SetPowerState( " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.SetPowerState: exception: " + e );
+            logger.error( this.__module(), "SetPowerState: exception: " + e );
         }
     };
     this.Reboot = function()
@@ -192,11 +196,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.Reboot();
             }
-            logger.info( "ASTBProxyClass.Reboot()" );
+            logger.info( this.__module(), "Reboot()" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.Reboot: exception: " + e );
+            logger.error( this.__module(), "Reboot: exception: " + e );
         }
     };
     this.Upgrade = function( aa, bb )
@@ -207,11 +211,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.Upgrade( aa, bb );
             }
-            logger.info( "ASTBProxyClass.Upgrade( " + aa + ", " + bb + " )" );
+            logger.info( this.__module(), "Upgrade( " + aa + ", " + bb + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.Upgrade: exception: " + e );
+            logger.error( this.__module(), "Upgrade: exception: " + e );
         }
     };
     this.SetLEDState = function( led, state )
@@ -222,20 +226,20 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetLEDState( led, state );
             }
-//            logger.info( "ASTBProxyClass.SetLEDState( " + led + ", " + state + " )" );
+//            logger.info( this.__module(), "SetLEDState( " + led + ", " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.SetLEDState: exception: " + e );
+            logger.error( this.__module(), "SetLEDState: exception: " + e );
         }
     };
     this.DebugString = function( debug )
     {
-        logger.info( debug );
+        logger.info( this.__module(), debug );
     };
     this.ErrorString = function( error )
     {
-        logger.error( error );
+        logger.error( this.__module(), error );
     };
     this.SetConfig = function( key, value, cc )
     {
@@ -245,11 +249,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.SetConfig( key, value, cc );
             }
-            logger.info( "ASTBProxyClass.SetConfig( " + key + ", " + value + ", " + cc + " )" );
+            logger.info( this.__module(), "SetConfig( " + key + ", " + value + ", " + cc + " )" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.SetConfig: exception: " + e );
+            logger.error( this.__module(), "SetConfig: exception: " + e );
         }
     };
     this.CommitConfig = function()
@@ -260,11 +264,11 @@ function ASTBProxyClass()
             {
                 window.ASTB.CommitConfig();
             }
-            logger.info( "ASTBProxyClass.CommitConfig()" );
+            logger.info( this.__module(), "CommitConfig()" );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.CommitConfig: exception: " + e );
+            logger.error( this.__module(), "CommitConfig: exception: " + e );
         }
     };
     this.GetIPAddress = function()
@@ -276,11 +280,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetIPAddress();
             }
-            logger.info( "ASTBProxyClass.GetIPAddress() = " + retval );
+            logger.info( this.__module(), "GetIPAddress() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetIPAddress: exception: " + e );
+            logger.error( this.__module(), "GetIPAddress: exception: " + e );
         }
         return retval;
     };
@@ -293,11 +297,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemManufacturer();
             }
-            logger.info( "ASTBProxyClass.GetSystemManufacturer() = " + retval );
+            logger.info( this.__module(), "GetSystemManufacturer() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSystemManufacturer: exception: " + e );
+            logger.error( this.__module(), "GetSystemManufacturer: exception: " + e );
         }
         return retval;
     };
@@ -310,11 +314,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetHardwareVersion();
             }
-            logger.info( "ASTBProxyClass.GetHardwareVersion() = " + retval );
+            logger.info( this.__module(), "GetHardwareVersion() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetHardwareVersion: exception: " + e );
+            logger.error( this.__module(), "GetHardwareVersion: exception: " + e );
         }
         return retval;
     };
@@ -327,11 +331,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSoftwareVersion();
             }
-            logger.info( "ASTBProxyClass.GetSoftwareVersion() = " + retval );
+            logger.info( this.__module(), "GetSoftwareVersion() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSoftwareVersion: exception: " + e );
+            logger.error( this.__module(), "GetSoftwareVersion: exception: " + e );
         }
         return retval;
     };
@@ -344,11 +348,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSystemInfo();
             }
-            logger.info( "ASTBProxyClass.GetSystemInfo() = " + retval );
+            logger.info( this.__module(), "GetSystemInfo() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSystemInfo: exception: " + e );
+            logger.error( this.__module(), "GetSystemInfo: exception: " + e );
         }
         return retval;
     };
@@ -361,11 +365,11 @@ function ASTBProxyClass()
             {
                 retval = window.ASTB.GetSerialNumber();
             }
-            logger.info( "ASTBProxyClass.GetSerialNumber() = " + retval );
+            logger.info( this.__module(), "GetSerialNumber() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "ASTBProxyClass.GetSerialNumber: exception: " + e );
+            logger.error( this.__module(), "GetSerialNumber: exception: " + e );
         }
         return retval;
     };
@@ -373,6 +377,10 @@ function ASTBProxyClass()
 
 function VideoDisplayProxyClass()
 {
+    this.__module = function()
+    {
+        return "proxy." + this.constructor.name;
+    };
     this.SetChromaKey = function( key )
     {
         try
@@ -381,11 +389,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetChromaKey( key );
             }
-            logger.info( "VideoDisplayProxyClass.SetChromaKey( " + key + " )" );
+            logger.info( this.__module(), "SetChromaKey( " + key + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetChromaKey: exception: " + e );
+            logger.error( this.__module(), "SetChromaKey: exception: " + e );
         }
     };
     this.SetAlphaLevel = function( level )
@@ -396,11 +404,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAlphaLevel( level );
             }
-            logger.info( "VideoDisplayProxyClass.SetAlphaLevel( " + level + " )" );
+            logger.info( this.__module(), "SetAlphaLevel( " + level + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetAlphaLevel: exception: " + e );
+            logger.error( this.__module(), "SetAlphaLevel: exception: " + e );
         }
     };
     this.RetainMouseState = function( state )
@@ -411,11 +419,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.RetainMouseState( state );
             }
-            logger.info( "VideoDisplayProxyClass.RetainMouseState( " + state + " )" );
+            logger.info( this.__module(), "RetainMouseState( " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.RetainMouseState: exception: " + e );
+            logger.error( this.__module(), "RetainMouseState: exception: " + e );
         }
     };
     this.RetainAlphaLevel = function( level )
@@ -426,11 +434,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.RetainAlphaLevel( level );
             }
-            logger.info( "VideoDisplayProxyClass.RetainAlphaLevel( " + level + " )" );
+            logger.info( this.__module(), "RetainAlphaLevel( " + level + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.RetainAlphaLevel: exception: " + e );
+            logger.error( this.__module(), "RetainAlphaLevel: exception: " + e );
         }
     };
     this.SetAVAspectSwitching = function( switching )
@@ -441,11 +449,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAVAspectSwitching( switching );
             }
-            logger.info( "VideoDisplayProxyClass.SetAVAspectSwitching( " + switching + " )" );
+            logger.info( this.__module(), "SetAVAspectSwitching( " + switching + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetAVAspectSwitching: exception: " + e );
+            logger.error( this.__module(), "SetAVAspectSwitching: exception: " + e );
         }
     };
     this.SetAVAspect = function( aspect )
@@ -456,11 +464,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAVAspect( aspect );
             }
-            logger.info( "VideoDisplayProxyClass.SetAVAspect( " + aspect + " )" );
+            logger.info( this.__module(), "SetAVAspect( " + aspect + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetAVAspect: exception: " + e );
+            logger.error( this.__module(), "SetAVAspect: exception: " + e );
         }
     };
     this.SetSubtitles = function( aa, bb )
@@ -471,11 +479,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetSubtitles( aa, bb );
             }
-            logger.info( "VideoDisplayProxyClass.SetSubtitles( " + aa + ", " + bb + " )" );
+            logger.info( this.__module(), "SetSubtitles( " + aa + ", " + bb + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetSubtitles: exception: " + e );
+            logger.error( this.__module(), "SetSubtitles: exception: " + e );
         }
     };
     this.SetTeletextFullscreen = function( fullscreen )
@@ -486,11 +494,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetTeletextFullscreen( fullscreen );
             }
-            logger.info( "VideoDisplayProxyClass.SetTeletextFullscreen( " + fullscreen + " )" );
+            logger.info( this.__module(), "SetTeletextFullscreen( " + fullscreen + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetTeletextFullscreen: exception: " + e );
+            logger.error( this.__module(), "SetTeletextFullscreen: exception: " + e );
         }
     };
     this.SetOutputFmt = function( format )
@@ -501,11 +509,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetOutputFmt( format );
             }
-            logger.info( "VideoDisplayProxyClass.SetOutputFmt( " + format + " )" );
+            logger.info( this.__module(), "SetOutputFmt( " + format + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetOutputFmt: exception: " + e );
+            logger.error( this.__module(), "SetOutputFmt: exception: " + e );
         }
     };
     this.SetAspect = function( aspect )
@@ -516,11 +524,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetAspect( aspect );
             }
-            logger.info( "VideoDisplayProxyClass.SetAspect( " + aspect + " )" );
+            logger.info( this.__module(), "SetAspect( " + aspect + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetAspect: exception: " + e );
+            logger.error( this.__module(), "SetAspect: exception: " + e );
         }
     };
     this.SetOutputResolution = function( resolution )
@@ -531,11 +539,11 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetOutputResolution( resolution );
             }
-            logger.info( "VideoDisplayProxyClass.SetOutputResolution( " + resolution + " )" );
+            logger.info( this.__module(), "SetOutputResolution( " + resolution + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetOutputResolution: exception: " + e );
+            logger.error( this.__module(), "SetOutputResolution: exception: " + e );
         }
     };
     this.SetPreferredHDRes = function( resolution )
@@ -546,17 +554,21 @@ function VideoDisplayProxyClass()
             {
                 window.VideoDisplay.SetPreferredHDRes( resolution );
             }
-            logger.info( "VideoDisplayProxyClass.SetPreferredHDRes( " + resolution + " )" );
+            logger.info( this.__module(), "SetPreferredHDRes( " + resolution + " )" );
         }
         catch ( e )
         {
-            logger.error( "VideoDisplayProxyClass.SetPreferredHDRes: exception: " + e );
+            logger.error( this.__module(), "SetPreferredHDRes: exception: " + e );
         }
     };
 }
 
 function BrowserProxyClass()
 {
+    this.__module = function()
+    {
+        return "proxy." + this.constructor.name;
+    };
     this.SetToolbarState = function( state )
     {
         try
@@ -565,11 +577,11 @@ function BrowserProxyClass()
             {
                 window.Browser.SetToolbarState( state );
             }
-            logger.info( "BrowserProxyClass.SetToolbarState( " + state + " )" );
+            logger.info( this.__module(), "SetToolbarState( " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "BrowserProxyClass.SetToolbarState: exception: " + e );
+            logger.error( this.__module(), "SetToolbarState: exception: " + e );
         }
     };
     this.FrameLoadResetsState = function( state )
@@ -580,11 +592,11 @@ function BrowserProxyClass()
             {
                 window.Browser.FrameLoadResetsState( state );
             }
-            logger.info( "BrowserProxyClass.FrameLoadResetsState( " + state + " )" );
+            logger.info( this.__module(), "FrameLoadResetsState( " + state + " )" );
         }
         catch ( e )
         {
-            logger.error( "BrowserProxyClass.FrameLoadResetsState: exception: " + e );
+            logger.error( this.__module(), "FrameLoadResetsState: exception: " + e );
         }
     };
     this.Lower = function()
@@ -595,11 +607,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Lower();
             }
-            logger.info( "BrowserProxyClass.Lower()" );
+            logger.info( this.__module(), "Lower()" );
         }
         catch ( e )
         {
-            logger.error( "BrowserProxyClass.Lower: exception: " + e );
+            logger.error( this.__module(), "Lower: exception: " + e );
         }
     };
     this.Raise = function()
@@ -610,11 +622,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Raise();
             }
-            logger.info( "BrowserProxyClass.Raise()" );
+            logger.info( this.__module(), "Raise()" );
         }
         catch ( e )
         {
-            logger.error( "BrowserProxyClass.Raise: exception: " + e );
+            logger.error( this.__module(), "Raise: exception: " + e );
         }
     };
     this.Action = function( action )
@@ -625,11 +637,11 @@ function BrowserProxyClass()
             {
                 window.Browser.Action( action );
             }
-            logger.info( "BrowserProxyClass.Action( " + action + " )" );
+            logger.info( this.__module(), "Action( " + action + " )" );
         }
         catch ( e )
         {
-            logger.error( "BrowserProxyClass.Action: exception: " + e );
+            logger.error( this.__module(), "Action: exception: " + e );
         }
     };
 }
@@ -655,16 +667,20 @@ function AVMediaProxyClass()
                 }
                 catch ( e )
                 {
-                    logger.error( "AVMediaProxyClass.onEvent: exception: " + e );
+                    logger.error( this.__module(), "onEvent: exception: " + e );
                 }
             }
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass: exception: " + e );
+            logger.error( this.__module(), "exception: " + e );
         }
     }
 
+    this.__module = function()
+    {
+        return "proxy." + this.constructor.name;
+    };
     this.Kill = function()
     {
         try
@@ -673,11 +689,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Kill();
             }
-            logger.info( "AVMediaProxyClass.Kill()" );
+            logger.info( this.__module(), "Kill()" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.Kill: exception: " + e );
+            logger.error( this.__module(), "Kill: exception: " + e );
         }
     };
     this.Play = function( url )
@@ -688,11 +704,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Play( url );
             }
-            logger.info( "AVMediaProxyClass.Play( " + url + " )" );
+            logger.info( this.__module(), "Play( " + url + " )" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.Play: exception: " + e );
+            logger.error( this.__module(), "Play: exception: " + e );
         }
     };
     this.Pause = function()
@@ -703,11 +719,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Pause();
             }
-            logger.info( "AVMediaProxyClass.Play()" );
+            logger.info( this.__module(), "Play()" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.Play: exception: " + e );
+            logger.error( this.__module(), "Play: exception: " + e );
         }
     };
     this.Continue = function()
@@ -718,11 +734,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Continue();
             }
-            logger.info( "AVMediaProxyClass.Continue()" );
+            logger.info( this.__module(), "Continue()" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.Continue: exception: " + e );
+            logger.error( this.__module(), "Continue: exception: " + e );
         }
     };
     this.GetMSecPosition = function()
@@ -734,11 +750,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.GetMSecPosition();
             }
-//            logger.info( "AVMediaProxyClass.GetMSecPosition() = " + retval );
+//            logger.info( this.__module(), "GetMSecPosition() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.GetMSecPosition: exception: " + e );
+            logger.error( this.__module(), "GetMSecPosition: exception: " + e );
         }
         return retval;
     };
@@ -751,11 +767,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.SetMSecPosition( pos );
             }
-            logger.info( "AVMediaProxyClass.SetMSecPosition( " + pos + " ) = " + retval );
+            logger.info( this.__module(), "SetMSecPosition( " + pos + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.SetMSecPosition: exception: " + e );
+            logger.error( this.__module(), "SetMSecPosition: exception: " + e );
         }
         return retval;
     };
@@ -767,11 +783,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetSpeed( speed );
             }
-            logger.info( "AVMediaProxyClass.SetSpeed( " + speed + " )" );
+            logger.info( this.__module(), "SetSpeed( " + speed + " )" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.SetSpeed: exception: " + e );
+            logger.error( this.__module(), "SetSpeed: exception: " + e );
         }
     };
     this.GetCurrentSpeed = function()
@@ -783,11 +799,11 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.GetCurrentSpeed();
             }
-            logger.info( "AVMediaProxyClass.GetCurrentSpeed() = " + retval );
+            logger.info( this.__module(), "GetCurrentSpeed() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.GetCurrentSpeed: exception: " + e );
+            logger.error( this.__module(), "GetCurrentSpeed: exception: " + e );
         }
         return retval;
     };
@@ -799,11 +815,11 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetAudioPID( pid );
             }
-            logger.info( "AVMediaProxyClass.SetAudioPID( " + pid + " )" );
+            logger.info( this.__module(), "SetAudioPID( " + pid + " )" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.SetAudioPID: exception: " + e );
+            logger.error( this.__module(), "SetAudioPID: exception: " + e );
         }
     };
     this.SetPrimarySubtitleLanguage = function( lang, bb )
@@ -814,17 +830,21 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.SetPrimarySubtitleLanguage( lang, bb );
             }
-            logger.info( "AVMediaProxyClass.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" );
+            logger.info( this.__module(), "SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" );
         }
         catch ( e )
         {
-            logger.error( "AVMediaProxyClass.SetPrimarySubtitleLanguage: exception: " + e );
+            logger.error( this.__module(), "SetPrimarySubtitleLanguage: exception: " + e );
         }
     };
 }
 
 function PVRProxyClass()
 {
+    this.__module = function()
+    {
+        return "proxy." + this.constructor.name;
+    };
     this.GetPltInfo = function()
     {
         retval = "";
@@ -834,11 +854,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetPltInfo();
             }
-            logger.info( "PVRProxyClass.GetPltInfo() = " + retval );
+            logger.info( this.__module(), "GetPltInfo() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetPltInfo: exception: " + e );
+            logger.error( this.__module(), "GetPltInfo: exception: " + e );
         }
         return retval;
     };
@@ -851,11 +871,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetStorageInfo();
             }
-            logger.debug( "PVRProxyClass.GetStorageInfo() = " + retval );
+            logger.debug( this.__module(), "GetStorageInfo() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetStorageInfo: exception: " + e );
+            logger.error( this.__module(), "GetStorageInfo: exception: " + e );
         }
         return retval;
     };
@@ -868,11 +888,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetDeviceInfo();
             }
-            logger.info( "PVRProxyClass.GetDeviceInfo() = " + retval );
+            logger.info( this.__module(), "GetDeviceInfo() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetDeviceInfo: exception: " + e );
+            logger.error( this.__module(), "GetDeviceInfo: exception: " + e );
         }
         return retval;
     };
@@ -885,11 +905,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetDeviceStatus( deviceId );
             }
-            logger.info( "PVRProxyClass.GetDeviceStatus( " + deviceId + " ) = " + retval );
+            logger.info( this.__module(), "GetDeviceStatus( " + deviceId + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetDeviceStatus: exception: " + e );
+            logger.error( this.__module(), "GetDeviceStatus: exception: " + e );
         }
         return retval;
     };
@@ -902,11 +922,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetAssetById( assetId );
             }
-//            logger.info( "PVRProxyClass.GetAssetById( " + assetId + " ) = " + retval );
+//            logger.info( this.__module(), "GetAssetById( " + assetId + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetAssetById: exception: " + e );
+            logger.error( this.__module(), "GetAssetById: exception: " + e );
         }
         return retval;
     };
@@ -919,11 +939,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetAssetIdList();
             }
-//            logger.info( "PVRProxyClass.GetAssetIdList() = " + retval );
+//            logger.info( this.__module(), "GetAssetIdList() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetAssetIdList: exception: " + e );
+            logger.error( this.__module(), "GetAssetIdList: exception: " + e );
         }
         return retval;
     };
@@ -936,11 +956,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.GetScheduleList();
             }
-//            logger.info( "PVRProxyClass.GetScheduleList() = " + retval );
+//            logger.info( this.__module(), "GetScheduleList() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.GetScheduleList: exception: " + e );
+            logger.error( this.__module(), "GetScheduleList: exception: " + e );
         }
         return retval;
     };
@@ -952,11 +972,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.DeleteAsset( aa );
             }
-            logger.info( "PVRProxyClass.DeleteAsset( " + aa + " ) = " + retval );
+            logger.info( this.__module(), "DeleteAsset( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.DeleteAsset: exception: " + e );
+            logger.error( this.__module(), "DeleteAsset: exception: " + e );
         }
         return retval;
     };
@@ -969,11 +989,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.AddSchedule( aa, bb, ff, gg, dd );
             }
-            logger.info( "PVRProxyClass.AddSchedule( " + aa + ", " + bb + ", " + ff + ", " + gg + ", " + dd + " ) = " + retval );
+            logger.info( this.__module(), "AddSchedule( " + aa + ", " + bb + ", " + ff + ", " + gg + ", " + dd + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.AddSchedule: exception: " + e );
+            logger.error( this.__module(), "AddSchedule: exception: " + e );
         }
         return retval;
     };
@@ -986,11 +1006,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.DeleteSchedule();
             }
-            logger.info( "PVRProxyClass.DeleteSchedule() = " + retval );
+            logger.info( this.__module(), "DeleteSchedule() = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.DeleteSchedule: exception: " + e );
+            logger.error( this.__module(), "DeleteSchedule: exception: " + e );
         }
         return retval;
     };
@@ -1003,11 +1023,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.RequestDeviceReformat( aa );
             }
-            logger.info( "PVRProxyClass.RequestDeviceReformat( " + aa + " ) = " + retval );
+            logger.info( this.__module(), "RequestDeviceReformat( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.RequestDeviceReformat: exception: " + e );
+            logger.error( this.__module(), "RequestDeviceReformat: exception: " + e );
         }
         return retval;
     };
@@ -1020,11 +1040,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.FormatDevice( aa );
             }
-            logger.info( "PVRProxyClass.FormatDevice( " + aa + " ) = " + retval );
+            logger.info( this.__module(), "FormatDevice( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.FormatDevice: exception: " + e );
+            logger.error( this.__module(), "FormatDevice: exception: " + e );
         }
         return retval;
     };
@@ -1037,11 +1057,11 @@ function PVRProxyClass()
             {
                 retval = window.PVR.StopRecording( aa );
             }
-            logger.info( "PVRProxyClass.StopRecording( " + aa + " ) = " + retval );
+            logger.info( this.__module(), "StopRecording( " + aa + " ) = " + retval );
         }
         catch ( e )
         {
-            logger.error( "PVRProxyClass.StopRecording: exception: " + e );
+            logger.error( this.__module(), "StopRecording: exception: " + e );
         }
         return retval;
     };

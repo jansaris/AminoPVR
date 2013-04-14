@@ -16,19 +16,25 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var __module = "stub."
+
 function ASTBClass()
 {
     this.powerState = 0;
 
-    this.DefaultKeys = function( keys ) { logger.info( "ASTBClass.DefaultKeys( " + keys + " )" ); };
-    this.WithChannels = function( channels ) { logger.info( "ASTBClass.WithChannels( " + channels + " )" ); };
-    this.SetMouseState = function( state ) { logger.info( "ASTBClass.SetMouseState( " + state + " )" ); };
-    this.SetKeyFunction = function( key, func ) { logger.info( "ASTBClass.SetKeyFunction( " + key + ", " + func + " )" ); };
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
+    this.DefaultKeys = function( keys ) { logger.info( this.__module(), "DefaultKeys( " + keys + " )" ); };
+    this.WithChannels = function( channels ) { logger.info( this.__module(), "WithChannels( " + channels + " )" ); };
+    this.SetMouseState = function( state ) { logger.info( this.__module(), "SetMouseState( " + state + " )" ); };
+    this.SetKeyFunction = function( key, func ) { logger.info( this.__module(), "SetKeyFunction( " + key + ", " + func + " )" ); };
     this.GetConfig = function( key )
     {
         var config = "";
 
-        logger.info( "ASTBClass.GetConfig( " + key + " )" );
+        logger.info( this.__module(), "GetConfig( " + key + " )" );
 
         switch ( key )
         {
@@ -41,7 +47,7 @@ function ASTBClass()
     };
     this.GetSystemModel = function()
     {
-        logger.info( "ASTBClass.GetSystemModel()" );
+        logger.info( this.__module(), "GetSystemModel()" );
         return "aminet130";
     };
     this.GetSystemSubmodel = function()
@@ -55,24 +61,24 @@ function ASTBClass()
     };
     this.GetPowerState = function()
     {
-        logger.info( "ASTBClass.GetPowerState()" );
+        logger.info( this.__module(), "GetPowerState()" );
         return 4;
     };
     this.SetPowerState = function( state )
     {
-        logger.info( "ASTBClass.SetPowerState( " + state + " )" );
+        logger.info( this.__module(), "SetPowerState( " + state + " )" );
         this.powerState = state;
     };
-    this.Reboot = function() { logger.info( "ASTBClass.Reboot()" ); };
-    this.Upgrade = function( aa, bb ) { logger.info( "ASTBClass.Upgrade( " + aa + ", " + bb + " )" ); };
+    this.Reboot = function() { logger.info( this.__module(), "Reboot()" ); };
+    this.Upgrade = function( aa, bb ) { logger.info( this.__module(), "Upgrade( " + aa + ", " + bb + " )" ); };
     this.SetLEDState = function( led, state ) {};
-    this.DebugString = function( debug ) { logger.info( "ASTBClass.DebugString( " + debug + " )" ); };
-    this.ErrorString = function( error ) { logger.info( "ASTBClass.ErrorString( " + error + " )" ); };
-    this.SetConfig = function( key, value, cc ) { logger.info( "ASTBClass.SetConfig( " + key + ", " + value + ", " + cc + " )" ); };
-    this.CommitConfig = function() { logger.info( "ASTBClass.CommitConfig()" ); };
-    this.GetIPAddress = function() { logger.info( "ASTBClass.GetIPAddress()" ); };
-    this.GetSystemManufacturer = function() { logger.info( "ASTBClass.GetSystemManufacturer()" ); };
-    this.GetHardwareVersion = function() { logger.info( "ASTBClass.GetHardwareVersion()" ); };
+    this.DebugString = function( debug ) { logger.info( this.__module(), "DebugString( " + debug + " )" ); };
+    this.ErrorString = function( error ) { logger.info( this.__module(), "ErrorString( " + error + " )" ); };
+    this.SetConfig = function( key, value, cc ) { logger.info( this.__module(), "SetConfig( " + key + ", " + value + ", " + cc + " )" ); };
+    this.CommitConfig = function() { logger.info( this.__module(), "CommitConfig()" ); };
+    this.GetIPAddress = function() { logger.info( this.__module(), "GetIPAddress()" ); };
+    this.GetSystemManufacturer = function() { logger.info( this.__module(), "GetSystemManufacturer()" ); };
+    this.GetHardwareVersion = function() { logger.info( this.__module(), "GetHardwareVersion()" ); };
     this.GetSoftwareVersion = function()
     {
         return "0.18.7a3-Ax3x-opera10";
@@ -81,32 +87,40 @@ function ASTBClass()
     {
         return "<xml><aminoVersion>0.18.7a3-Ax3x-opera10</aminoVersion><aminoCVersion>0.18.7-Ax3x-opera10</aminoCVersion><oemVersion>zt6-ax3x-0.18.7a3.0</oemVersion></xml>";
     };
-    this.GetSerialNumber = function() { logger.info( "ASTBClass.GetSerialNumber()" ); };
+    this.GetSerialNumber = function() { logger.info( this.__module(), "GetSerialNumber()" ); };
 }
 
 function VideoDisplayClass()
 {
-    this.SetChromaKey = function( key ) { logger.info( "VideoDisplayClass.SetChromaKey( " + key + " )" ); };
-    this.SetAlphaLevel = function( level ) { logger.info( "VideoDisplayClass.SetAlphaLevel( " + level + " )" ); };
-    this.RetainMouseState = function( state ) { logger.info( "VideoDisplayClass.RetainMouseState( " + state + " )" ); };
-    this.RetainAlphaLevel = function( level ) { logger.info( "VideoDisplayClass.RetainAlphaLevel( " + level + " )" ); };
-    this.SetAVAspectSwitching = function( switching ) { logger.info( "VideoDisplayClass.SetAVAspectSwitching( " + switching + " )" ); };
-    this.SetAVAspect = function( aspect ) { logger.info( "VideoDisplayClass.SetAVAspect( " + aspect + " )" ); };
-    this.SetSubtitles = function( aa, bb ) { logger.info( "VideoDisplayClass.SetSubtitles( " + aa + ", " + bb + " )" ); };
-    this.SetTeletextFullscreen = function( fullscreen ) { logger.info( "VideoDisplayClass.SetTeletextFullscreen( " + fullscreen + " )" ); };
-    this.SetOutputFmt = function( format ) { logger.info( "VideoDisplayClass.SetOutputFmt( " + format + " )" ); };
-    this.SetAspect = function( aspect ) { logger.info( "VideoDisplayClass.SetAspect( " + aspect + " )" ); };
-    this.SetOutputResolution = function( resolution ) { logger.info( "VideoDisplayClass.SetOutputResolution( " + resolution + " )" ); };
-    this.SetPreferredHDRes = function( resolution ) { logger.info( "VideoDisplayClass.SetPreferredHDRes( " + resolution + " )" ); };
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
+    this.SetChromaKey = function( key ) { logger.info( this.__module(), "SetChromaKey( " + key + " )" ); };
+    this.SetAlphaLevel = function( level ) { logger.info( this.__module(), "SetAlphaLevel( " + level + " )" ); };
+    this.RetainMouseState = function( state ) { logger.info( this.__module(), "RetainMouseState( " + state + " )" ); };
+    this.RetainAlphaLevel = function( level ) { logger.info( this.__module(), "RetainAlphaLevel( " + level + " )" ); };
+    this.SetAVAspectSwitching = function( switching ) { logger.info( this.__module(), "SetAVAspectSwitching( " + switching + " )" ); };
+    this.SetAVAspect = function( aspect ) { logger.info( this.__module(), "SetAVAspect( " + aspect + " )" ); };
+    this.SetSubtitles = function( aa, bb ) { logger.info( this.__module(), "SetSubtitles( " + aa + ", " + bb + " )" ); };
+    this.SetTeletextFullscreen = function( fullscreen ) { logger.info( this.__module(), "SetTeletextFullscreen( " + fullscreen + " )" ); };
+    this.SetOutputFmt = function( format ) { logger.info( this.__module(), "SetOutputFmt( " + format + " )" ); };
+    this.SetAspect = function( aspect ) { logger.info( this.__module(), "SetAspect( " + aspect + " )" ); };
+    this.SetOutputResolution = function( resolution ) { logger.info( this.__module(), "SetOutputResolution( " + resolution + " )" ); };
+    this.SetPreferredHDRes = function( resolution ) { logger.info( this.__module(), "SetPreferredHDRes( " + resolution + " )" ); };
 }
 
 function BrowserClass()
 {
-    this.SetToolbarState = function( state ) { logger.info( "BrowserClass.SetToolbarState( " + state + " )" ); };
-    this.FrameLoadResetsState = function( state ) { logger.info( "BrowserClass.FrameLoadResetsState( " + state + " )" ); };
-    this.Lower = function() { logger.info( "BrowserClass.Lower()" ); };
-    this.Raise = function() { logger.info( "BrowserClass.Raise()" ); };
-    this.Action = function( action ) { logger.info( "BrowserClass.Action( " + action + " )" ); };
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
+    this.SetToolbarState = function( state ) { logger.info( this.__module(), "SetToolbarState( " + state + " )" ); };
+    this.FrameLoadResetsState = function( state ) { logger.info( this.__module(), "FrameLoadResetsState( " + state + " )" ); };
+    this.Lower = function() { logger.info( this.__module(), "Lower()" ); };
+    this.Raise = function() { logger.info( this.__module(), "Raise()" ); };
+    this.Action = function( action ) { logger.info( this.__module(), "Action( " + action + " )" ); };
 }
 
 function AVMediaClass()
@@ -114,16 +128,20 @@ function AVMediaClass()
     this.onEvent = null;
     this.Event   = 0;
 
-    this.Kill = function() { logger.info( "AVMedia.Kill()" ); };
-    this.Play = function( url ) { logger.info( "AVMedia.Play( " + url + " )" ); };
-    this.Pause = function() { logger.info( "AVMedia.Play()" ) };
-    this.Continue = function() { logger.info( "AVMedia.Continue()" ) };
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
+    this.Kill = function() { logger.info( this.__module(), "Kill()" ); };
+    this.Play = function( url ) { logger.info( this.__module(), "Play( " + url + " )" ); };
+    this.Pause = function() { logger.info( this.__module(), "Play()" ) };
+    this.Continue = function() { logger.info( this.__module(), "Continue()" ) };
     this.GetMSecPosition = function() { return 0; };
     this.SetMSecPosition = function( pos ) { return pos; };
-    this.SetSpeed = function( speed ) { logger.info( "AVMedia.SetSpeed( " + speed + " )" ); };
-    this.GetCurrentSpeed = function() { logger.info( "AVMedia.GetCurrentSpeed()" ); return 0; };
-    this.SetAudioPID = function( pid ) { logger.info( "AVMedia.SetAudioPID( " + pid + " )" ); };
-    this.SetPrimarySubtitleLanguage = function( lang, bb ) { logger.info( "AVMedia.SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" ); };
+    this.SetSpeed = function( speed ) { logger.info( this.__module(), "SetSpeed( " + speed + " )" ); };
+    this.GetCurrentSpeed = function() { logger.info( this.__module(), "GetCurrentSpeed()" ); return 0; };
+    this.SetAudioPID = function( pid ) { logger.info( this.__module(), "SetAudioPID( " + pid + " )" ); };
+    this.SetPrimarySubtitleLanguage = function( lang, bb ) { logger.info( this.__module(), "SetPrimarySubtitleLanguage( " + lang + ", " + bb + " )" ); };
 }
 
 function StorageInfo()
@@ -154,6 +172,10 @@ function RecordingAsset()
     this.position = 0;
     this.marker = -1;
 
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
     this.ReadMeta = function()
     {
         if ( this.marker == -1 )
@@ -174,7 +196,7 @@ function RecordingAsset()
 						{
                         	asset.marker = responseItem["data"]["marker"];
 
-                        	logger.info( "RecordingAsset.ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
+                        	logger.info( this.__module(), "ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
                         }
                     }
                 }
@@ -188,7 +210,7 @@ function RecordingAsset()
     }
     this.WriteMeta = function( meta )
     {
-        logger.info( "RecordingAsset.WriteMeta( " + meta + " )" );
+        logger.info( this.__module(), "WriteMeta( " + meta + " )" );
 
         var meta = eval( "(" + meta + ")" );
         this.marker = meta.marker;
@@ -201,7 +223,7 @@ function RecordingAsset()
             {
                 if ( this.status == 200 )
                 {
-                    logger.info( "RecordingAsset.WriteMeta: onreadystatechange: saved meta data" );
+                    logger.info( this.__module(), "WriteMeta: onreadystatechange: saved meta data" );
                 }
             }
         };
@@ -225,6 +247,10 @@ function PVRClass()
 
     this.storage_info        = null;
 
+    this.__module = function()
+    {
+        return "stub." + this.constructor.name;
+    };
     this.GetPltInfo = function() { return "OK"; };
     this.GetStorageInfo = function()
     {
@@ -233,7 +259,7 @@ function PVRClass()
             var pvr             = this;
             var storageRequest = new XMLHttpRequest();
 
-            logger.info( "PVRClass.GetStorageInfo: Downloading storage info" );
+            logger.info( this.__module(), "GetStorageInfo: Downloading storage info" );
 
             storageRequest.onreadystatechange = function()
             {
@@ -252,16 +278,16 @@ function PVRClass()
                             	pvr.storage_info.availableSize = responseItem["data"]["available_size"];
                             	pvr.storage_info.totalSize     = responseItem["data"]["total_size"];
 
-                            	logger.info( "PVRClass.GetStorageInfo: onreadystatechange: Downloaded storage info" );
+                            	logger.info( this.__module(), "GetStorageInfo: onreadystatechange: Downloaded storage info" );
                             }
                             else
                             {
-                            	logger.error( "PVRClass.GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
+                            	logger.error( this.__module(), "GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
                             }
                         }
                         catch ( e )
                         {
-                            logger.error( "PVRClass.GetStorageInfo: onreadystatechange: exception: " + e );
+                            logger.error( this.__module(), "GetStorageInfo: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -296,7 +322,7 @@ function PVRClass()
             var pvr               = this;
             var recordingsRequest = new XMLHttpRequest();
 
-            logger.info( "PVRClass.GetAssetIdList: Downloading recording list" );
+            logger.info( this.__module(), "GetAssetIdList: Downloading recording list" );
 
             recordingsRequest.onreadystatechange = function()
             {
@@ -336,11 +362,11 @@ function PVRClass()
 	                            pvr.recording_ids.count = i - 1;
 	                        }
 
-                            logger.info( "PVRClass.GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
+                            logger.info( this.__module(), "GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
                         }
                         catch ( e )
                         {
-                            logger.error( "PVRClass.GetAssetIdList: onreadystatechange: exception: " + e );
+                            logger.error( this.__module(), "GetAssetIdList: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -358,7 +384,7 @@ function PVRClass()
             var pvr             = this;
             var scheduleRequest = new XMLHttpRequest();
 
-            logger.info( "PVRClass.GetScheduleList: Downloading schedule list" );
+            logger.info( this.__module(), "GetScheduleList: Downloading schedule list" );
 
             scheduleRequest.onreadystatechange = function()
             {
@@ -389,11 +415,11 @@ function PVRClass()
             	                pvr.schedule_list.count = i - 1;
             	            }
 
-                            logger.info( "PVRClass.GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
+                            logger.info( this.__module(), "GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
                         }
                         catch ( e )
                         {
-                            logger.error( "PVRClass.GetScheduleList: onreadystatechange: exception: " + e );
+                            logger.error( this.__module(), "GetScheduleList: onreadystatechange: exception: " + e );
                         }
                     }
                 }
@@ -414,7 +440,7 @@ function PVRClass()
         {
             if ( (this.readyState == 4) && (this.status == 200) )
             {
-                logger.info( "PVRClass.AddSchedule.onreadystatechange: done: " + this.responseText );
+                logger.info( this.__module(), "AddSchedule.onreadystatechange: done: " + this.responseText );
             }
         };
         scheduleRequest.open( "POST", "/aminopvr/api/addSchedule", false );
