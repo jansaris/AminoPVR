@@ -119,7 +119,7 @@ class ContentProvider( threading.Thread ):
                 styleCssContent = self._getStyleCss( styleCssPath )
                 apiJsContent    = self._modifyApiJs( symbolNames )
                 if indexContent and codeJsContent and styleCssContent and apiJsContent:
-                    self._logger.info( "_translateContent: content translated: title=%s" % ( title ) )
+                    self._logger.warning( "_translateContent: content translated: title=%s" % ( title ) )
                     conn = DBConnection()
 
                     if conn:
@@ -197,6 +197,7 @@ class ContentProvider( threading.Thread ):
         if content:
             fileHandle  = gzip.GzipFile( fileobj=StringIO( content ) )
             fileContent = fileHandle.read()
+            parseOk     = True
             regExp = {
                         #                                   z                            [ b       ] ={ k                              :b          ,   c                                 :{ " default" :" Nederland 1" } ,   q                                  :{ " default" :" Nederland 1" } ,   j                            :" ned1" ,   m                            :" ned1" ,   s                              :" ned1.png" ,   t                              :" ned1.png" ,   o                              :" ned1.png" ,   n                                   :a          ,   d                               :[ ] ,   e                                 :[ ] } ;
                         "CHANNEL_LIST_1":                 r"(?P<channel_list>[A-Za-z]{1})\[[a-z]{1}\]=\{(?P<channel_number>[A-Za-z]{1}):[A-Za-z]{1},\s*(?P<channel_name_long>[A-Za-z]{1}):\{\"default\":\"Nederland 1\"\},\s*(?P<channel_name_short>[A-Za-z]{1}):\{\"default\":\"Nederland 1\"\},\s*(?P<channel_id_1>[A-Za-z]{1}):\"ned1\",\s*(?P<channel_id_2>[A-Za-z]{1}):\"ned1\",\s*(?P<channel_logo_1>[A-Za-z]{1}):\"ned1.png\",\s*(?P<channel_logo_2>[A-Za-z]{1}):\"ned1.png\",\s*(?P<channel_logo_3>[A-Za-z]{1}):\"ned1.png\",\s*(?P<prev_channel_number>[A-Za-z]{1}):[A-Za-z]{1},\s*(?P<channel_streams>[A-Za-z]{1}):\[\],\s*(?P<channel_unknown_1>[A-Za-z]{1}):\[\]\};",
@@ -239,8 +240,8 @@ class ContentProvider( threading.Thread ):
                 symbolNames["prev_channel_number"]  = channelList1Match.group( "prev_channel_number" )
                 symbolNames["channel_streams"]      = channelList1Match.group( "channel_streams" )
 
-                # For the folloing matches I only need about 1000 characters starting from the start of this match
-                channelListString = fileContent[channelList1Match.start():channelList1Match.start() + 1000]
+                # For the folloing matches I only need about 1500 characters starting from the start of this match
+                channelListString = fileContent[channelList1Match.start():channelList1Match.start() + 1500]
 
                 channelList2Match = re.compile( regExp["CHANNEL_LIST_2"] ).search( channelListString )
                 if channelList2Match:
@@ -248,14 +249,14 @@ class ContentProvider( threading.Thread ):
                     symbolNames["channel_url_hd"] = channelList2Match.group( "channel_url_hd" )
                 else:
                     self._logger.error( "_parseCodeJs: no match for CHANNEL_LIST_2" )
-                    return ( None, None )
+                    parseOk = False
 
                 channelList3Match = re.compile( regExp["CHANNEL_LIST_3"] ).search( channelListString )
                 if channelList3Match:
                     symbolNames["channel_id_list"] = channelList3Match.group( "channel_id_list" )
                 else:
                     self._logger.error( "_parseCodeJs: no match for CHANNEL_LIST_3" )
-                    return ( None, None )
+                    parseOk = False
 
                 # Take the rest of the file starting from the first match
                 channelListString = fileContent[channelList1Match.start():]
@@ -275,10 +276,10 @@ class ContentProvider( threading.Thread ):
                         symbolNames["channel_radio"] = channelList4Match.group( "channel_radio" )
                     else:
                         self._logger.error( "_parseCodeJs: mismatch in CHANNEL_LIST_4 with earlier matches!" )
-                        return ( None, None )
+                        parseOk = False
                 else:
                     _logger.error( "_parseCodeJs: no match for CHANNEL_LIST_4" )
-                    return ( None, None )
+                    parseOk = False
 
                 channelList5Match = re.compile( regExp["CHANNEL_LIST_5"] ).search( channelListString )
                 if channelList5Match:
@@ -286,10 +287,10 @@ class ContentProvider( threading.Thread ):
                     symbolNames["next_channel_number"] = channelList5Match.group( "next_channel_number" )
                 else:
                     self._logger.error( "_parseCodeJs: no match for CHANNEL_LIST_5" )
-                    return ( None, None )
+                    parseOk = False
             else:
                 self._logger.error( "_parseCodeJs: no match for CHANNEL_LIST_1" )
-                return ( None, None )
+                parseOk = False
 
             playStreamActionsMatch = re.compile( regExp["PLAY_STREAM_ACTIONS"] ).search( fileContent )
             if playStreamActionsMatch:
@@ -297,7 +298,7 @@ class ContentProvider( threading.Thread ):
                 symbolNames["play_action_2"] = playStreamActionsMatch.group( "play_action_2" );
             else:
                 self._logger.error( "_parseCodeJs: no match for PLAY_STREAM_ACTIONS" )
-                return ( None, None )
+                parseOk = False
 
             playStreamClassMatch = re.compile( regExp["PLAY_STREAM_CLASS"] ).search( fileContent )
             if playStreamClassMatch:
@@ -305,7 +306,7 @@ class ContentProvider( threading.Thread ):
                 symbolNames["play_stream_url"]   = playStreamClassMatch.group( "play_stream_url" );
             else:
                 self._logger.error( "_parseCodeJs: no match for PLAY_STREAM_CLASS" )
-                return ( None, None )
+                parseOk = False
 
             setChannelFunctionMatch = re.compile( regExp["SET_CHANNEL_FUNCTION"] ).search( fileContent )
             if setChannelFunctionMatch:
@@ -315,10 +316,10 @@ class ContentProvider( threading.Thread ):
                     symbolNames["set_channel_instance"] = setChannelInstanceMatch.group( "set_channel_instance" );
                 else:
                     self._logger.error( "_parseCodeJs: no match for SET_CHANNEL_FUNCTION" )
-                    return ( None, None )
+                    parseOk = False
             else:
                 self._logger.error( "_parseCodeJs: no match for SET_CHANNEL_FUNCTION" )
-                return ( None, None )
+                parseOk = False
 
             channelObjectMatch = re.compile( regExp["CHANNEL_OBJECT"] ).search( fileContent )
             if channelObjectMatch:
@@ -326,7 +327,7 @@ class ContentProvider( threading.Thread ):
                 symbolNames["channel_object_2"] = channelObjectMatch.group( "channel_object_2" );
             else:
                 self._logger.error( "_parseCodeJs: no match for CHANNEL_OBJECT" )
-                return ( None, None )
+                parseOk = False
 
             debugFunctionMatch = re.compile( regExp["DEBUG_FUNCTION"] ).search( fileContent )
             if debugFunctionMatch:
@@ -335,24 +336,27 @@ class ContentProvider( threading.Thread ):
                 initFunctionMatch = re.compile( regExp["INIT_FUNCTION"] % ( symbolNames["debug_function"] ) ).search( fileContent )
                 if not initFunctionMatch:
                     _logger.error( "_parseCodeJs: no match for INIT_FUNCTION" )
-                    return ( None, None )
+                    parseOk = False
 
                 lastJSLineMatch = re.compile( regExp["LAST_JS_LINE"] % ( symbolNames["debug_function"] ) ).search( fileContent )
                 if not lastJSLineMatch:
                     self._logger.error( "_parseCodeJs: no match for LAST_JS_LINE" )
-                    return ( None, None )
+                    parseOk = False
             else:
                 self._logger.error( "_parseCodeJs: no match for DEBUG_FUNCTION" )
-                return ( None, None )
+                parseOk = False
 
             keyEventFunctionMatch = re.compile( regExp["KEY_EVENT_FUNCTION"] ).search( fileContent )
             if keyEventFunctionMatch:
                 symbolNames["key_event_function"] = keyEventFunctionMatch.group( "key_event_function" );
             else:
                 _logger.error( "_parseCodeJs: no match for KEY_EVENT_FUNCTION" )
-                return ( None, None )
+                parseOk = False
 
-            return ( fileContent, symbolNames )
+            if parseOk:
+                return ( fileContent, symbolNames )
+            else:
+                return ( None, None )
         else:
             self._logger.error( "_parseCodeJs: no file content!" )
             return ( None, None )
@@ -403,7 +407,8 @@ class ContentProvider( threading.Thread ):
                     "REPLACE_PLAY_STREAM_FUNCTION_2": r"/* id_begin */if ( !localStream ){\1}/* id_end */",
                     "PROXY_OBJECT":                   r"(ASTB|PVR|AVMedia|Browser|VideoDisplay)\.",
                     "REPLACE_PROXY_OBJECT":           r"\1Proxy.",
-                    "REDIRECT_FIX":                   r"if\s*\(([a-z]{1})\s*=\s*([a-z]{1}\.[a-z]{1})\.redirect\){",
+                    #                                   if   ( b            =   a         .B           . redirect) {
+                    "REDIRECT_FIX":                   r"if\s*\(([a-z]{1})\s*=\s*([a-z]{1}\.[A-Za-z]{1})\.redirect\){",
                     "REPLACE_REDIRECT_FIX":           r'if(\2.redirect){\1=\2.redirect;DebugLog( "Redirecting to: " + \1 );'
                  }
         #    "REPLACE_INIT_FUNCTION": "\${0};/* id_begin *//* id_end */",
