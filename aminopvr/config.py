@@ -113,6 +113,16 @@ class GeneralConfig( ConfigSectionAbstract ):
     def localAccessNets( self ):
         return self._get( "local_access_nets" ).split( ',' )
 
+class DebugConfig( ConfigSectionAbstract ):
+    _section = "Debug"
+    _options = {
+                 "logger": ""
+               }
+
+    @property
+    def logger( self ):
+        return { x.split( ':' )[0]: x.split( ':' )[1] for x in self._get( "logger" ).split( ',' ) }
+
 class Config( object ):
     __metaclass__ = Singleton
 

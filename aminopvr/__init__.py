@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.config import config, GeneralConfig
+from aminopvr.config import config, GeneralConfig, DebugConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
@@ -24,20 +24,17 @@ from aminopvr.wi import initWebserver, stopWebserver
 import datetime
 import logging
 import os
+import sys
 import time
 
 logger          = logging.getLogger( "aminopvr" )
 
 generalConfig   = GeneralConfig( config )
-resourceMonitor = ResourceMonitor()
-recorder        = Recorder()
-scheduler       = Scheduler()
+resourceMonitor = None
+recorder        = None
+scheduler       = None
 epgGrabber      = None
 contentProvider = None
-
-if generalConfig.provider == "glashart":
-    import providers.glashart as provider
-    provider.RegisterProvider()
 
 #def test( eventType, params ):
 #    logger.warning( "test" )
@@ -53,17 +50,48 @@ def shutdown():
         epgGrabber.stop()
     if contentProvider:
         contentProvider.stop()
-    recorder.stopAllRecordings()
-    scheduler.stop()
-    resourceMonitor.stop()
+    if recorder:
+        recorder.stopAllRecordings()
+    if scheduler:
+        scheduler.stop()
+    if resourceMonitor:
+        resourceMonitor.stop()
     stopWebserver()
     logger.warning( "Everything has stopped, now exit" )
+    logging.shutdown()
     os._exit( 0 )
 
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
-    initWebserver( generalConfig.serverPort )
+    debugConfig = DebugConfig( config )
+    for debugLogger in debugConfig.logger.keys():
+        loggerInst = logging.getLogger( debugLogger )
+        if debugConfig.logger[debugLogger].lower() == "debug":
+            loggerInst.setLevel( logging.DEBUG )
+        elif debugConfig.logger[debugLogger].lower() == "info":
+            loggerInst.setLevel( logging.INFO )
+        elif debugConfig.logger[debugLogger].lower() == "warning":
+            loggerInst.setLevel( logging.WARNING )
+        elif debugConfig.logger[debugLogger].lower() == "error":
+            loggerInst.setLevel( logging.ERROR )
+        elif debugConfig.logger[debugLogger].lower() == "critical":
+            loggerInst.setLevel( logging.CRITICAL )
+        logger.warning( "Configured logger '%s' at level '%s'" % ( debugLogger, debugConfig.logger[debugLogger] ) )
+
+    resourceMonitor = ResourceMonitor()
+    recorder        = Recorder()
+    scheduler       = Scheduler()
+
+    if generalConfig.provider == "glashart":
+        import providers.glashart as provider
+        provider.RegisterProvider()
+
+    try:
+        initWebserver( generalConfig.serverPort )
+    except IOError:
+        logger.error( u"Unable to start web server, is something else running on port %d?" % ( generalConfig.serverPort ) )
+        sys.exit()
 
     scheduler.start()
     scheduler.requestReschedule()
