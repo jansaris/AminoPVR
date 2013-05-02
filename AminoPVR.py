@@ -97,7 +97,7 @@ def daemonize():
 
     if aminopvr.const.CREATEPID:
         pid = str( os.getpid() )
-        logger.log( u"Writing PID " + pid + " to " + str( aminopvr.const.PIDFILE ) )
+        logger.warning( u"Writing PID " + pid + " to " + str( aminopvr.const.PIDFILE ) )
         file( aminopvr.const.PIDFILE, 'w' ).write( "%s\n" % pid )
 
 def main():
