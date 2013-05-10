@@ -20,7 +20,6 @@ from aminopvr.tools import Singleton
 from Queue import Queue
 import logging
 import threading
-import time
 
 class ActiveRecording( threading.Thread ):
 

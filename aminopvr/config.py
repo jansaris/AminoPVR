@@ -36,7 +36,7 @@ class ConfigSectionAbstract( object ):
         self._config         = config
         self._sectionOptions = self._config.getSection( self._section )
         if not self._sectionOptions:
-            self._logger.warning( "ConfigSectionAbstract<%s>.__init__: section doesn't exist, so added" )
+            self._logger.warning( "ConfigSectionAbstract<%s>.__init__: section doesn't exist, so added" % ( self._section ) )
             self._config.addSection( self._section )
 
         unsupportedOptions = set( self._sectionOptions ).difference( set( self._options.keys() ) )
@@ -86,7 +86,8 @@ class GeneralConfig( ConfigSectionAbstract ):
                  "server_port":          8080,
                  "provider":             "Glashart",
                  "input_stream_support": "multicast,http",
-                 "local_access_nets":    "127.0.0.1"
+                 "local_access_nets":    "127.0.0.1",
+                 "recordings_path":      "./recordings"
                }
 
     """
@@ -112,6 +113,10 @@ class GeneralConfig( ConfigSectionAbstract ):
     @property
     def localAccessNets( self ):
         return self._get( "local_access_nets" ).split( ',' )
+
+    @property
+    def recordingsPath( self ):
+        return self._get( "recordings_path" )
 
 class DebugConfig( ConfigSectionAbstract ):
     _section = "Debug"

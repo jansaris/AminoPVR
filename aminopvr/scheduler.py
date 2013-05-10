@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.channel import Channel
+from aminopvr.config import GeneralConfig, config
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
@@ -26,6 +27,7 @@ from aminopvr.timer import Timer
 from aminopvr.tools import Singleton
 import datetime
 import logging
+import os
 import threading
 import time
 
@@ -577,9 +579,12 @@ class Scheduler( threading.Thread ):
                             timer["recordingId"] = recording.id
                             del timer["recording"]
 
+                            generalConfig = GeneralConfig( config )
+                            recordingFilename = os.path.join( generalConfig.recordingsPath, recording.filename )
+
                             # Hmm, recording didn't start
                             # Mark recording as unfinished
-                            recorder.startRecording( channelUrl, timerId, recording.filename, InputStreamProtocol.HTTP, self._recorderCallback )
+                            recorder.startRecording( channelUrl, timerId, recordingFilename, InputStreamProtocol.HTTP, self._recorderCallback )
                         else:
                             self._logger.error( "_startRecording: Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
                     else:
