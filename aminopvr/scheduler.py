@@ -532,7 +532,17 @@ class Scheduler( threading.Thread ):
         channelId      = channel.id
         channelName    = channel.name
         channelUrlType = url.channelType
-        recording = Recording( -1, schedule.id, program.id, channelId, channelName, channelUrlType, program.startTime, program.endTime, 0, program.title, epgProgram=program )
+        recording = Recording( -1,
+                               schedule.id,
+                               program.id,
+                               channelId,
+                               channelName,
+                               channelUrlType,
+                               program.startTime - schedule.startEarly,
+                               program.endTime   + schedule.endLate,
+                               ((program.endTime + schedule.endLate) - (program.startTime - schedule.startEarly)),
+                               program.title,
+                               epgProgram=program )
         return recording
 
     def _startRecording( self, eventType, timerId ):

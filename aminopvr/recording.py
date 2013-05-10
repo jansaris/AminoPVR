@@ -36,24 +36,24 @@ class RecordingAbstract( object ):
     _tableName       = None
 
     def __init__( self, id, scheduleId, epgProgramId, channelId, channelName, channelUrlType, startTime, endTime, length, title, filename="", fileSize=0, streamArguments="", marker=0, type="sd", scrambled=0, status=RecordingState.UNKNOWN, rerecord=False, epgProgram=None ):
-        self._id              = id
-        self._scheduleId      = scheduleId
-        self._epgProgramId    = epgProgramId
-        self._channelId       = channelId
-        self._channelName     = channelName
-        self._channelUrlType  = channelUrlType
-        self._startTime       = startTime
-        self._endTime         = endTime
-        self._length          = length
-        self._title           = title
-        self._filename        = filename
-        self._fileSize        = fileSize
-        self._streamArguments = streamArguments
-        self._type            = type
-        self._scrambled       = scrambled
-        self._marker          = marker
-        self._status          = status
-        self._rerecord        = rerecord
+        self._id              = int( id )
+        self._scheduleId      = int( scheduleId )
+        self._epgProgramId    = int( epgProgramId )
+        self._channelId       = int( channelId )
+        self._channelName     = unicode( channelName )
+        self._channelUrlType  = unicode( channelUrlType )
+        self._startTime       = int( startTime )
+        self._endTime         = int( endTime )
+        self._length          = int( length )
+        self._title           = unicode( title )
+        self._filename        = unicode( filename )
+        self._fileSize        = int( fileSize )
+        self._streamArguments = unicode( streamArguments )
+        self._type            = unicode( type )
+        self._scrambled       = int( scrambled )
+        self._marker          = int( marker )
+        self._status          = int( status )
+        self._rerecord        = int( rerecord )
         self._epgProgram      = epgProgram
 
 #        if self._filename = "":
@@ -240,6 +240,17 @@ class RecordingAbstract( object ):
                 recordings.append( recording )
 
         return recordings
+
+    @classmethod
+    def getByEpgProgramIdFromDb( cls, conn, epgProgramId ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        recording = None
+        if conn:
+            row = conn.execute( "SELECT * FROM %s WHERE epg_program_id = ?" % ( cls._tableName ), ( epgProgramId, ) )
+            if row:
+                recording = cls._createRecordingFromDbDict( conn, row[0] )
+
+        return recording
 
     @classmethod
     def getAllUnfinishedFromDb( cls, conn ):

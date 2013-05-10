@@ -714,6 +714,17 @@ class ProgramAbstract( object ):
         return programs
 
     @classmethod
+    def getByOriginalIdFromDb( cls, conn, originalId ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        program = None
+        if conn:
+            row = conn.execute( "SELECT * FROM %s WHERE original_id=?" % ( cls._tableName ), ( originalId, ) )
+            if row:
+                program = cls._createProgramFromDbDict( conn, row[0] )
+
+        return program
+
+    @classmethod
     def getFromDb( cls, conn, id ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         program = None
@@ -789,16 +800,6 @@ class ProgramAbstract( object ):
 class EpgProgram( ProgramAbstract ):
     _tableName = "epg_programs"
     _logger    = logging.getLogger( 'aminopvr.EPG.Program' )
-
-    @classmethod
-    def getByOriginalIdFromDb( cls, conn, originalId ):
-        program = None
-        if conn:
-            row = conn.execute( "SELECT * FROM %s WHERE original_id=?" % ( cls._tableName ), ( originalId, ) )
-            if row:
-                program = cls._createProgramFromDbDict( conn, row[0] )
-
-        return program
 
     @classmethod
     def _createProgramFromDbDict( cls, conn, programData ):
