@@ -428,7 +428,7 @@ class RecordingAbstract( object ):
 
     def _generateFilename( self, conn ):
         channel  = Channel.getFromDb( conn, self._channelId )
-        filename = "%d_%s" % ( channel.number, datetime.datetime.fromtimestamp( self._startTime ).strftime( "%Y%m%d%H%M%S" ) )
+        filename = "%04d_%s" % ( channel.number, datetime.datetime.fromtimestamp( self._startTime ).strftime( "%Y%m%d%H%M%S" ) )
         return filename
 
     def dump( self ):

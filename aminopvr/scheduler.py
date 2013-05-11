@@ -590,7 +590,7 @@ class Scheduler( threading.Thread ):
                             del timer["recording"]
 
                             generalConfig = GeneralConfig( config )
-                            recordingFilename = os.path.join( generalConfig.recordingsPath, recording.filename )
+                            recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) )
 
                             # Hmm, recording didn't start
                             # Mark recording as unfinished
