@@ -7,8 +7,8 @@ scheduler
 - record at same time every day/weekday/weekendday/week
 - record once
 - record early / end late
-- indicate recording group (e.g. TV Series, Food, Sport)
-- support recording group filter (genre > group mapping)
+- [future] indicate recording group (e.g. TV Series, Food, Sport)
+- [future] support recording group filter (genre > group mapping)
 recordings
 - delete (prevent re-recording)
 - delete & re-record
@@ -28,7 +28,7 @@ epg
 - download EPG daily
 - download detailed EPG on-demand (by scheduler or detailed EPG view)
 - forced download of detailed EPG configurable
-- extraction of series/episode information from name
+- [future] extraction of series/episode information from name
 - (optional) on-demand grabbing of (tvdb) metadata
 - (optional) parsing of season/episode info from meta data
 api
@@ -52,3 +52,5 @@ streams
 - [future] internal multicast > unicast proxy
 - [future] internal rtsp server
 
+future
+- extend DB structure: epg_ids.fail_count or epg_ids.last_grab
