@@ -521,12 +521,16 @@ def main():
     # Rename the main thread
     threading.currentThread().name = "MAIN"
 
-    dryRun = True
+    dryRun    = True
+    mysqlHost = "localhost"
+    mysqlDb   = "mythconverg"
+    mysqlUser = "mythtv"
+    mysqlPass = ""
 
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "dv", ['dryrun', 'verbose'] )  # @UnusedVariable
+        opts, args = getopt.getopt( sys.argv[1:], "dv", ['dryrun', 'verbose', 'host=', 'user=', 'pass=', 'db='] )  # @UnusedVariable
     except getopt.GetoptError:
-        print "Available Options: --dryrun, --verbose"
+        print "Available Options: --dryrun, --verbose, --host=<hostname>, --user=<username>, --pass=<password>, --db=<database>"
         sys.exit()
 
     for o, a in opts:
@@ -536,240 +540,262 @@ def main():
         if o in ( '-d', '--dryrun' ):
             dryRun = True
 
+        if o in ( '--host', ):
+            mysqlHost = str( a )
+
+        if o in ( '--user', ):
+            mysqlUser = str( a )
+
+        if o in ( '--pass', ):
+            mysqlPass = str( a )
+
+        if o in ( '--db', ):
+            mysqlDb = str( a )
+
     resourceMonitor = ResourceMonitor()
+    connMythTv      = None
 
-    connMythTv = MySQLdb.connect( host = "192.168.1.253",
-                                  user = "mythtv",
-                                  passwd = "5hFsbRSo",
-                                  db = "mythconverg",
-                                  use_unicode = True )
+    try:
+        connMythTv = MySQLdb.connect( host        = mysqlHost,
+                                      user        = mysqlUser,
+                                      passwd      = mysqlPass,
+                                      db          = mysqlDb,
+                                      use_unicode = True )
+    except MySQLdb.Error, e:
+        logger.error( "Unable to open MythTV database: error %d: %s" % ( e.args[0], e.args[1] ) )
 
-    mythTvChannels = MythTvChannel.getAllFromDb( connMythTv )
-    for channel in mythTvChannels:
-        logger.debug( "%s" % channel.dump() )
+    if connMythTv:
+        mythTvChannels = MythTvChannel.getAllFromDb( connMythTv )
+        for channel in mythTvChannels:
+            logger.debug( "%s" % channel.dump() )
 
-    mythTvIptvChannels = MythTvIptvChannel.getAllFromDb( connMythTv )
-    for channel in mythTvIptvChannels:
-        logger.debug( "%s" % channel.dump() )
+        mythTvIptvChannels = MythTvIptvChannel.getAllFromDb( connMythTv )
+        for channel in mythTvIptvChannels:
+            logger.debug( "%s" % channel.dump() )
 
-    mythTvRecords = MythTvRecord.getAllFromDb( connMythTv )
-    for record in mythTvRecords:
-        logger.debug( "%s" % record.dump() )
+        mythTvRecords = MythTvRecord.getAllFromDb( connMythTv )
+        for record in mythTvRecords:
+            logger.debug( "%s" % record.dump() )
 
-    mythTvRecordeds = MythTvRecorded.getAllFromDb( connMythTv )
-    for recorded in mythTvRecordeds:
-        logger.debug( "%s" % recorded.dump() )
+        mythTvRecordeds = MythTvRecorded.getAllFromDb( connMythTv )
+        for recorded in mythTvRecordeds:
+            logger.debug( "%s" % recorded.dump() )
 
-    mythTvRecordedPrograms = MythTvRecordedProgram.getAllFromDb( connMythTv )
-    for recordedProgram in mythTvRecordedPrograms:
-        logger.debug( "%s" % recordedProgram.dump() )
+        mythTvRecordedPrograms = MythTvRecordedProgram.getAllFromDb( connMythTv )
+        for recordedProgram in mythTvRecordedPrograms:
+            logger.debug( "%s" % recordedProgram.dump() )
 
-    mythTvChannelsDict         = { x.chanId: x for x in mythTvChannels }
-    mythTvIptvChannelsDict     = { x.chanId: x for x in mythTvIptvChannels }
-    mythTvRecordedsDict        = { "%i_%i" % ( x.chanId, x.programStart ): x for x in mythTvRecordeds }
-    mythTvRecordedProgramsDict = { "%i_%i" % ( x.chanId, x.startTime ):    x for x in mythTvRecordedPrograms }
+        mythTvChannelsDict         = { x.chanId: x for x in mythTvChannels }
+        mythTvIptvChannelsDict     = { x.chanId: x for x in mythTvIptvChannels }
+        mythTvRecordedsDict        = { "%i_%i" % ( x.chanId, x.programStart ): x for x in mythTvRecordeds }
+        mythTvRecordedProgramsDict = { "%i_%i" % ( x.chanId, x.startTime ):    x for x in mythTvRecordedPrograms }
 
-    mythTvRecordMap         = {}
-    mythTvChannelMap        = {}
-    mythTvChannelUrlTypeMap = {}
+        mythTvRecordMap         = {}
+        mythTvChannelMap        = {}
+        mythTvChannelUrlTypeMap = {}
 
-    conn = DBConnection()
+        # TODO: storage path: storagegroup.groupname == 'Default'
 
-    # Create a channel map to map channels between MythTV and AminoPVR
-    for mythTvChannel in mythTvChannels:
-        if mythTvChannel.chanId in mythTvIptvChannelsDict:
-            mythTvIptvChannel = mythTvIptvChannelsDict[mythTvChannel.chanId]
-        else:
-            logger.warning( "channel with chanId=%i not found in mythTvIptvChannelsDict" % ( mythTvChannel.chanId ) )
+        conn = DBConnection()
 
-        # The xmlTvId in MythTV is known as epgId in AminoPVR
-        # Search for AminoPVR channels with the same epgId
-        # Then match the Iptv Channel Url against AminoPVR ChannelUrl's
-        epgId             = mythTvChannel.xmlTvId
-        currChannels      = Channel.getAllByEpgIdFromDb( conn, epgId, includeInactive=True )
-        for channel in currChannels:
-            if mythTvIptvChannel:
-                for urlType in channel.urls.keys():
-                    url     = channel.urls[urlType]
-                    urlPart = "%s:%i" % ( url.ip, url.port )
-                    if urlPart in mythTvIptvChannel.url:
-                        mythTvChannelMap[mythTvChannel.chanId]        = channel
-                        mythTvChannelUrlTypeMap[mythTvChannel.chanId] = urlType
-                        break
+        if conn:
+            # Create a channel map to map channels between MythTV and AminoPVR
+            for mythTvChannel in mythTvChannels:
+                if mythTvChannel.chanId in mythTvIptvChannelsDict:
+                    mythTvIptvChannel = mythTvIptvChannelsDict[mythTvChannel.chanId]
+                else:
+                    logger.warning( "channel with chanId=%i not found in mythTvIptvChannelsDict" % ( mythTvChannel.chanId ) )
 
-        # We didn't find a match
-        if not mythTvChannelMap.has_key( mythTvChannel.chanId ):
-            if len( currChannels ) > 0:
-                logger.warning( "Channels found, but no Url match for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
+                # The xmlTvId in MythTV is known as epgId in AminoPVR
+                # Search for AminoPVR channels with the same epgId
+                # Then match the Iptv Channel Url against AminoPVR ChannelUrl's
+                epgId             = mythTvChannel.xmlTvId
+                currChannels      = Channel.getAllByEpgIdFromDb( conn, epgId, includeInactive=True )
                 for channel in currChannels:
-                    logger.warning( "Channel: %s" % ( channel.dump() ) )
-            else:
-                logger.warning( "No channels found for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
+                    if mythTvIptvChannel:
+                        for urlType in channel.urls.keys():
+                            url     = channel.urls[urlType]
+                            urlPart = "%s:%i" % ( url.ip, url.port )
+                            if urlPart in mythTvIptvChannel.url:
+                                mythTvChannelMap[mythTvChannel.chanId]        = channel
+                                mythTvChannelUrlTypeMap[mythTvChannel.chanId] = urlType
+                                break
 
-    # Convert MythTV records (schedule entries) to AminoPVR schedules
-    for record in mythTvRecords:
-        if record.chanId == 0 or record.chanId in mythTvChannelMap:
-            channelId = -1
-            if record.chanId:
-                channelId = mythTvChannelMap[recordedProgram.chanId].id
- 
-            # Search for a Schedule with the same title and channelId
-            schedule = Schedule.getByTitleAndChannelIdFromDb( conn, record.title, channel.id )
+                # We didn't find a match
+                if not mythTvChannelMap.has_key( mythTvChannel.chanId ):
+                    if len( currChannels ) > 0:
+                        logger.warning( "Channels found, but no Url match for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
+                        for channel in currChannels:
+                            logger.warning( "Channel: %s" % ( channel.dump() ) )
+                    else:
+                        logger.warning( "No channels found for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
 
-            # No schedule exists yet, create one
-            if not schedule:
-                type      = Schedule.SCHEDULE_TYPE_ANY_TIME
-                dupMethod = Schedule.DUPLICATION_METHOD_NONE
-                if record.type == 1:    # kSingleRecord
-                    type = Schedule.SCHEDULE_TYPE_ONCE
-                elif record.type == 2:  # kTimeslotRecord
-                    type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
-                elif record.type == 3:  # kChannelRecord
-                    type = Schedule.SCHEDULE_TYPE_ANY_TIME
-                    if channelId == -1:
-                        logger.warning( "Expecting a channelId" )
-                        break
-                elif record.type == 4:  # kAllRecord
-                    type      = Schedule.SCHEDULE_TYPE_ANY_TIME
+            # Convert MythTV records (schedule entries) to AminoPVR schedules
+            for record in mythTvRecords:
+                if record.chanId == 0 or record.chanId in mythTvChannelMap:
                     channelId = -1
-                elif record.type == 5:  # kWeekslotRecord
-                    type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK
-                elif record.type == 9:  # kFindDailyRecord
-                    type = Schedule.SCHEDULE_TYPE_ONCE_EVERY_DAY
-                elif record.type == 10: # kFindWeeklyRecord
-                    type = Schedule.SCHEDULE_TYPE_ONCE_EVERY_WEEK
+                    if record.chanId:
+                        channelId = mythTvChannelMap[recordedProgram.chanId].id
  
-                if record.dupMethod & 0x02 == 0x02: # kDupCheckSub
-                    dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_SUBTITLE
-                if record.dupMethod & 0x04 == 0x04: # kDupCheckDesc
-                    dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_DESCRIPTION
- 
-                schedule = Schedule( -1,
-                                     type,
-                                     channelId,
-                                     record.startTime,
-                                     record.endTime,
-                                     record.title,
-                                     (channelId != -1 and mythTvChannelUrlTypeMap[recordedProgram.chanId] == u"hd"),
-                                     True,
-                                     dupMethod,
-                                     record.startOffset,
-                                     record.endOffset,
-                                     record.inactive )
- 
-                logger.warning( "Adding Schedule: %s" % ( schedule.dump() ) )
- 
-                if not dryRun:
-                    schedule.addToDb( conn )
-            else:
-                logger.warning( "Schedule with title=%s and channelId=%i already exists" % ( schedule.title, schedule.channelId ) )
- 
-            mythTvRecordMap[record.recordId] = schedule
- 
-    for recordKey in mythTvRecordedsDict.keys():
-        if recordKey in mythTvRecordedProgramsDict:
-            recorded        = mythTvRecordedsDict[recordKey]
-            recordedProgram = mythTvRecordedProgramsDict[recordKey]
+                    # Search for a Schedule with the same title and channelId
+                    schedule = Schedule.getByTitleAndChannelIdFromDb( conn, record.title, channel.id )
 
-            # If the channel is not in the channel map (yet), it does not exist
-            # in the AminoPVR database.
-            # If there is enough information on MythTV side, create an inactive
-            # channel.
-            if recordedProgram.chanId not in mythTvChannelMap:
-                if recordedProgram.chanId in mythTvChannelsDict: 
-                    mythTvChannel = mythTvChannelsDict[recordedProgram.chanId]
-                    if recordedProgram.chanId in mythTvIptvChannelsDict:
-                        mythTvIptvChannel = mythTvIptvChannelsDict[recordedProgram.chanId]
+                    # No schedule exists yet, create one
+                    if not schedule:
+                        type      = Schedule.SCHEDULE_TYPE_ANY_TIME
+                        dupMethod = Schedule.DUPLICATION_METHOD_NONE
+                        if record.type == 1:    # kSingleRecord
+                            type = Schedule.SCHEDULE_TYPE_ONCE
+                        elif record.type == 2:  # kTimeslotRecord
+                            type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
+                        elif record.type == 3:  # kChannelRecord
+                            type = Schedule.SCHEDULE_TYPE_ANY_TIME
+                            if channelId == -1:
+                                logger.warning( "Expecting a channelId" )
+                                break
+                        elif record.type == 4:  # kAllRecord
+                            type      = Schedule.SCHEDULE_TYPE_ANY_TIME
+                            channelId = -1
+                        elif record.type == 5:  # kWeekslotRecord
+                            type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK
+                        elif record.type == 9:  # kFindDailyRecord
+                            type = Schedule.SCHEDULE_TYPE_ONCE_EVERY_DAY
+                        elif record.type == 10: # kFindWeeklyRecord
+                            type = Schedule.SCHEDULE_TYPE_ONCE_EVERY_WEEK
+ 
+                        if record.dupMethod & 0x02 == 0x02: # kDupCheckSub
+                            dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_SUBTITLE
+                        if record.dupMethod & 0x04 == 0x04: # kDupCheckDesc
+                            dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_DESCRIPTION
+ 
+                        schedule = Schedule( -1,
+                                             type,
+                                             channelId,
+                                             record.startTime,
+                                             record.endTime,
+                                             record.title,
+                                             (channelId != -1 and mythTvChannelUrlTypeMap[recordedProgram.chanId] == u"hd"),
+                                             True,
+                                             dupMethod,
+                                             record.startOffset,
+                                             record.endOffset,
+                                             record.inactive )
+ 
+                        logger.warning( "Adding Schedule: %s" % ( schedule.dump() ) )
+ 
+                        if not dryRun:
+                            schedule.addToDb( conn )
+                    else:
+                        logger.warning( "Schedule with title=%s and channelId=%i already exists" % ( schedule.title, schedule.channelId ) )
+ 
+                    mythTvRecordMap[record.recordId] = schedule
+ 
+            for recordKey in mythTvRecordedsDict.keys():
+                if recordKey in mythTvRecordedProgramsDict:
+                    recorded        = mythTvRecordedsDict[recordKey]
+                    recordedProgram = mythTvRecordedProgramsDict[recordKey]
 
-                        urlRe    = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})" )
-                        urlMatch = urlRe.search( mythTvIptvChannel.url )
-                        if urlMatch:
-                            urlType   = u"sd"
-                            protocol  = "igmp"
-                            ip        = urlMatch.group( "ip" )
-                            port      = int( urlMatch.group( "port" ) )
-                            arguments = ""
-                            if urlMatch.group( "protocol" ) == "rtp":
-                                arguments = ";rtpskip=yes"
+                    # If the channel is not in the channel map (yet), it does not exist
+                    # in the AminoPVR database.
+                    # If there is enough information on MythTV side, create an inactive
+                    # channel.
+                    if recordedProgram.chanId not in mythTvChannelMap:
+                        if recordedProgram.chanId in mythTvChannelsDict: 
+                            mythTvChannel = mythTvChannelsDict[recordedProgram.chanId]
+                            if recordedProgram.chanId in mythTvIptvChannelsDict:
+                                mythTvIptvChannel = mythTvIptvChannelsDict[recordedProgram.chanId]
 
-                            channel = Channel( -1,
-                                               mythTvChannel.chanNum,
-                                               mythTvChannel.xmlTvId,
-                                               mythTvChannel.name,
-                                               mythTvChannel.callsign,
-                                               "",
-                                               "",
-                                               False,
-                                               True )
-                            channel.urls[urlType] = ChannelUrl( urlType, protocol, ip, port, arguments, scrambled=0 )
+                                urlRe    = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})" )
+                                urlMatch = urlRe.search( mythTvIptvChannel.url )
+                                if urlMatch:
+                                    urlType   = u"sd"
+                                    protocol  = "igmp"
+                                    ip        = urlMatch.group( "ip" )
+                                    port      = int( urlMatch.group( "port" ) )
+                                    arguments = ""
+                                    if urlMatch.group( "protocol" ) == "rtp":
+                                        arguments = ";rtpskip=yes"
 
-                            logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
+                                    channel = Channel( -1,
+                                                       mythTvChannel.chanNum,
+                                                       mythTvChannel.xmlTvId,
+                                                       mythTvChannel.name,
+                                                       mythTvChannel.callsign,
+                                                       "",
+                                                       "",
+                                                       False,
+                                                       True )
+                                    channel.urls[urlType] = ChannelUrl( urlType, protocol, ip, port, arguments, scrambled=0 )
 
+                                    logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
+
+                                    if not dryRun:
+                                        channel.addToDb( conn )
+
+                                    mythTvChannelMap[recordedProgram.chanId]        = channel
+                                    mythTvChannelUrlTypeMap[recordedProgram.chanId] = urlType
+                        else:
+                            logger.warning( "channel with chanId=%i not found in mythTvChannelsDict (%s)" % ( recordedProgram.chanId, recordedProgram.dump() ) )
+
+                    if recordedProgram.chanId in mythTvChannelMap:
+                        channel = mythTvChannelMap[recordedProgram.chanId]
+
+                        scheduleId = -1
+                        if recorded.recordId in mythTvRecordMap:
+                            scheduleId = mythTvRecordMap[recorded.recordId].id
+                        else:
+                            logger.debug( "record with recordId=%i not found in mythTvRecordMap (%s)" % ( recorded.recordId, recorded.dump() ) )
+
+                        recordingProgram = RecordingProgram.getByOriginalIdFromDb( conn, recordKey )
+                        recording        = None
+
+                        if not recordingProgram:
+                            recordingProgram = RecordingProgram( epgId,
+                                                                 -1,
+                                                                 recordKey,
+                                                                 recordedProgram.startTime,
+                                                                 recordedProgram.endTime,
+                                                                 recordedProgram.title,
+                                                                 recordedProgram.subtitle,
+                                                                 recordedProgram.description,
+                                                                 detailed=True )
+                            if recordedProgram.category != "" and recordedProgram.category in _CATTRANS:
+                                genre = Genre.getByGenreFromDb( conn, _CATTRANS[recordedProgram.category] )
+                                if genre:
+                                    recordingProgram.genres.append( RecordingProgramGenre( -1, genre.id, genre ) )
+                        else:
+                            logger.warning( "Recording program with originalId=%s already exists" % ( recordKey ) )
+                            recording = Recording.getByEpgProgramIdFromDb( conn, recordingProgram.id )
+ 
+                        if not recording:
+                            recording = Recording( -1,
+                                                   scheduleId,
+                                                   recordingProgram.id,
+                                                   channel.id,
+                                                   channel.name,
+                                                   mythTvChannelUrlTypeMap[recordedProgram.chanId],
+                                                   recorded.startTime,
+                                                   recorded.endTime,
+                                                   recorded.endTime - recorded.startTime,
+                                                   recorded.title,
+                                                   recorded.baseName,
+                                                   recorded.fileSize,
+                                                   type=mythTvChannelUrlTypeMap[recordedProgram.chanId],
+                                                   status=RecordingState.RECORDING_FINISHED,
+                                                   epgProgram=recordingProgram )
+                            logger.warning( "Adding Recording: %s" % ( recording.dump() ) )
                             if not dryRun:
-                                channel.addToDb( conn )
+                                recording.addToDb( conn )
 
-                            mythTvChannelMap[recordedProgram.chanId]        = channel
-                            mythTvChannelUrlTypeMap[recordedProgram.chanId] = urlType
+                        # TODO: copy/move/link recording files & recording index
+                    else:
+                        logger.warning( "Recording with epgProgramId=%i already exists" % ( recordingProgram.id ) )
                 else:
-                    logger.warning( "channel with chanId=%i not found in mythTvChannelsDict (%s)" % ( recordedProgram.chanId, recordedProgram.dump() ) )
-
-            if recordedProgram.chanId in mythTvChannelMap:
-                channel = mythTvChannelMap[recordedProgram.chanId]
-
-                scheduleId = -1
-                if recorded.recordId in mythTvRecordMap:
-                    scheduleId = mythTvRecordMap[recorded.recordId].id
-                else:
-                    logger.debug( "record with recordId=%i not found in mythTvRecordMap (%s)" % ( recorded.recordId, recorded.dump() ) )
-
-                recordingProgram = RecordingProgram.getByOriginalIdFromDb( conn, recordKey )
-                recording        = None
-
-                if not recordingProgram:
-                    recordingProgram = RecordingProgram( epgId,
-                                                         -1,
-                                                         recordKey,
-                                                         recordedProgram.startTime,
-                                                         recordedProgram.endTime,
-                                                         recordedProgram.title,
-                                                         recordedProgram.subtitle,
-                                                         recordedProgram.description,
-                                                         detailed=True )
-                    if recordedProgram.category != "" and recordedProgram.category in _CATTRANS:
-                        genre = Genre.getByGenreFromDb( conn, _CATTRANS[recordedProgram.category] )
-                        if genre:
-                            recordingProgram.genres.append( RecordingProgramGenre( -1, genre.id, genre ) )
-                else:
-                    logger.warning( "Recording program with originalId=%s already exists" % ( recordKey ) )
-                    recording = Recording.getByEpgProgramIdFromDb( conn, recordingProgram.id )
- 
-                if not recording:
-                    recording = Recording( -1,
-                                           scheduleId,
-                                           recordingProgram.id,
-                                           channel.id,
-                                           channel.name,
-                                           mythTvChannelUrlTypeMap[recordedProgram.chanId],
-                                           recorded.startTime,
-                                           recorded.endTime,
-                                           recorded.endTime - recorded.startTime,
-                                           recorded.title,
-                                           recorded.baseName,
-                                           recorded.fileSize,
-                                           type=mythTvChannelUrlTypeMap[recordedProgram.chanId],
-                                           status=RecordingState.RECORDING_FINISHED,
-                                           epgProgram=recordingProgram )
-                    logger.warning( "Adding Recording: %s" % ( recording.dump() ) )
-                    if not dryRun:
-                        recording.addToDb( conn )
-
-                    # TODO: copy/move/link recording files & recording index
-                else:
-                    logger.warning( "Recording with epgProgramId=%i already exists" % ( recordingProgram.id ) )
+                    logger.warning( "channel with chanId=%i not found in mythTvChannelMap (%s)" % ( recordedProgram.chanId, recordedProgram.dump() ) )
             else:
-                logger.warning( "channel with chanId=%i not found in mythTvChannelMap (%s)" % ( recordedProgram.chanId, recordedProgram.dump() ) )
+                logger.warning( "recordKey=%s not found in mythTvRecordedProgramsDict" % ( recordKey ) )
         else:
-            logger.warning( "recordKey=%s not found in mythTvRecordedProgramsDict" % ( recordKey ) )
+            logger.error( "Unable to open AminoPVR database" )
 
     resourceMonitor.stop()
 
