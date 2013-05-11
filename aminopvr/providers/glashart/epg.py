@@ -74,7 +74,7 @@ class EpgProvider( threading.Thread ):
 
         now          = datetime.datetime.now()
         grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( glashartConfig.grabEpgTime, "%H:%M" ).timetz() )
-        grabInterval = EpgProvider._parseTimedetla( glashartConfig.grabEpgInterval )
+        grabInterval = self._parseTimedetla( glashartConfig.grabEpgInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -113,9 +113,9 @@ class EpgProvider( threading.Thread ):
                 Scheduler().requestReschedule()
             self._event.clear()
 
-    @staticmethod
-    def _parseTimedetla( timeString ):
-        parts = EpgProvider._timedeltaRegex.match( timeString )
+    @classmethod
+    def _parseTimedetla( cls, timeString ):
+        parts = cls._timedeltaRegex.match( timeString )
         if not parts:
             return
         parts      = parts.groupdict()
@@ -176,89 +176,112 @@ class EpgProvider( threading.Thread ):
         else:
             self._logger.info( "Grabbing EPG for epgId: %s (method: %s)" % ( epgId.epgId, epgId.strategy ) )
 
-        now             = time.localtime()
-        nowDay          = datetime.datetime( now[0], now[1], now[2] )
-        daysDetailDelta = datetime.timedelta( days = 3 )
+        # Check if _fail_# is behind strategy
+        # This is to indicate epg grabbing for this epgId failed previously
+        strategy   = epgId.strategy
+        strategyRe = re.compile( r'_fail_(?P<fail>\d+)' )
+        failMatch  = strategyRe.match( strategy )
+        failCount  = 0
+        if failMatch:
+            failCount = failMatch.group( "fail" )
+            strategy  = strategy.split( '_' )[0]
 
-        epgFilename = "/%s.json.gz" % ( epgId.epgId )
-        epgUrl      = glashartConfig.epgChannelsPath + epgFilename
+        # We're going to attempt to grab EPG information for this channel 5 times
+        # before we stop grabbing this epgId in the future.
+        if failCount < 5:
+            now             = time.localtime()
+            nowDay          = datetime.datetime( now[0], now[1], now[2] )
+            daysDetailDelta = datetime.timedelta( days = 3 )
 
-        currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
-        currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
+            epgFilename = "/%s.json.gz" % ( epgId.epgId )
+            epgUrl      = glashartConfig.epgChannelsPath + epgFilename
 
-        content, _, _ = getPage( epgUrl )
+            currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
+            currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
 
-        if content:
-            fileHandle = gzip.GzipFile( fileobj=StringIO( content ) )
-            epgData    = json.loads( fileHandle.read() )
+            content, _, _ = getPage( epgUrl )
 
-            numPrograms             = 0
-            numProgramsDetail       = 0
-            numProgramsDetailFailed = 0
-            numProgramsNew          = 0
-            numProgramsUpdated      = 0
+            if content:
+                fileHandle = gzip.GzipFile( fileobj=StringIO( content ) )
+                epgData    = json.loads( fileHandle.read() )
 
-            for program in epgData:
-                if not self._running:
-                    break
+                # If strategy has changed (working after (a few) failed attempts)
+                if epgId.strategy != strategy:
+                    epgId.strategy = strategy
+                    epgId.addToDb( conn )
 
-                numPrograms += 1
+                numPrograms             = 0
+                numProgramsDetail       = 0
+                numProgramsDetailFailed = 0
+                numProgramsNew          = 0
+                numProgramsUpdated      = 0
 
-                programNew = self._getProgramFromJson( epgId.epgId, program )
+                for program in epgData:
+                    if not self._running:
+                        break
 
-                updateDetailedData = True
+                    numPrograms += 1
 
-                programOld = None
-                if currentProgramsDict.has_key( programNew.originalId ):
-                    programOld = currentProgramsDict[programNew.originalId]
+                    programNew = self._getProgramFromJson( epgId.epgId, program )
 
-                if programOld and programOld.detailed and programNew == programOld:
-                    programNew         = programOld
-                    updateDetailedData = False
+                    updateDetailedData = True
 
-                if updateDetailedData:
+                    programOld = None
+                    if currentProgramsDict.has_key( programNew.originalId ):
+                        programOld = currentProgramsDict[programNew.originalId]
 
-                    if ( ( epgId.strategy == "default" and (nowDay + daysDetailDelta) > datetime.datetime.fromtimestamp( programNew.startTime ) ) or
-                         ( epgId.strategy == "full" ) ):
+                    if programOld and programOld.detailed and programNew == programOld:
+                        programNew         = programOld
+                        updateDetailedData = False
 
-                        time.sleep( random.uniform( 0.5, 1.0 ) )
+                    if updateDetailedData:
 
-                        programNew, grabbed = self._grabDetailedEpgForProgram( programNew )
-                        if grabbed:
-                            numProgramsDetail += 1
+                        if ( ( epgId.strategy == "default" and (nowDay + daysDetailDelta) > datetime.datetime.fromtimestamp( programNew.startTime ) ) or
+                             ( epgId.strategy == "full" ) ):
+
+                            time.sleep( random.uniform( 0.5, 1.0 ) )
+
+                            programNew, grabbed = self._grabDetailedEpgForProgram( programNew )
+                            if grabbed:
+                                numProgramsDetail += 1
+                            else:
+                                # if more than 10 detailed program information grabs failed, set strategy to none.
+                                numProgramsDetailFailed += 1
+                                if numProgramsDetailFailed == 10:
+                                    self._logger.error( "Couldn't download at least 10 detailed program information files, so setting strategy to 'none'" )
+                                    epgId.strategy = "none"
+                                    epgId.addToDb( conn )
+
+                    if not programOld or programNew != programOld:
+                        if programOld:
+                            self._logger.debug( "Updated program: id = %s" % ( programNew.originalId ) )
+                            self._logger.debug( "Start time: %s > %s" % ( str( programOld.startTime ), str( programNew.startTime ) ) )
+                            self._logger.debug( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
+                            self._logger.debug( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
+                            programNew.id = programOld.id
+                            numProgramsUpdated += 1
                         else:
-                            # if more than 10 detailed program information grabs failed, set strategy to none.
-                            numProgramsDetailFailed += 1
-                            if numProgramsDetailFailed == 10:
-                                self._logger.error( "Couldn't download at least 10 detailed program information files, so setting strategy to 'none'" )
-                                epgId._strategy = "none"
-                                epgId.addToDb( conn )
+                            numProgramsNew += 1
 
-                if not programOld or programNew != programOld:
-                    if programOld:
-                        self._logger.debug( "Updated program: id = %s" % ( programNew.originalId ) )
-                        self._logger.debug( "Start time: %s > %s" % ( str( programOld.startTime ), str( programNew.startTime ) ) )
-                        self._logger.debug( "End time:   %s > %s" % ( str( programOld.endTime ),   str( programNew.endTime ) ) )
-                        self._logger.debug( "Name:       %s > %s" % ( repr( programOld.title ),    repr( programNew.title ) ) )
-                        programNew.id = programOld.id
-                        numProgramsUpdated += 1
-                    else:
-                        numProgramsNew += 1
+                        try:
+                            programNew.addToDb( conn )
+                        except:
+                            self._logger.exception( programNew.dump() )
 
-                    try:
-                        programNew.addToDb( conn )
-                    except:
-                        self._logger.exception( programNew.dump() )
-
-            if self._running:
-                self._logger.debug( "Num programs:         %i" % ( numPrograms ) )
-                self._logger.debug( "Num program details:  %i" % ( numProgramsDetail ) )
-                self._logger.info( "Num new programs:     %i" % ( numProgramsNew ) )
-                self._logger.info( "Num updated programs: %i" % ( numProgramsUpdated ) )
-                if numProgramsNew == 0:
-                    self._logger.warning( "No new programs were added" )
+                if self._running:
+                    self._logger.debug( "Num programs:         %i" % ( numPrograms ) )
+                    self._logger.debug( "Num program details:  %i" % ( numProgramsDetail ) )
+                    self._logger.info( "Num new programs:     %i" % ( numProgramsNew ) )
+                    self._logger.info( "Num updated programs: %i" % ( numProgramsUpdated ) )
+                    if numProgramsNew == 0:
+                        self._logger.warning( "No new programs were added" )
+            else:
+                self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
+                failCount     += 1
+                epgId.strategy = "%s_fail_%d" % ( strategy, failCount )
+                epgId.addToDb( conn )
         else:
-            self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
+            self._logger.info( "Downloading of EPG information for epgId: %s skipped becaused it failed too many times" % ( epgId.epgId ) )
 
     def _grabDetailedEpgForProgram( self, program, epgId=None ):
         grabbed = True
