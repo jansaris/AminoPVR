@@ -137,7 +137,7 @@ class Config( object ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )
         self._filename = filename
         self._config   = ConfigParser.ConfigParser()
-        self._config.read( Config.configFilename( self._filename ) )
+        self._config.read( self._configFilename( self._filename ) )
 
     def getSection( self, section ):
         options = None
@@ -164,8 +164,8 @@ class Config( object ):
     def set( self, section, option, value ):
         self._config.set( section, option, str( value ) )
 
-    @staticmethod
-    def configFilename( filename ):
+    @classmethod
+    def _configFilename( cls, filename ):
         return os.path.join( DATA_ROOT, filename )
 
 config = Config()

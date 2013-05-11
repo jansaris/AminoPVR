@@ -35,7 +35,7 @@ class DBConnection:
 
     def __init__( self, filename="aminopvr.db" ):
         self._filename           = filename
-        self._conn               = sqlite3.connect( DBConnection.dbFilename( filename ), 20 )
+        self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
         self._cursor             = self._conn.cursor()
         self._cursor.row_factory = sqlite3.Row
         self._conn.create_function( "LIKE", 2, _like )
@@ -83,6 +83,6 @@ class DBConnection:
         ResourceMonitor.reportDb( "insert", 1, self._cursor.rowcount )
         return self._cursor.lastrowid
 
-    @staticmethod
-    def dbFilename( filename ):
+    @classmethod
+    def _dbFilename( cls, filename ):
         return os.path.join( DATA_ROOT, filename )

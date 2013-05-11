@@ -55,7 +55,7 @@ class ContentProvider( threading.Thread ):
 
         now          = datetime.datetime.now()
         grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( glashartConfig.grabContentTime, "%H:%M" ).timetz() )
-        grabInterval = ContentProvider._parseTimedetla( glashartConfig.grabContentInterval )
+        grabInterval = self._parseTimedetla( glashartConfig.grabContentInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -92,9 +92,9 @@ class ContentProvider( threading.Thread ):
                 self._translateContent()
             self._event.clear()
 
-    @staticmethod
-    def _parseTimedetla( timeString ):
-        parts = ContentProvider._timedeltaRegex.match( timeString )
+    @classmethod
+    def _parseTimedetla( cls, timeString ):
+        parts = cls._timedeltaRegex.match( timeString )
         if not parts:
             return
         parts      = parts.groupdict()
