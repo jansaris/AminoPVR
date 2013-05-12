@@ -73,10 +73,10 @@ class EpgId( object ):
         return epgidsSorted
 
     @classmethod
-    def getFromDb( cls, conn, epgID ):
+    def getFromDb( cls, conn, epgId ):
         epgid = None
         if conn:
-            row = conn.execute( "SELECT * FROM epg_ids WHERE epg_id=?", ( epgID, ) )
+            row = conn.execute( "SELECT * FROM epg_ids WHERE epg_id=?", ( epgId, ) )
             if row:
                 epgid = cls( row[0]["epg_id"], row[0]["strategy"] )
 
@@ -99,7 +99,9 @@ class EpgId( object ):
         return ( "%s: %s" % ( self._epgId, self._strategy ) )
 
 class Genre( object ):
-    _logger    = logging.getLogger( 'aminopvr.Genre' )
+    _logger     = logging.getLogger( 'aminopvr.Genre' )
+
+    _genreCache = {}
 
     def __init__( self, id, genre ):
         self._id     = id
@@ -126,10 +128,14 @@ class Genre( object ):
     @classmethod
     def getFromDb( cls, conn, id ):
         genre = None
-        if conn:
-            row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) )
-            if row:
-                genre = cls( row[0]["id"], row[0]["genre"] )
+        if id in cls._genreCache:
+            genre = cls._genreCache[id]
+        else:
+            if conn:
+                row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) )
+                if row:
+                    genre = cls._createGenreFromDbDict( row[0] )
+                    cls._genreCache[id] = genre
 
         return genre
 
@@ -138,8 +144,7 @@ class Genre( object ):
         genres = []
         if conn:
             rows = conn.execute( "SELECT * FROM genres" )
-            for row in rows:
-                genres.append( cls( row["id"], row["genre"] ) )
+            genres = [ cls._createGenreFromDbDict( row ) for row in rows ]
 
         return genres
 
@@ -149,9 +154,22 @@ class Genre( object ):
         if conn:
             row = conn.execute( "SELECT * FROM genres WHERE genre=?", ( genre, ) )
             if row:
-                dbGenre = cls( row[0]["id"], row[0]["genre"] )
+                dbGenre = cls._createGenreFromDbDict( row[0] )
 
         return dbGenre
+
+    @classmethod
+    def _createGenreFromDbDict( cls, genreData ):
+        genre = None
+        if genreData:
+            try:
+                genre = cls( genreData["id"], genreData["genre"] )
+
+                if genre._id not in cls._genreCache:
+                    cls._genreCache[genre._id] = genre
+            except:
+                cls._logger.error( "_createGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+        return genre
 
     def addToDb( self, conn ):
         if conn:
@@ -173,6 +191,8 @@ class Genre( object ):
 class Person( object ):
     _logger = logging.getLogger( 'aminopvr.Person' )
 
+    _personCache = {}
+
     def __init__( self, id, person ):
         self._id     = id
         self._person = unicode( person )
@@ -189,13 +209,20 @@ class Person( object ):
     def __ne__( self, other ):
         return not self.__eq__( other )
 
+    @property
+    def person( self ):
+        return self._person
+
     @classmethod
     def getFromDb( cls, conn, id ):
         person = None
-        if conn:
-            row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) )
-            if row:
-                person = cls( row[0]["id"], row[0]["person"] )
+        if id in cls._personCache:
+            person = cls._personCache[id]
+        else:
+            if conn:
+                row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) )
+                if row:
+                    person = cls._createPersonFromDbDict( row[0] )
 
         return person
 
@@ -203,9 +230,8 @@ class Person( object ):
     def getAllFromDb( cls, conn ):
         persons = []
         if conn:
-            rows = conn.execute( "SELECT * FROM persons" )
-            for row in rows:
-                persons.append( cls( row["id"], row["person"] ) )
+            rows    = conn.execute( "SELECT * FROM persons" )
+            persons = [ cls._createPersonFromDbDict( row ) for row in rows ]
 
         return persons
 
@@ -215,9 +241,23 @@ class Person( object ):
         if conn:
             row = conn.execute( "SELECT * FROM persons WHERE person=?", ( person, ) )
             if row:
-                dbPerson = cls( row[0]["id"], row[0]["person"] )
+                dbPerson = cls._createPersonFromDbDict( row[0] )
 
         return dbPerson
+
+    @classmethod
+    def _createPersonFromDbDict( cls, personData ):
+        person = None
+        if personData:
+            try:
+                person = cls( personData["id"], personData["person"] )
+
+                if person._id not in cls._personCache:
+                    cls._personCache[person._id] = person
+            except:
+                cls._logger.error( "_createPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+        return person
+
 
     def addToDb( self, conn ):
         if conn:
@@ -293,12 +333,7 @@ class ProgramGenreAbstract( object ):
         if conn:
             row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND genre_id=?" % ( cls._tableName ), ( programId, genreId ) )
             if row:
-                genre = Genre.getFromDb( conn, row[0]["genre_id"] )
-                if genre:
-                    programGenre = cls( row[0]["program_id"], row[0]["genre_id"], genre )
-                else:
-                    cls._logger.warning( "ProgramGenreAbstract.getFromDb: Genre with id %s not in database." % ( row[0]["genre_id"] ) )
-                    programGenre = cls( row[0]["program_id"], row[0]["genre_id"] )
+                programGenre = cls._createProgramGenreFromDbDict( conn, row[0] )
 
         return programGenre
 
@@ -307,16 +342,25 @@ class ProgramGenreAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programGenres = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
-            for row in rows:
-                genre = Genre.getFromDb( conn, row["genre_id"] )
-                if genre:
-                    programGenres.append( cls( row["program_id"], row["genre_id"], genre ) )
-                else:
-                    cls._logger.warning( "ProgramGenreAbstract.getFromDb: Genre with id %s not in database." % ( row["genre_id"] ) )
-                    programGenres.append( cls( row["program_id"], row["genre_id"] ) )
+            rows          = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
+            programGenres = [ cls._createProgramGenreFromDbDict( conn, row ) for row in rows  ]
 
         return programGenres
+
+    @classmethod
+    def _createProgramGenreFromDbDict( cls, conn, programGenreData ):
+        programGenre = None
+        if programGenreData:
+            try:
+                genre = Genre.getFromDb( conn, programGenreData["genre_id"] )
+                if genre:
+                    programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"], genre )
+                else:
+                    cls._logger.warning( "_createProgramGenreFromDbDict: Genre with id %s not in database." % ( programGenreData["genre_id"] ) )
+                    programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"] )
+            except:
+                cls._logger.error( "_createProgramGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+        return programGenre
 
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
@@ -400,6 +444,10 @@ class ProgramPersonAbstract( object ):
     def personId( self, personId ):
         self._personId = personId
 
+    @property
+    def person( self ):
+        self._person
+
     @classmethod
     def getFromDb( cls, conn, programId, personId ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
@@ -407,12 +455,7 @@ class ProgramPersonAbstract( object ):
         if conn:
             row = conn.execute( "SELECT * FROM %s WHERE program_id=? AND person_id=?" % ( cls._tableName ), ( programId, personId ) )
             if row:
-                person = Person.getFromDb( conn, row[0]["person_id"] )
-                if person:
-                    programPerson = cls( row[0]["program_id"], row[0]["person_id"], person )
-                else:
-                    cls._logger.warning( "ProgramPersonAbstract.getFromDb: Person with id %s not in database." % ( row[0]["person_id"] ) )
-                    programPerson = cls( row[0]["program_id"], row[0]["person_id"] )
+                programPerson = cls._createProgramPersonFromDbDict( conn, row[0] )
 
         return programPerson
 
@@ -421,16 +464,25 @@ class ProgramPersonAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programPersons = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
-            for row in rows:
-                person = Person.getFromDb( conn, row["person_id"] )
-                if person:
-                    programPersons.append( cls( row["program_id"], row["person_id"], person ) )
-                else:
-                    cls._logger.warning( "ProgramPersonAbstract.getFromDb: Person with id %s not in database." % ( row["person_id"] ) )
-                    programPersons.append( cls( row["program_id"], row["person_id"] ) )
+            rows           = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
+            programPersons = [ cls._createProgramPersonFromDbDict( conn, row ) for row in rows ]
 
         return programPersons
+
+    @classmethod
+    def _createProgramPersonFromDbDict( cls, conn, programPersonData ):
+        programPerson = None
+        if programPersonData:
+            try:
+                genre = Person.getFromDb( conn, programPersonData["person_id"] )
+                if genre:
+                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"], genre )
+                else:
+                    cls._logger.warning( "_createProgramPersonFromDbDict: Person with id %s not in database." % ( programPersonData["person_id"] ) )
+                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"] )
+            except:
+                cls._logger.error( "_createProgramPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+        return programPerson
 
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
@@ -685,9 +737,7 @@ class ProgramAbstract( object ):
                 rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ) )
             else:
                 rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) )
-            for row in rows:
-                program = cls._createProgramFromDbDict( conn, row )
-                programs.append( program )
+            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
 
         return programs
 
@@ -707,9 +757,7 @@ class ProgramAbstract( object ):
                     rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) )
                 else:
                     rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime ) )
-            for row in rows:
-                program = cls._createProgramFromDbDict( conn, row )
-                programs.append( program )
+            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
 
         return programs
 
@@ -763,38 +811,31 @@ class ProgramAbstract( object ):
                 whereValue.append( title )
 
             where.append( "(" + " OR ".join( search ) + ")" )
-            query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY start_time ASC"
-            rows = conn.execute( query, whereValue )
-            for row in rows:
-                program = cls._createProgramFromDbDict( conn, row )
-                programs.append( program )
+            query    = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY start_time ASC"
+            rows     = conn.execute( query, whereValue )
+            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
         return programs
 
     def toDict( self ):
-        genres = []
-        for genre in self._genres:
-            genres.append( genre.genre.genre )
-        return { "id":          self.id,
-                 "title":       self.title,
-                 "subtitle":    self.subtitle,
-                 "genre":       genres,
-                 "start_time":  self.startTime,
-                 "end_time":    self.endTime,
-                 "description": self.description }
+        return { "id":              self.id,
+                 "title":           self.title,
+                 "subtitle":        self.subtitle,
+                 "description":     self.description,
+                 "start_time":      self.startTime,
+                 "end_time":        self.endTime,
+                 "genre":           [ genre.genre.genre       for genre     in self._genres ],
+                 "actors":          [ actor.person.person     for actor     in self._actors ],
+                 "directors":       [ director.person.person  for director  in self._directors ],
+                 "presenters":      [ presenter.person.person for presenter in self._presenters ],
+                 "aspect_ratio":    self.aspectRatio,
+                 "parental_rating": self.parentalRating,
+                 "ratings":         self.ratings }
 
     def dump( self ):
-        genres     = [];
-        actors     = [];
-        directors  = [];
-        presenters = [];
-        for genre in self._genres:
-            genres.append( genre.dump() )
-        for actor in self._actors:
-            actors.append( actor.dump() )
-        for director in self._directors:
-            directors.append( director.dump() )
-        for presenter in self._presenters:
-            presenters.append( presenter.dump() )
+        genres     = [ genre.dump()     for genre     in self._genres ];
+        actors     = [ actor.dump()     for actor     in self._actors ];
+        directors  = [ director.dump()  for director  in self._directors ];
+        presenters = [ presenter.dump() for presenter in self._presenters ];
         return ( "%s - %i: %s, %i, %i, %s, %s, %s, [%s], [%s], [%s], [%s]" % ( self._tableName, self._id, self._epgId, self._startTime, self._endTime, repr( self._title ), repr( self._subtitle ), repr( self._description ), ", ".join( genres ), ", ".join( actors ), ", ".join( directors ), ", ".join( presenters ) ) )
 
 class EpgProgram( ProgramAbstract ):
@@ -805,13 +846,17 @@ class EpgProgram( ProgramAbstract ):
     def _createProgramFromDbDict( cls, conn, programData ):
         program = None
         if programData:
-            program            = EpgProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
-            program.genres     = EpgProgramGenre.getAllFromDb( conn, programData["id"] )
-            program.actors     = EpgProgramActor.getAllFromDb( conn, programData["id"] )
-            program.directors  = EpgProgramDirector.getAllFromDb( conn, programData["id"] )
-            program.presenters = EpgProgramPresenter.getAllFromDb( conn, programData["id"] )
-            if programData["ratings"] != "":
-                program.ratings = programData["ratings"].split( ";" )
+            try:
+                program            = EpgProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
+                program.genres     = EpgProgramGenre.getAllFromDb( conn, programData["id"] )
+                program.actors     = EpgProgramActor.getAllFromDb( conn, programData["id"] )
+                program.directors  = EpgProgramDirector.getAllFromDb( conn, programData["id"] )
+                program.presenters = EpgProgramPresenter.getAllFromDb( conn, programData["id"] )
+                if programData["ratings"] != "":
+                    program.ratings = programData["ratings"].split( ";" )
+            except:
+                cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                program = None
         return program
 
     @classmethod
@@ -1075,13 +1120,18 @@ class RecordingProgram( ProgramAbstract ):
     def _createProgramFromDbDict( cls, conn, programData ):
         program = None
         if programData:
-            program            = RecordingProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
-            program.genres     = RecordingProgramGenre.getAllFromDb( conn, programData["id"] )
-            program.actors     = RecordingProgramActor.getAllFromDb( conn, programData["id"] )
-            program.directors  = RecordingProgramDirector.getAllFromDb( conn, programData["id"] )
-            program.presenters = RecordingProgramPresenter.getAllFromDb( conn, programData["id"] )
-            if programData["ratings"] != "":
-                program.ratings = programData["ratings"].split( ";" )
+            try:
+                program            = RecordingProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
+                program.genres     = RecordingProgramGenre.getAllFromDb( conn, programData["id"] )
+                program.actors     = RecordingProgramActor.getAllFromDb( conn, programData["id"] )
+                program.directors  = RecordingProgramDirector.getAllFromDb( conn, programData["id"] )
+                program.presenters = RecordingProgramPresenter.getAllFromDb( conn, programData["id"] )
+                if programData["ratings"] != "":
+                    program.ratings = programData["ratings"].split( ";" )
+            except:
+                cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                program = None
+
         return program
 
     def addToDb( self, conn ):

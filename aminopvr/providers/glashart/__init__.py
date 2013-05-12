@@ -30,6 +30,7 @@ import gzip
 import logging
 import os
 import re
+import sys
 import threading
 import time
 
@@ -89,7 +90,10 @@ class ContentProvider( threading.Thread ):
         while self._running:
             self._event.wait()
             if self._running:
-                self._translateContent()
+                try:
+                    self._translateContent()
+                except:
+                    self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
             self._event.clear()
 
     @classmethod

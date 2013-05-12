@@ -83,7 +83,7 @@ class MulticastInputStream( InputStreamAbstract ):
             self._socket = MulticastSocket( self._port, True )
             self._socket.add( self._ip )
         except:
-            self._logger.debug( "Cannot open multicast: %s:%i, filename: %s" % ( self._ip, self._port ) )
+            self._logger.error( "Cannot open multicast: %s:%i, filename: %s" % ( self._ip, self._port ) )
             return False
         return True
 

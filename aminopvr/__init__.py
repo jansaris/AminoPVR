@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr import const
 from aminopvr.config import config, GeneralConfig, DebugConfig
-from aminopvr.const import CREATEPID, PIDFILE
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
@@ -76,8 +76,8 @@ def shutdown():
     logger.warning( "Everything has stopped, now exit" )
     logging.shutdown()
     # Remove PID file if created
-    if CREATEPID and os.path.exists( PIDFILE ):
-        os.unlink( PIDFILE )
+    if const.CREATEPID and os.path.exists( const.PIDFILE ):
+        os.unlink( const.PIDFILE )
     os._exit( 0 )
 
 def aminoPVRProcess():

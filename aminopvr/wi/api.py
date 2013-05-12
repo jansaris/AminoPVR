@@ -285,7 +285,27 @@ class AminoPVRAPI( API ):
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getScheduleList( self ):
         self._logger.debug( "getScheduleList()" )
-        return self._createResponse( API.STATUS_SUCCESS, [] )
+        conn           = DBConnection()
+        schedules      = Schedule.getAllFromDb( conn, includeInactive=True )
+        schedulesArray = []
+        for schedule in schedules:
+            scheduleJson = schedule.toDict()
+            if scheduleJson:
+                schedulesArray.append( scheduleJson )
+        return self._createResponse( API.STATUS_SUCCESS, schedulesArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    # TODO: this is still very STB oriented --> define proper API here and in JavaScript
+    def getScheduledRecordingList( self, offset=None, count=None, sort=None ):
+        self._logger.debug( "getScheduledRecordingList()" )
+        scheduledRecordings = Scheduler().getScheduledRecordings()
+        scheduledRecordingsArray = []
+        for scheduledRecording in scheduledRecordings:
+            scheduledRecordingJson = scheduledRecording.toDict()
+            if scheduledRecordingJson:
+                scheduledRecordingsArray.append( scheduledRecordingJson )
+        return self._createResponse( API.STATUS_SUCCESS, scheduledRecordingsArray )
 
     @cherrypy.expose
     @API._grantAccess

@@ -279,28 +279,32 @@ class RecordingAbstract( object ):
     def _createRecordingFromDbDict( cls, conn, data ):
         recording = None
         if data:
-            recording = cls( id              = data["id"],
-                             scheduleId      = data["schedule_id"],
-                             epgProgramId    = data["epg_program_id"],
-                             channelId       = data["channel_id"],
-                             channelName     = data["channel_name"],
-                             channelUrlType  = data["channel_url_type"],
-                             startTime       = data["start_time"],
-                             endTime         = data["end_time"],
-                             length          = data["length"],
-                             title           = data["title"],
-                             filename        = data["filename"],
-                             fileSize        = data["file_size"],
-                             streamArguments = data["stream_arguments"],
-                             marker          = data["marker"],
-                             type            = data["type"],
-                             scrambled       = data["scrambled"],
-                             status          = data["status"],
-                             rerecord        = False ) # TODO data["rerecord"]
-            if recording._epgProgramId != -1:
-                recording._epgProgram = epg.RecordingProgram.getFromDb( conn, recording._epgProgramId )
-                if not recording._epgProgram:
-                    recording._epgProgramId = -1
+            try:
+                recording = cls( id              = data["id"],
+                                 scheduleId      = data["schedule_id"],
+                                 epgProgramId    = data["epg_program_id"],
+                                 channelId       = data["channel_id"],
+                                 channelName     = data["channel_name"],
+                                 channelUrlType  = data["channel_url_type"],
+                                 startTime       = data["start_time"],
+                                 endTime         = data["end_time"],
+                                 length          = data["length"],
+                                 title           = data["title"],
+                                 filename        = data["filename"],
+                                 fileSize        = data["file_size"],
+                                 streamArguments = data["stream_arguments"],
+                                 marker          = data["marker"],
+                                 type            = data["type"],
+                                 scrambled       = data["scrambled"],
+                                 status          = data["status"],
+                                 rerecord        = False ) # TODO data["rerecord"]
+                if recording._epgProgramId != -1:
+                    recording._epgProgram = epg.RecordingProgram.getFromDb( conn, recording._epgProgramId )
+                    if not recording._epgProgram:
+                        recording._epgProgramId = -1
+            except:
+                cls._logger.error( "_createRecordingFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+
         return recording
 
     def deleteFromDB( self, conn ):
@@ -421,6 +425,7 @@ class RecordingAbstract( object ):
                  "end_time":     self.endTime,
                  "title":        self.epgProgram.title,
                  "subtitle":     self.epgProgram.subtitle,
+                 "description":  self.epgProgram.description,
                  "channel_id":   self.channelId,
                  "channel_name": self.channelName,
                  "url":          "",

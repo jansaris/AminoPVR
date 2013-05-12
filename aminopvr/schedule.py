@@ -215,18 +215,21 @@ class Schedule( object ):
     def _createScheduleFromDbDict( cls, data ):
         schedule = None
         if data:
-            schedule = cls( id                = data["id"],
-                            type              = data["type"],
-                            channelId         = data["channel_id"],
-                            startTime         = data["start_time"],
-                            endTime           = data["end_time"],
-                            title             = data["title"],
-                            preferHd          = data["prefer_hd"],
-                            preferUnscrambled = data["prefer_unscrambled"],
-                            dupMethod         = data["dup_method"],
-                            startEarly        = data["start_early"],
-                            endLate           = data["end_late"],
-                            inactive          = data["inactive"] )
+            try:
+                schedule = cls( id                = data["id"],
+                                type              = data["type"],
+                                channelId         = data["channel_id"],
+                                startTime         = data["start_time"],
+                                endTime           = data["end_time"],
+                                title             = data["title"],
+                                preferHd          = data["prefer_hd"],
+                                preferUnscrambled = data["prefer_unscrambled"],
+                                dupMethod         = data["dup_method"],
+                                startEarly        = data["start_early"],
+                                endLate           = data["end_late"],
+                                inactive          = data["inactive"] )
+            except:
+                cls._logger.error( "_createScheduleFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
         return schedule
 
     def deleteFromDB( self, conn ):
@@ -318,8 +321,22 @@ class Schedule( object ):
             programs = EpgProgram.getByTitleFromDb( conn, self._title, epgId, startTime, searchWhere )
         return programs
 
+    def toDict( self ):
+        return { "id":                  self.id,
+                 "type":                self.type,
+                 "channel_id":          self.channelId,
+                 "start_time":          self.startTime,
+                 "end_time":            self.endTime,
+                 "title":               self.title,
+                 "prefer_hd":           self.preferHd,
+                 "prefer_unscrambled":  self.preferUnscrambled,
+                 "dup_method":          self.dupMethod,
+                 "start_early":         self.startEarly,
+                 "end_late":            self.endLate,
+                 "inactive":            self.inactive }
+
     def dump( self ):
-        return ( "%i: %i, %s, %i" % ( self._id, self._type, self._title, self._inactive ) )
+        return ( "%i: %i, %s, %i, %i-%i, %i, %i, %i, %i-%i, %i" % ( self._id, self._type, self._title, self._channelId, self._startTime, self._endTime, self._preferHd, self._preferUnscrambled, self._dupMethod, self._startEarly, self._endLate, self._inactive ) )
 
 def main():
     sys.stderr.write( "main()\n" );

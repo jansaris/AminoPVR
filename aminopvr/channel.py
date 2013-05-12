@@ -148,7 +148,15 @@ class ChannelUrlAbstract( object ):
     def _createChannelUrlFromDbDict( cls, channelUrlData ):
         url = None
         if channelUrlData:
-            url = cls( channelUrlData["type"], channelUrlData["protocol"], channelUrlData["ip"], channelUrlData["port"], channelUrlData["arguments"], channelUrlData["scrambled"] )
+            try:
+                url = cls( channelUrlData["type"],
+                           channelUrlData["protocol"],
+                           channelUrlData["ip"],
+                           channelUrlData["port"],
+                           channelUrlData["arguments"],
+                           channelUrlData["scrambled"] )
+            except:
+                cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
         return url
 
     def addToDb( self, conn, channelId ):
@@ -349,10 +357,8 @@ class ChannelAbstract( object ):
                 whereCondition.append( "inactive=0" )
             if not includeRadio:
                 whereCondition.append( "radio=0" )
-            rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ), ( epgId, ) )
-            for row in rows:
-                channel = cls._createChannelFromDbDict( conn, row )
-                channels.append( channel )
+            rows     = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ), ( epgId, ) )
+            channels = [ cls._createChannelFromDbDict( conn, row ) for row in rows ]
 
         return channels
 
@@ -373,9 +379,7 @@ class ChannelAbstract( object ):
                 rows = conn.execute( "SELECT * FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) )
             else:
                 rows = conn.execute( "SELECT * FROM %s ORDER BY number ASC" % ( cls._tableName ) )
-            for row in rows:
-                channel = cls._createChannelFromDbDict( conn, row )
-                channels.append( channel )
+            channels = [ cls._createChannelFromDbDict( conn, row ) for row in rows ]
 
         return channels
 
@@ -394,8 +398,7 @@ class ChannelAbstract( object ):
                 rows = conn.execute( "SELECT DISTINCT epg_id FROM %s WHERE %s ORDER BY number ASC" % ( cls._tableName, " AND ".join( whereCondition ) ) )
             else:
                 rows = conn.execute( "SELECT DISTINCT epg_id FROM %s ORDER BY number ASC" % ( cls._tableName ) )
-            for row in rows:
-                epgIds.append( row["epg_id"] )
+            epgIds = [ row["epg_id"] for row in rows ]
 
         return epgIds
 
@@ -441,16 +444,20 @@ class ChannelAbstract( object ):
     def _createChannelFromDbDict( cls, conn, channelData ):
         channel = None
         if channelData:
-            channel = cls( channelData["id"],
-                           channelData["number"],
-                           channelData["epg_id"],
-                           channelData["name"],
-                           channelData["name_short"],
-                           channelData["logo"],
-                           channelData["thumbnail"],
-                           channelData["radio"],
-                           channelData["inactive"] )
-            channel.getUrlsFromDb( conn )
+            try:
+                channel = cls( channelData["id"],
+                               channelData["number"],
+                               channelData["epg_id"],
+                               channelData["name"],
+                               channelData["name_short"],
+                               channelData["logo"],
+                               channelData["thumbnail"],
+                               channelData["radio"],
+                               channelData["inactive"] )
+                channel.getUrlsFromDb( conn )
+            except:
+                cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                channel = None
         return channel
 
     def getUrlsFromDb( self, conn ):

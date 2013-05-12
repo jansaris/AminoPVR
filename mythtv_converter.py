@@ -528,17 +528,17 @@ def main():
     mysqlPass = ""
 
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "dv", ['dryrun', 'verbose', 'host=', 'user=', 'pass=', 'db='] )  # @UnusedVariable
+        opts, args = getopt.getopt( sys.argv[1:], "cv", ['commit', 'verbose', 'host=', 'user=', 'pass=', 'db='] )  # @UnusedVariable
     except getopt.GetoptError:
-        print "Available Options: --dryrun, --verbose, --host=<hostname>, --user=<username>, --pass=<password>, --db=<database>"
+        print "Available Options: --commit, --verbose, --host=<hostname>, --user=<username>, --pass=<password>, --db=<database>"
         sys.exit()
 
     for o, a in opts:
         if o in ( '-v', '--verbose' ):
             logger.setLevel( logging.DEBUG )
 
-        if o in ( '-d', '--dryrun' ):
-            dryRun = True
+        if o in ( '-c', '--commit' ):
+            dryRun = False
 
         if o in ( '--host', ):
             mysqlHost = str( a )
@@ -632,10 +632,52 @@ def main():
 
             # Convert MythTV records (schedule entries) to AminoPVR schedules
             for record in mythTvRecords:
+                # If the channel is not in the channel map (yet), it does not exist
+                # in the AminoPVR database.
+                # If there is enough information on MythTV side, create an inactive
+                # channel.
+                if record.chanId != 0 and record.chanId not in mythTvChannelMap:
+                    if record.chanId in mythTvChannelsDict: 
+                        mythTvChannel = mythTvChannelsDict[record.chanId]
+                        if recordedProgram.chanId in mythTvIptvChannelsDict:
+                            mythTvIptvChannel = mythTvIptvChannelsDict[record.chanId]
+
+                            urlRe    = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})" )
+                            urlMatch = urlRe.search( mythTvIptvChannel.url )
+                            if urlMatch:
+                                urlType   = u"sd"
+                                protocol  = "igmp"
+                                ip        = urlMatch.group( "ip" )
+                                port      = int( urlMatch.group( "port" ) )
+                                arguments = ""
+                                if urlMatch.group( "protocol" ) == "rtp":
+                                    arguments = ";rtpskip=yes"
+
+                                channel = Channel( -1,
+                                                   mythTvChannel.chanNum,
+                                                   mythTvChannel.xmlTvId,
+                                                   mythTvChannel.name,
+                                                   mythTvChannel.callsign,
+                                                   "",
+                                                   "",
+                                                   False,
+                                                   True )
+                                channel.urls[urlType] = ChannelUrl( urlType, protocol, ip, port, arguments, scrambled=0 )
+
+                                logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
+
+                                if not dryRun:
+                                    channel.addToDb( conn )
+
+                                mythTvChannelMap[record.chanId]        = channel
+                                mythTvChannelUrlTypeMap[record.chanId] = urlType
+                    else:
+                        logger.warning( "channel with chanId=%i not found in mythTvChannelsDict (%s)" % ( record.chanId, record.dump() ) )
+
                 if record.chanId == 0 or record.chanId in mythTvChannelMap:
                     channelId = -1
                     if record.chanId:
-                        channelId = mythTvChannelMap[recordedProgram.chanId].id
+                        channelId = mythTvChannelMap[record.chanId].id
  
                     # Search for a Schedule with the same title and channelId
                     schedule = Schedule.getByTitleAndChannelIdFromDb( conn, record.title, channel.id )
@@ -651,8 +693,9 @@ def main():
                         elif record.type == 3:  # kChannelRecord
                             type = Schedule.SCHEDULE_TYPE_ANY_TIME
                             if channelId == -1:
-                                logger.warning( "Expecting a channelId" )
-                                break
+                                logger.warning( "Expecting a channelId in record %s" % ( record.dump() ) )
+                                if not dryRun:  # on the dry-run there might be new channels added, so they don't have a valid id yet.
+                                    continue
                         elif record.type == 4:  # kAllRecord
                             type      = Schedule.SCHEDULE_TYPE_ANY_TIME
                             channelId = -1
@@ -667,14 +710,14 @@ def main():
                             dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_SUBTITLE
                         if record.dupMethod & 0x04 == 0x04: # kDupCheckDesc
                             dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_DESCRIPTION
- 
+
                         schedule = Schedule( -1,
                                              type,
                                              channelId,
                                              record.startTime,
                                              record.endTime,
                                              record.title,
-                                             (channelId != -1 and mythTvChannelUrlTypeMap[recordedProgram.chanId] == u"hd"),
+                                             (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] == u"hd"),
                                              True,
                                              dupMethod,
                                              record.startOffset,

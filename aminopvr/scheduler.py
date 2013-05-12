@@ -28,6 +28,7 @@ from aminopvr.tools import Singleton
 import datetime
 import logging
 import os
+import sys
 import threading
 import time
 
@@ -77,6 +78,20 @@ class Scheduler( threading.Thread ):
         self._event.set()
         self.join()
 
+    def getScheduledRecordings( self ):
+        recordings = []
+        conn       = DBConnection()
+        with self._lock:
+            for timerId in self._timers.keys():
+                timer = self._timers[timerId]
+                if timer.has_key( "recordingId" ):
+                    recording = Recording.getFromDb( conn, timer["recordingId"] )
+                    if recording:
+                        recordings.append( recording )
+                elif timer.has_key( "recording" ):
+                    recordings.append( timer["recording"] )
+        return recordings
+
     def run( self ):
         self._logger.debug( "Scheduler.run()" )
 
@@ -84,7 +99,10 @@ class Scheduler( threading.Thread ):
         while self._running:
             self._event.wait()
             if self._running:
-                self._reschedule()
+                try:
+                    self._reschedule()
+                except:
+                    self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
             self._event.clear()
 
         self._logger.warning( "Scheduler is about to shutdown, stop and remove timers" )
@@ -306,7 +324,7 @@ class Scheduler( threading.Thread ):
                 # subject to rescheduling
                 recordings       = Recording.getByTitleFromDb( conn, program.title )
                 oldRecordings    = OldRecording.getByTitleFromDb( conn, program.title )
-                filteredPrograms = self._filterOutDuplicates( schedule, filteredPrograms, recordings, oldRecordings=oldRecordings )
+                filteredPrograms = self._filterOutDuplicates( schedule, filteredPrograms, recordings, oldRecordings=oldRecordings, newRecordings=newRecordings )
 
                 # Find the last recording
                 for recording in recordings:
@@ -380,7 +398,7 @@ class Scheduler( threading.Thread ):
                         else:
                             newRecordings.append( newRecording )
 
-                            self._logger.info( "reschedule: Program %i - '%s' starting at %s will be recorded" % ( program.id, program.title, startTime ) )
+                            self._logger.info( "reschedule: Program %i - '%s' (subtitle=%s, description=%s) starting at %s will be recorded" % ( program.id, program.title, program.subtitle, program.description, startTime ) )
 
                             lastRecording = newRecording
 
@@ -483,10 +501,15 @@ class Scheduler( threading.Thread ):
 
         # Check if there is a (old) recording with the same title/subtitle/description in the programs list
         # It is still OK if the programs list contains duplicates: they could become important to fix conflicts
+        filteredPrograms = []
         for program in programs:
             found = False
-            self._logger.debug( "_filterOutDuplicates: checking program: title=%s, subtitle=%s, description=%s" % ( program.title, program.subtitle, program.description ) )
+            self._logger.info( "_filterOutDuplicates: checking program: title=%s, subtitle=%s, description=%s" % ( program.title, program.subtitle, program.description ) )
             for recording in recordings:
+                if recording.epgProgram:
+                    self._logger.debug( "_filterOutDuplicates: checking against: title=%s, subtitle=%s, description=%s" % ( recording.epgProgram.title, recording.epgProgram.subtitle, recording.epgProgram.description ) )
+                else:
+                    self._logger.debug( "_filterOutDuplicates: checking against: title=%s" % ( recording.title ) )
                 if ( schedule.dupMethod != Schedule.DUPLICATION_METHOD_NONE and not recording.rerecord and recording.epgProgram and
                      ( ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_TITLE       and program.title       == recording.epgProgram.title )       or not ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_TITLE ) )    and
                      ( ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_SUBTITLE    and program.subtitle    == recording.epgProgram.subtitle )    or not ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_SUBTITLE ) ) and
@@ -494,12 +517,12 @@ class Scheduler( threading.Thread ):
                     self._logger.info( "_filterOutDuplicates: found duplicate program: dupMethod=%i, title=%s, subtitle=%s, description=%s" % ( schedule.dupMethod, recording.epgProgram.title, recording.epgProgram.subtitle, recording.epgProgram.description ) )
                     found = True
                     break
-            if found:
-                programs.remove( program )  
+            if not found:
+                filteredPrograms.append( program )  
 
-        self._logger.debug( "_filterOutDuplicates: len( programs )=%i" % ( len( programs ) ) )
+        self._logger.debug( "_filterOutDuplicates: len( filteredPrograms )=%i" % ( len( filteredPrograms ) ) )
 
-        return programs
+        return filteredPrograms
 
     def _isRecorderBusyAtTimeframe( self, recordings, schedule, newRecording ):
         """

@@ -30,6 +30,7 @@ import json
 import logging
 import random
 import re
+import sys
 import threading
 import time
 import unicodedata
@@ -108,7 +109,10 @@ class EpgProvider( threading.Thread ):
         while self._running:
             self._event.wait()
             if self._running:
-                self._grabAll()
+                try:
+                    self._grabAll()
+                except:
+                    self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
                 # Request a reschedule
                 Scheduler().requestReschedule()
             self._event.clear()
@@ -180,11 +184,11 @@ class EpgProvider( threading.Thread ):
         # This is to indicate epg grabbing for this epgId failed previously
         strategy   = epgId.strategy
         strategyRe = re.compile( r'_fail_(?P<fail>\d+)' )
-        failMatch  = strategyRe.match( strategy )
+        failMatch  = strategyRe.search( strategy )
         failCount  = 0
         if failMatch:
-            failCount = failMatch.group( "fail" )
-            strategy  = strategy.split( '_' )[0]
+            failCount = int( failMatch.group( "fail" ) )
+            strategy  = epgId.strategy.split( '_' )[0]
 
         # We're going to attempt to grab EPG information for this channel 5 times
         # before we stop grabbing this epgId in the future.
@@ -274,7 +278,7 @@ class EpgProvider( threading.Thread ):
                     self._logger.info( "Num new programs:     %i" % ( numProgramsNew ) )
                     self._logger.info( "Num updated programs: %i" % ( numProgramsUpdated ) )
                     if numProgramsNew == 0:
-                        self._logger.warning( "No new programs were added" )
+                        self._logger.warning( "No new programs were added for epgId: %s" % ( epgId.epgId ) )
             else:
                 self._logger.warning( "Unable to download EPG information for epgId: %s" % ( epgId.epgId ) )
                 failCount     += 1
