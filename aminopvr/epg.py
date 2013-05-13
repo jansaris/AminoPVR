@@ -122,6 +122,10 @@ class Genre( object ):
         return not self.__eq__( other )
 
     @property
+    def id( self ):
+        return self._id
+
+    @property
     def genre( self ):
         return self._genre
 
@@ -208,6 +212,10 @@ class Person( object ):
 
     def __ne__( self, other ):
         return not self.__eq__( other )
+
+    @property
+    def id( self ):
+        return self._id
 
     @property
     def person( self ):

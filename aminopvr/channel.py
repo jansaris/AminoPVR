@@ -476,7 +476,7 @@ class ChannelAbstract( object ):
                 if channel and self != channel:
                     conn.execute( "UPDATE %s SET number=?, epg_id=?, name=?, name_short=?, logo=?, thumbnail=?, radio=?, inactive=? WHERE id=?" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive, self._id ) )
             else:
-                id = conn.insert( "INSERT INTO %s (number, epg_id, name, name_short, logo, thumbnail, radio, inactive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._inactive, self._radio ) )
+                id = conn.insert( "INSERT INTO %s (number, epg_id, name, name_short, logo, thumbnail, radio, inactive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive ) )
                 if id:
                     self._id = id;
 

@@ -388,17 +388,20 @@ class Scheduler( threading.Thread ):
                         if urls.has_key( "hd" ):
                             urlsOrder.append( "hd" )
 
+                    if len( urlsOrder ) == 0:
+                        self._logger.warning( "_handleSchedule: No Urls to record program %i - '%s'" % ( program.id, program.title ) )
+
                     for urlType in urlsOrder:
                         newRecording = self._createRecording( schedule, program, channel, urls[urlType] )
                         if self._isRecorderBusyAtTimeframe( newRecordings, schedule, newRecording ):
                             # But oh, it cannot be recorded at that time
-                            self._logger.info( "reschedule: Program %i - '%s' starting at %s cannot be recorded because recorder will be busy" % ( program.id, program.title, startTime ) )
+                            self._logger.warning( "_handleSchedule: Program %i - '%s' starting at %s cannot be recorded because recorder will be busy" % ( program.id, program.title, startTime ) )
 
                             newRecording = None
                         else:
                             newRecordings.append( newRecording )
 
-                            self._logger.info( "reschedule: Program %i - '%s' (subtitle=%s, description=%s) starting at %s will be recorded" % ( program.id, program.title, program.subtitle, program.description, startTime ) )
+                            self._logger.info( "_handleSchedule: Program %i - '%s' (subtitle=%s, description=%s) starting at %s will be recorded" % ( program.id, program.title, program.subtitle, program.description, startTime ) )
 
                             lastRecording = newRecording
 
@@ -411,7 +414,7 @@ class Scheduler( threading.Thread ):
                     if not newRecording:
                         break
             else:
-                self._logger.info( "reschedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
+                self._logger.info( "_handleSchedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
 
             if schedule.type == Schedule.SCHEDULE_TYPE_ONCE:
                 break
