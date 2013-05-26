@@ -283,3 +283,5 @@ if __name__ == '__main__':
     print "######################################################################"
     suite = unittest.TestLoader().loadTestsFromTestCase( EpgIdTests )
     unittest.TextTestRunner( verbosity=2 ).run( suite )
+    suite = unittest.TestLoader().loadTestsFromTestCase( EpgProgramTests )
+    unittest.TextTestRunner( verbosity=2 ).run( suite )
