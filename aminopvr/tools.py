@@ -144,6 +144,8 @@ class ResourceMonitor( object ):
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
+        self.__instance = self
+
     def stop( self ):
         self._logger.warning( "Stopping ResourceMonitor" )
         self._timer.stop()
@@ -151,8 +153,10 @@ class ResourceMonitor( object ):
 
     @classmethod
     def report( cls, dataType, amount, direction ):
+        # If cls.__instance is not set, it means nobody has initialized use yet
+        # so, so maybe, we're not welcome. Just return
         if not cls.__instance:
-            cls.__instance = ResourceMonitor()
+            return
         instance = cls.__instance
         if direction == "db":
             cls.reportDb( dataType, amount, 0 )
@@ -171,8 +175,10 @@ class ResourceMonitor( object ):
 
     @classmethod
     def reportDb( cls, dataType, amount, rows ):
+        # If cls.__instance is not set, it means nobody has initialized use yet
+        # so, so maybe, we're not welcome. Just return
         if not cls.__instance:
-            cls.__instance = ResourceMonitor()
+            return
         instance = cls.__instance
 
         if rows < 0:

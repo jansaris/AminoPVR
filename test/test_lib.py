@@ -16,17 +16,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import aminopvr
 import logging
 import os.path
 import sys
 import unittest
-from aminopvr import database, db, config
 
-
+# Make sure we can find aminopvr and other libs when we want to import them below
 sys.path.append( os.path.abspath( '..' ) )
 sys.path.append( os.path.abspath( '../lib' ) )
 
+# Should be after appending the search path!
+import aminopvr
+from aminopvr import database, db, config
 
 #=================
 # test globals
