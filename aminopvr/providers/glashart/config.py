@@ -77,5 +77,3 @@ class GlashartConfig( ConfigSectionAbstract ):
     @property
     def grabContentInterval( self ):
         return self._get( "grab_content_interval" )
-
-glashartConfig = GlashartConfig( aminopvr.config )

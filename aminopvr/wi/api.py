@@ -18,6 +18,7 @@
 from aminopvr import schedule
 from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel, \
     ChannelUrl
+from aminopvr.config import GeneralConfig, Config
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
@@ -54,8 +55,9 @@ class API( object ):
                 apiKey = kwargs["apiKey"]
                 del kwargs["apiKey"]
 
+            generalConfig = GeneralConfig( Config() )
             if apiKey:
-                cls._apiKey = aminopvr.generalConfig.apiKey
+                cls._apiKey = generalConfig.apiKey
                 if apiKey == cls._apiKey:
                     access = True
                 else:
@@ -63,7 +65,7 @@ class API( object ):
 
             if not access:
                 cls._apiLogger.debug( "_grantAccess: clientIP=%s" % ( clientIP ) )
-                access = cls._addressInNetwork( clientIP, aminopvr.generalConfig.localAccessNets )
+                access = cls._addressInNetwork( clientIP, generalConfig.localAccessNets )
 
             if not access:
                 raise cherrypy.HTTPError( 401 )

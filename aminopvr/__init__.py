@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr import const
-from aminopvr.config import config, GeneralConfig, DebugConfig
+from aminopvr.config import Config, GeneralConfig, DebugConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
@@ -30,27 +30,28 @@ import time
 
 logger          = logging.getLogger( "aminopvr" )
 
-generalConfig   = GeneralConfig( config )
-debugConfig     = DebugConfig( config )
 resourceMonitor = None
 recorder        = None
 scheduler       = None
 epgGrabber      = None
 contentProvider = None
 
-for debugLogger in debugConfig.logger.keys():
-    loggerInst = logging.getLogger( debugLogger )
-    if debugConfig.logger[debugLogger].lower() == "debug":
-        loggerInst.setLevel( logging.DEBUG )
-    elif debugConfig.logger[debugLogger].lower() == "info":
-        loggerInst.setLevel( logging.INFO )
-    elif debugConfig.logger[debugLogger].lower() == "warning":
-        loggerInst.setLevel( logging.WARNING )
-    elif debugConfig.logger[debugLogger].lower() == "error":
-        loggerInst.setLevel( logging.ERROR )
-    elif debugConfig.logger[debugLogger].lower() == "critical":
-        loggerInst.setLevel( logging.CRITICAL )
-    logger.warning( "Configured logger '%s' at level '%s'" % ( debugLogger, debugConfig.logger[debugLogger] ) )
+def init():
+    debugConfig = DebugConfig( Config() )
+
+    for debugLogger in debugConfig.logger.keys():
+        loggerInst = logging.getLogger( debugLogger )
+        if debugConfig.logger[debugLogger].lower() == "debug":
+            loggerInst.setLevel( logging.DEBUG )
+        elif debugConfig.logger[debugLogger].lower() == "info":
+            loggerInst.setLevel( logging.INFO )
+        elif debugConfig.logger[debugLogger].lower() == "warning":
+            loggerInst.setLevel( logging.WARNING )
+        elif debugConfig.logger[debugLogger].lower() == "error":
+            loggerInst.setLevel( logging.ERROR )
+        elif debugConfig.logger[debugLogger].lower() == "critical":
+            loggerInst.setLevel( logging.CRITICAL )
+        logger.warning( "Configured logger '%s' at level '%s'" % ( debugLogger, debugConfig.logger[debugLogger] ) )
 
 #def test( eventType, params ):
 #    logger.warning( "test" )
@@ -83,6 +84,7 @@ def shutdown():
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
+    generalConfig   = GeneralConfig( Config() )
     resourceMonitor = ResourceMonitor()
     recorder        = Recorder()
     scheduler       = Scheduler()

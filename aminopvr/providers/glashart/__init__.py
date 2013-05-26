@@ -16,9 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from StringIO import StringIO
+from aminopvr.config import Config
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
-from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.providers.glashart.epg import EpgProvider
 from aminopvr.providers.glashart.page import PageSymbol
 from aminopvr.providers.glashart.wi import WebInterface
@@ -45,7 +46,7 @@ def RegisterProvider():
 class ContentProvider( threading.Thread ):
     __metaclass__ = Singleton
 
-    _logger = logging.getLogger( "aminopvr.providers.glashart.ContentProvider" )
+    _logger         = logging.getLogger( "aminopvr.providers.glashart.ContentProvider" )
 
     _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
 
@@ -54,9 +55,11 @@ class ContentProvider( threading.Thread ):
 
         self._logger.debug( "ContentProvider" )
 
+        self._glashartConfig = GlashartConfig( Config() )
+
         now          = datetime.datetime.now()
-        grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( glashartConfig.grabContentTime, "%H:%M" ).timetz() )
-        grabInterval = self._parseTimedetla( glashartConfig.grabContentInterval )
+        grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( self._glashartConfig.grabContentTime, "%H:%M" ).timetz() )
+        grabInterval = self._parseTimedetla( self._glashartConfig.grabContentInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -157,7 +160,7 @@ class ContentProvider( threading.Thread ):
                         PageSymbol.addAllDictToDb( conn, symbolNames )
 
     def _parseIndexPage( self ):
-        content, _, _ = getPage( glashartConfig.tvmenuIndexPath )
+        content, _, _ = getPage( self._glashartConfig.tvmenuIndexPath )
         if content:
             title        = None
             codeJsPath   = None
@@ -180,14 +183,14 @@ class ContentProvider( threading.Thread ):
 
             codeJsMatch  = re.compile( regExp["JAVASCRIPT"] ).search( fileContent )
             if codeJsMatch:
-                codeJsPath = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/" + codeJsMatch.group( "js_filename" )
+                codeJsPath = self._glashartConfig.iptvBaseUrl + "/" + self._glashartConfig.tvmenuPath + "/" + codeJsMatch.group( "js_filename" )
             else:
                 self._logger.error( "_parseIndexPage: no match for JAVASCRIPT" )
                 return ( None, None, None, None )
 
             styleCssMatch  = re.compile( regExp["STYLE"] ).search( fileContent )
             if styleCssMatch:
-                styleCssPath = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/" + styleCssMatch.group( "css_filename" )
+                styleCssPath = self._glashartConfig.iptvBaseUrl + "/" + self._glashartConfig.tvmenuPath + "/" + styleCssMatch.group( "css_filename" )
             else:
                 self._logger.error( "_parseIndexPage: no match for STYLE" )
                 return ( None, None, None, None )
@@ -227,8 +230,8 @@ class ContentProvider( threading.Thread ):
                         "KEY_EVENT_FUNCTION":             r"function (?P<key_event_function>[A-Za-z]{1,2})\([A-Za-z]{1,2}\)\{[A-Za-z]{1,2}\(\);[A-Za-z]{1,2}&&clearTimeout\([A-Za-z]{1,2}\);[A-Za-z]{1,2}=\s*[A-Za-z]{1,2}.keyCode\|\|[A-Za-z]{1,2}.charCode;",
                      }
             symbolNames = {}
-            symbolNames["channel_logo_path"]  = glashartConfig.channelLogoPath
-            symbolNames["channel_thumb_path"] = glashartConfig.channelThumbPath
+            symbolNames["channel_logo_path"]  = self._glashartConfig.channelLogoPath
+            symbolNames["channel_thumb_path"] = self._glashartConfig.channelThumbPath
 
             channelList1Match = re.compile( regExp["CHANNEL_LIST_1"] ).search( fileContent )
             if channelList1Match:

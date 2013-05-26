@@ -17,10 +17,11 @@
 """
 from StringIO import StringIO
 from aminopvr.channel import Channel
+from aminopvr.config import Config
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
-from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
 from aminopvr.tools import getPage, Singleton
@@ -35,10 +36,51 @@ import threading
 import time
 import unicodedata
 
-_CATTRANS = { "amusement"            : "Talk",
+# Content_nibble_level_1 Content_nibble_level_2 Description
+# 0x0 0x0 to 0xF undefined content
+# Movie/Drama:
+# 0x1 0x0 movie/drama (general)
+# 0x1 0x1 detective/thriller
+# 0x1 0x2 adventure/western/war
+# 0x1 0x3 science fiction/fantasy/horror
+# 0x1 0x4 comedy
+# 0x1 0x5 soap/melodrama/folkloric
+# 0x1 0x6 romance
+# 0x1 0x7 serious/classical/religious/historical movie/drama
+# 0x1 0x8 adult movie/drama
+# 0x1 0x9 to 0xE reserved for future use
+# 0x1 0xF user defined
+# News/Current affairs:
+# 0x2 0x0 news/current affairs (general)
+# 0x2 0x1 news/weather report
+# 0x2 0x2 news magazine
+# 0x2 0x3 documentary
+# 0x2 0x4 discussion/interview/debate
+# 0x2 0x5 to 0xE reserved for future use
+# 0x2 0xF user defined
+# Show/Game show:
+# 0x3 0x0 show/game show (general)
+# 0x3 0x1 game show/quiz/contest
+# 0x3 0x2 variety show
+# 0x3 0x3 talk show
+# 0x3 0x4 to 0xE reserved for future use
+# 0x3 0xF user defined
+# Sports:
+# 0x4 0x0 sports (general) 
+# 0x4 0x1 special events (Olympic Games, World Cup, etc.)
+# 0x4 0x2 sports magazines
+# 0x4 0x3 football/soccer
+# 0x4 0x4 tennis/squash
+# 0x4 0x5 team sports (excluding football)
+# 0x4 0x6 athletics
+# 0x4 0x7 motor sport
+# 0x4 0x8 water sport
+# 0x4 0x9 winter sports
+
+_CATTRANS = { "talk"                 : "Talk",
               "animatie"             : "Animated",
               "comedy"               : "Comedy",
-              "docu"                 : "Documentary",
+              "documentary"          : "Documentary",
               "educatief"            : "Educational",
               "erotiek"              : "Adult",
               "film"                 : "Film",
@@ -50,7 +92,7 @@ _CATTRANS = { "amusement"            : "Talk",
               "muziek"               : "Music",
               "natuur"               : "Science/Nature",
               "actualiteit"          : "News",
-              "overige"              : "Unknown",
+              "unknown"              : "Unknown",
               "religieus"            : "Religion",
               "serie"                : "Drama",
               "sport"                : "Sports",
@@ -64,7 +106,7 @@ def _lineFilter( line ):
 class EpgProvider( threading.Thread ):
     __metaclass__ = Singleton
 
-    _logger = logging.getLogger( "aminopvr.providers.glashart.EpgProvider" )
+    _logger         = logging.getLogger( "aminopvr.providers.glashart.EpgProvider" )
 
     _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
 
@@ -73,9 +115,11 @@ class EpgProvider( threading.Thread ):
 
         self._logger.debug( "EpgProvider" )
 
+        self._glashartConfig = GlashartConfig( Config() )
+
         now          = datetime.datetime.now()
-        grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( glashartConfig.grabEpgTime, "%H:%M" ).timetz() )
-        grabInterval = self._parseTimedetla( glashartConfig.grabEpgInterval )
+        grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( self._glashartConfig.grabEpgTime, "%H:%M" ).timetz() )
+        grabInterval = self._parseTimedetla( self._glashartConfig.grabEpgInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -198,7 +242,7 @@ class EpgProvider( threading.Thread ):
             daysDetailDelta = datetime.timedelta( days = 3 )
 
             epgFilename = "/%s.json.gz" % ( epgId.epgId )
-            epgUrl      = glashartConfig.epgChannelsPath + epgFilename
+            epgUrl      = self._glashartConfig.epgChannelsPath + epgFilename
 
             currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
             currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
@@ -292,7 +336,7 @@ class EpgProvider( threading.Thread ):
 
         # Fetch detailed information. http://w.zt6.nl/epgdata/xx/xxxxxx.json
         detailsFilename   = "/%s/%s.json" % ( program.originalId[-2:], program.originalId )
-        detailsUrl        = glashartConfig.epgDataPath + detailsFilename
+        detailsUrl        = self._glashartConfig.epgDataPath + detailsFilename
         detailsPage, _, _ = getPage( detailsUrl, None )
 
         if detailsPage and len( detailsPage ) > 0:

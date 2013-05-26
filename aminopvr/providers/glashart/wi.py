@@ -16,9 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from Cheetah.Template import Template
+from aminopvr.config import Config
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
-from aminopvr.providers.glashart.config import glashartConfig
+from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.providers.glashart.page import PageSymbol
 from cherrypy.lib.static import serve_fileobj
 import aminopvr.wi
@@ -27,6 +28,13 @@ import json
 import logging
 import os
 import urllib
+
+_glashartConfig = None
+
+def _getGlashartConfig():
+    if not _glashartConfig:
+        _glashartConfig = GlashartConfig( Config() )
+    return _glashartConfig
 
 class WebInterface( aminopvr.wi.WebInterface ):
     _logger = logging.getLogger( "aminopvr.providers.glashart.WI" )
@@ -67,7 +75,7 @@ class WebInterface( aminopvr.wi.WebInterface ):
     def stbinfo( self, *args, **kwargs ):
         self._logger.debug( "stbinfo( %s, %s )" % ( str( args ), str( kwargs ) ) )
         method = cherrypy.request.method.upper()
-        url    = glashartConfig.iptvBaseUrl + "/stbinfo"
+        url    = _getGlashartConfig().iptvBaseUrl + "/stbinfo"
         if len( list( args ) ) > 0:
             url = url + "/" + '/'.join( list( args ) )
         return self._serveRemoteContent( url, method, kwargs )
@@ -76,35 +84,35 @@ class WebInterface( aminopvr.wi.WebInterface ):
     def rckey_xhtml( self, *args, **kwargs ):
         self._logger.debug( "rckey_xhtml( %s, %s )" )
         method = cherrypy.request.method.uppper()
-        url    = glashartConfig.iptvBaseUrl + "/rckey.xhtml"
+        url    = _getGlashartConfig().iptvBaseUrl + "/rckey.xhtml"
         return self._serveRemoteContent( url, method, kwargs )
 
     @cherrypy.expose
     def epgdata( self, *args, **kwargs ):
         self._logger.debug( "epgdata( %s, %s )" % ( str( args ), str( kwargs ) ) )
         method = cherrypy.request.method.upper()
-        url    = glashartConfig.epgDataPath + "/" + '/'.join( list( args ) )
+        url    = _getGlashartConfig().epgDataPath + "/" + '/'.join( list( args ) )
         return self._serveRemoteContent( url, method, kwargs )
 
     @cherrypy.expose
     def last_update_txt( self, *args, **kwargs ):
         self._logger.debug( "last_update_txt( %s, %s )" % ( str( args ), str( kwargs ) ) )
         method = cherrypy.request.method.upper()
-        url    = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/last-update.txt"
+        url    = _getGlashartConfig().iptvBaseUrl + "/" + _getGlashartConfig().tvmenuPath + "/last-update.txt"
         return self._serveRemoteContent( url, method, kwargs )
 
     @cherrypy.expose
     def images( self, *args, **kwargs ):
         self._logger.debug( "images( %s, %s )" % ( str( args ), str( kwargs ) ) )
 
-        url = glashartConfig.iptvBaseUrl + "/" + glashartConfig.tvmenuPath + "/images/" + '/'.join( list( args ) )
+        url = _getGlashartConfig().iptvBaseUrl + "/" + _getGlashartConfig().tvmenuPath + "/images/" + '/'.join( list( args ) )
         return self._serveRemoteContent( url )
 
     @cherrypy.expose
     def api( self, *args, **kwargs ):
         self._logger.debug( "api( %s, %s )" % ( str( args ), str( kwargs ) ) )
         method = cherrypy.request.method.upper()
-        url    = glashartConfig.iptvBaseUrl + "/api"
+        url    = _getGlashartConfig().iptvBaseUrl + "/api"
         if len( list( args ) ) > 0:
             url = url + "/" + '/'.join( list( args ) )
 

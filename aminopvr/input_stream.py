@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.config import ConfigSectionAbstract, config
+from aminopvr.config import Config, ConfigSectionAbstract
 from aminopvr.multicast import MulticastSocket
 from lib import httpplus
 import logging
@@ -37,14 +37,10 @@ class InputStreamConfig( ConfigSectionAbstract ):
     def httpBaseUrl( self ):
         return self._get( "http_base_url" )
 
-inputStreamConfig = InputStreamConfig( config )
-
 class InputStreamAbstract( object ):
     """
     InputStreamAbstract base class
     """
-    _logger = logging.getLogger( "aminopvr.InputStreamAbstract" )
-
     def __init__( self ):
         self._logger.debug( "InputStreamAbstract.__init__()" )
 
@@ -164,7 +160,8 @@ class HttpInputStream( InputStreamAbstract ):
         else:
             protocol = "udp"
 
-        httpBaseUrl = inputStreamConfig.httpBaseUrl
+        inputStreamConfig = InputStreamConfig( Config() )
+        httpBaseUrl       = inputStreamConfig.httpBaseUrl
         formatMap = {
                         "[protocol]": protocol,
                         "[ip]":       url.ip,

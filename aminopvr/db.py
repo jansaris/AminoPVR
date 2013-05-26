@@ -19,6 +19,7 @@ from aminopvr.const import DATA_ROOT
 from aminopvr.tools import ResourceMonitor
 import logging
 import os
+import re
 import sqlite3
 import threading
 import time
@@ -26,13 +27,13 @@ import unicodedata
 
 lock = threading.Lock()
 
+_logger = logging.getLogger( "aminopvr.db" )
+
 def _like( mask, value, escape=None ):
     value = unicodedata.normalize( "NFKD", value ).encode( "ASCII", "ignore" )
     return mask[1:-1].lower() in value.lower()
 
 class DBConnection:
-    _logger = logging.getLogger( "aminopvr.db" )
-
     def __init__( self, filename="aminopvr.db" ):
         self._filename           = filename
         self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
@@ -40,6 +41,10 @@ class DBConnection:
         self._cursor.row_factory = sqlite3.Row
         self._conn.create_function( "LIKE", 2, _like )
         self._conn.create_function( "LIKE", 3, _like )
+
+    def __del__( self ):
+        if self._conn:
+            self._conn.close()
 
     def execute( self, query, args=None ):
         if query == None:
@@ -50,10 +55,10 @@ class DBConnection:
             while attempt < 5:
                 try:
                     if args == None:
-                        self._logger.debug( "%s: %s" % ( self._filename, query ) )
+                        _logger.debug( "%s: %s" % ( self._filename, query ) )
                         sqlResult = self._cursor.execute( query )
                     else:
-                        self._logger.debug( "%s: %s with args %s" % ( self._filename, query, args ) )
+                        _logger.debug( "%s: %s with args %s" % ( self._filename, query, args ) )
                         sqlResult = self._cursor.execute( query, args )
                     self._conn.commit()
                     if query.lower().startswith( "select" ):
@@ -66,14 +71,14 @@ class DBConnection:
                     break
                 except sqlite3.OperationalError, e:
                     if "unable to open database file" in e.message or "database is locked" in e.message:
-                        self._logger.warning( "DB error: %s" % ( e.message ) )
+                        _logger.warning( "DB error: %s" % ( e.message ) )
                         attempt += 1
                         time.sleep( 1 )
                     else:
-                        self._logger.error( "DB error: %s" % ( e.message ) )
+                        _logger.error( "DB error: %s" % ( e.message ) )
                         raise
                 except sqlite3.DatabaseError, e:
-                    self._logger.error( "Fatal error executing query: %s" % ( e.message ) )
+                    _logger.error( "Fatal error executing query: %s" % ( e.message ) )
                     raise
 
             return sqlResult
@@ -86,3 +91,73 @@ class DBConnection:
     @classmethod
     def _dbFilename( cls, filename ):
         return os.path.join( DATA_ROOT, filename )
+
+def sanityCheckDatabase( connection, sanityCheck ):
+    sanityCheck( connection ).check()
+
+class DbSanityCheck( object ):
+    def __init__( self, connection ):
+        self.connection = connection
+
+    def check( self ):
+        pass
+
+# ===============
+# = Upgrade API =
+# ===============
+
+def upgradeDatabase( connection, schema ):
+    _logger.warning( "Checking database structure..." )
+    _processUpgrade( connection, schema )
+
+def prettyName( str ):
+    return ' '.join( [ x.group() for x in re.finditer( "([A-Z])([a-z0-9]+)", str ) ] )
+
+def _processUpgrade( connection, upgradeClass ):
+    instance = upgradeClass( connection )
+    _logger.debug( "Checking %s database upgrade" % ( prettyName( upgradeClass.__name__ ) ) )
+    if not instance.test():
+        _logger.warning( "Database upgrade required: %s" % ( prettyName( upgradeClass.__name__ ) ) )
+        try:
+            instance.execute()
+        except sqlite3.DatabaseError, e:
+            print "Error in %s: %s" % ( upgradeClass.__name__, e )
+            raise
+        _logger.debug( "%s upgrade completed" % ( upgradeClass.__name__ ) )
+    else:
+        _logger.debug( "%s upgrade not required" % ( upgradeClass.__name__ ) )
+
+    for upgradeSubClass in upgradeClass.__subclasses__():
+        _processUpgrade( connection, upgradeSubClass )
+
+# Base migration class. All future DB changes should be subclassed from this class
+class SchemaUpgrade( object ):
+    def __init__( self, connection ):
+        self.connection = connection
+
+    def hasTable( self, tableName ):
+        return len( self.connection.execute( "SELECT 1 FROM sqlite_master WHERE name = ?;", ( tableName, ) ) ) > 0
+
+    def hasColumn( self, tableName, column ):
+        return column in self.connection.tableInfo( tableName )
+
+    def addColumn( self, table, column, type="NUMERIC", default=0 ):
+        self.connection.execute( "ALTER TABLE %s ADD %s %s" % ( table, column, type ) )
+        self.connection.execute( "UPDATE %s SET %s = ?" % ( table, column ), ( default, ) )
+
+    def checkDbVersion( self ):
+        try:
+            result = self.connection.execute( "SELECT db_version FROM db_version" )
+        except:
+            _logger.error( "checkDbVersion: db_version table not found!" )
+            return 0
+
+        if result:
+            return int( result[0]["db_version"] )
+        else:
+            return 0
+
+    def incDbVersion( self ):
+        curVersion = self.checkDbVersion()
+        self.connection.execute( "UPDATE db_version SET db_version = ?", [curVersion + 1] )
+        return curVersion + 1

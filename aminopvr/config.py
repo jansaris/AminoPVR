@@ -25,23 +25,24 @@ import os
 class ConfigSectionAbstract( object ):
     _section = None
     _options = {}
-    _logger  = logging.getLogger( "aminopvr.ConfigSectionAbstract" )
 
     def __init__( self, config ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None, "_options not defined!"
 
-        self._logger.debug( "ConfigSectionAbstract<%s>.__init__( config=%r )" % ( self._section, config ) )
+        self._logger  = logging.getLogger( "aminopvr.ConfigSectionAbstract<%s>" % ( self._section ) )
+        self._logger.debug( "__init__( config=%r )" % ( config ) )
 
         self._config         = config
         self._sectionOptions = self._config.getSection( self._section )
         if not self._sectionOptions:
-            self._logger.warning( "ConfigSectionAbstract<%s>.__init__: section doesn't exist, so added" % ( self._section ) )
+            self._logger.info( "__init__: section doesn't exist, so added" )
             self._config.addSection( self._section )
+            self._sectionOptions = self._config.getSection( self._section )
 
         unsupportedOptions = set( self._sectionOptions ).difference( set( self._options.keys() ) )
         for option in unsupportedOptions:
-            self._logger.warning( "ConfigSectionAbstract<%s>.__init__: option: %s not supported" % ( self._section, option ) )
+            self._logger.warning( "__init__: option: %s not supported" % ( option ) )
 
     def _get( self, option ):
         assert self._section != None, "_section member not defined!"
@@ -71,7 +72,7 @@ class ConfigSectionAbstract( object ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         if option not in self._sectionOptions:
-            self._logger.debug( "ConfigSectionAbstract<%s>._addIfNew: adding option: %s with value %s" % ( self._section, option, str( self._options[option] ) ) )
+            self._logger.debug( "_addIfNew: adding option: %s with value %s" % ( option, str( self._options[option] ) ) )
             self._config.set( self._section, option, str( self._options[option] ) )
 
     def _set( self, option, value ):
@@ -126,7 +127,7 @@ class DebugConfig( ConfigSectionAbstract ):
 
     @property
     def logger( self ):
-        return { x.split( ':' )[0]: x.split( ':' )[1] for x in self._get( "logger" ).split( ',' ) }
+        return { x.split( ':' )[0]: x.split( ':' )[1] for x in self._get( "logger" ).split( ',' ) if x != "" }
 
 class Config( object ):
     __metaclass__ = Singleton
@@ -146,7 +147,7 @@ class Config( object ):
         return options
 
     def addSection( self, section ):
-        if self._config.has_section( section ):
+        if not self._config.has_section( section ):
             self._config.add_section( section )
 
     def get( self, section, option ):
@@ -167,5 +168,3 @@ class Config( object ):
     @classmethod
     def _configFilename( cls, filename ):
         return os.path.join( DATA_ROOT, filename )
-
-config = Config()

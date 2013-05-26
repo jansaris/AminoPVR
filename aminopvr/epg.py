@@ -579,26 +579,23 @@ class ProgramAbstract( object ):
         return "ProgramAbstract( epgId=%r, id=%r, originalId=%r, startTime=%r, endTime=%r, title=%r, subtitle=%r, description=%r, aspectRatio=%r, parentalRating=%r, genres=%r, actors=%r, directors=%r, presenters=%r, ratings=%r )" % ( self._epgId, self._id, self._originalId, self._startTime, self._endTime, self._title, self._subtitle, self._description, self._aspectRatio, self._parentalRating, self._genres, self._actors, self._directors, self._presenters, self._ratings )
 
     def __eq__( self, other ):
-        # Not comparng _id as it might not be set at comparison time.
+        # Not comparing _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
-        # If both instances have 'detailed' program information, compare that
-        # too, else consider them to be the same
-        return ( self._epgId                                                          == other._epgId            and
-                 self._originalId                                                     == other._originalId       and
-                 self._startTime                                                      == other._startTime        and
-                 self._endTime                                                        == other._endTime          and
-                 self._title                                                          == other._title            and
-                 ( ( self._detailed                                                   == other._detailed         and
-                     self._subtitle                                                   == other._subtitle         and
-                     self._description                                                == other._description      and
-                     self._aspectRatio                                                == other._aspectRatio      and
-                     self._parentalRating                                             == other._parentalRating   and
-                     set( self._genres     ).intersection( set( other._genres     ) ) == set( self._genres )     and
-                     set( self._actors     ).intersection( set( other._actors     ) ) == set( self._actors )     and
-                     set( self._directors  ).intersection( set( other._directors  ) ) == set( self._directors )  and
-                     set( self._presenters ).intersection( set( other._presenters ) ) == set( self._presenters ) and
-                     set( self._ratings    ).intersection( set( other._ratings    ) ) == set( self._ratings ) )  or 
-                   ( self._detailed                                                   != other._detailed ) ) )
+        return ( self._epgId                                            == other._epgId            and
+                 self._originalId                                       == other._originalId       and
+                 self._startTime                                        == other._startTime        and
+                 self._endTime                                          == other._endTime          and
+                 self._title                                            == other._title            and
+                 self._detailed                                         == other._detailed         and
+                 self._subtitle                                         == other._subtitle         and
+                 self._description                                      == other._description      and
+                 self._aspectRatio                                      == other._aspectRatio      and
+                 self._parentalRating                                   == other._parentalRating   and
+                 ( set( self._genres     ) & set( other._genres     ) ) == set( self._genres )     and
+                 ( set( self._actors     ) & set( other._actors     ) ) == set( self._actors )     and
+                 ( set( self._directors  ) & set( other._directors  ) ) == set( self._directors )  and
+                 ( set( self._presenters ) & set( other._presenters ) ) == set( self._presenters ) and
+                 ( set( self._ratings    ) & set( other._ratings    ) ) == set( self._ratings ) )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
@@ -823,6 +820,19 @@ class ProgramAbstract( object ):
             rows     = conn.execute( query, whereValue )
             programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
         return programs
+
+    def deleteFromDb( self, conn ):
+        assert self._tableName != None, "Not the right class: %r" % ( self )
+        if conn:
+            conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ) )
+            for genre in self.genres:
+                genre.deleteFromDb( conn )
+            for actor in self.actors:
+                actor.deleteFromDb( conn )
+            for director in self.directors:
+                director.deleteFromDb( conn )
+            for presenter in self.presenters:
+                presenter.deleteFromDb( conn )
 
     def toDict( self ):
         return { "id":              self.id,

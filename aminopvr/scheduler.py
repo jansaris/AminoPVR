@@ -15,8 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr import config
 from aminopvr.channel import Channel
-from aminopvr.config import GeneralConfig, config
+from aminopvr.config import GeneralConfig
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol

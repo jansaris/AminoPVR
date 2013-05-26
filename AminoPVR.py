@@ -145,6 +145,8 @@ def main():
             else:
                 logger.log( u"Not running in daemon mode. PID file creation disabled." )
 
+    aminopvr.init()
+
     if consoleLogging:
         consoleHandler = logging.StreamHandler( sys.stdout )
         consoleHandler.setLevel( logging.INFO )
