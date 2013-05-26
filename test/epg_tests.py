@@ -16,11 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import unittest
+import test_lib as test     # import test_lib before anything else from aminopvr!
 from aminopvr.channel import Channel
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramGenre, Genre, Person, \
     EpgProgramActor, EpgProgramDirector, EpgProgramPresenter
-import test_lib as test
-import unittest
 
 
 class EpgIdTests( test.AminoPVRTestDBCase ):

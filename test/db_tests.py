@@ -17,7 +17,7 @@
 """
 
 import unittest
-import test_lib as test
+import test_lib as test     # import test_lib before anything else from aminopvr!
 
 
 class DBBasicTests( test.AminoPVRTestDBCase ):

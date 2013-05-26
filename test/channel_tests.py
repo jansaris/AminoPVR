@@ -16,10 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import unittest
+import test_lib as test     # import test_lib before anything else from aminopvr!
 from aminopvr.channel import Channel, ChannelUrl, PendingChannel, \
     PendingChannelUrl
-import test_lib as test
-import unittest
 
 
 class ChannelTests( test.AminoPVRTestDBCase ):
