@@ -32,6 +32,8 @@ import urllib
 _glashartConfig = None
 
 def _getGlashartConfig():
+    global _glashartConfig
+
     if not _glashartConfig:
         _glashartConfig = GlashartConfig( Config() )
     return _glashartConfig
