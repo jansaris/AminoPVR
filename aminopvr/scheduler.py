@@ -15,9 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr import config
 from aminopvr.channel import Channel
-from aminopvr.config import GeneralConfig
+from aminopvr.config import Config, GeneralConfig
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
@@ -103,7 +102,7 @@ class Scheduler( threading.Thread ):
                 try:
                     self._reschedule()
                 except:
-                    self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
+                    self._logger.error( "run: unexpected error: %s" % ( sys.exc_info()[0] ) )
             self._event.clear()
 
         self._logger.warning( "Scheduler is about to shutdown, stop and remove timers" )
@@ -244,10 +243,18 @@ class Scheduler( threading.Thread ):
             untouchedTimers = set( self._timers.keys() ).difference( set( touchedTimers ) )
             self._logger.info( "untouchedTimers=%r" % ( untouchedTimers ) )
             for untouchedTimer in untouchedTimers:
-                timer = self._timers[untouchedTimer]
-                self._logger.warning( "Removing timer with id=%d (recording @ %s from %s with title %s." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName, timer["recording"].title ) )
-                timer["timer"].cancel()
-                del self._timers[untouchedTimer]
+                if untouchedTimer in self._timers:
+                    timer = self._timers[untouchedTimer]
+                    if "recording" in timer:
+                        self._logger.warning( "Removing timer with id=%d (recording @ %s from %s with title %s)." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName, timer["recording"].title ) )
+                        timer["timer"].cancel()
+                        del self._timers[untouchedTimer]
+                    else:
+                        # TODO: Properly cancel a running recording
+                        self._logger.warning( "Removing timer with id=%d (active recording @ %s with id %d)." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recordingId"] ) )
+                        self._stopRecording( Timer.TIME_TRIGGER_EVENT, timer["id"] )
+                else:
+                    self._logger.critical( "Untouched timer with id=%d not in timer list (%r)" % ( untouchedTimer, self._timers ) )
             
     def _handleSchedule( self, conn, schedule, newRecordings ):
         """
@@ -616,7 +623,7 @@ class Scheduler( threading.Thread ):
                             timer["recordingId"] = recording.id
                             del timer["recording"]
 
-                            generalConfig = GeneralConfig( config )
+                            generalConfig     = GeneralConfig( Config() )
                             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) )
 
                             # Hmm, recording didn't start
