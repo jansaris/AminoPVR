@@ -63,6 +63,9 @@ def signalHandler( signalNumber=None, frame=None ):
 
 def shutdown():
     logger.warning( "Let's stop everything before we exit" )
+
+    global epgGrabber, contentProvider, recorder, scheduler, resourceMonitor
+
     if epgGrabber:
         epgGrabber.stop()
     if contentProvider:
@@ -83,6 +86,8 @@ def shutdown():
 
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
+
+    global epgGrabber, contentProvider, recorder, scheduler, resourceMonitor
 
     generalConfig   = GeneralConfig( Config() )
     resourceMonitor = ResourceMonitor()
