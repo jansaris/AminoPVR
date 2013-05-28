@@ -278,6 +278,22 @@ class EpgProvider( threading.Thread ):
                     if currentProgramsDict.has_key( programNew.originalId ):
                         programOld = currentProgramsDict[programNew.originalId]
 
+                    # If the old program has detailed info, copy those fields
+                    # TODO: do this somewhere else
+                    if programOld and programOld.detailed:
+                        programNew.subtitle       = programOld.subtitle
+                        programNew.description    = programOld.description
+                        programNew.aspectRatio    = programOld.aspectRatio
+                        programNew.parentalRating = programOld.parentalRating
+                        programNew.genres         = programOld.genres
+                        programNew.actors         = programOld.actors
+                        programNew.directors      = programOld.directors
+                        programNew.presenters     = programOld.presenters
+                        programNew.ratings        = programOld.ratings
+                        programNew.detailed       = programOld.detailed
+
+                    # Now, compare the old program and the new program
+                    # Are they the same, then we don't need to download detailed information
                     if programOld and programOld.detailed and programNew == programOld:
                         programNew         = programOld
                         updateDetailedData = False
