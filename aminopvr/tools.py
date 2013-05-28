@@ -144,7 +144,7 @@ class ResourceMonitor( object ):
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
-        self.__instance = self
+        ResourceMonitor.__instance = self
 
     def stop( self ):
         self._logger.warning( "Stopping ResourceMonitor" )
