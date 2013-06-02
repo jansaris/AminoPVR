@@ -80,6 +80,8 @@ class ActiveRecording( threading.Thread ):
             with self._listenerLock:
                 if listener in self._listeners:
                     self._listeners.remove( listener )
+            if "output" in listener:
+                listener["output"].close()
             if listener.has_key( "callback" ) and listener["callback"]:
                 listener["callback"]( listener["id"], ActiveRecording.ABORTED )
 
@@ -106,6 +108,8 @@ class ActiveRecording( threading.Thread ):
                 if listener["id"] == id:
                     self._logger.info( "ActiveRecording.removeListener: remove listener" )
                     self._listeners.remove( listener )
+                    if "output" in listener:
+                        listener["output"].close()
                     if listener.has_key( "callback" ) and listener["callback"]:
                         listener["callback"]( listener["id"], ActiveRecording.FINISHED )
         self._logger.info( "ActiveRecording.removeListener: number of listeners=%d" % ( len( self._listeners ) ) )
@@ -125,8 +129,15 @@ class ActiveRecording( threading.Thread ):
                             """ Write data to listener["outputFile"] """
                             if listener["new"]:
                                 listener["new"] = False
-                                if listener.has_key( "callback" ) and listener["callback"]:
-                                    listener["callback"]( listener["id"], ActiveRecording.STARTED )
+                                try:
+                                    listener["output"] = open( listener["outputFile"], "wb" )
+                                    if listener.has_key( "callback" ) and listener["callback"]:
+                                        listener["callback"]( listener["id"], ActiveRecording.STARTED )
+                                except:
+                                    if listener.has_key( "callback" ) and listener["callback"]:
+                                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                            if "output" in listener:
+                                listener["output"].write( data )
 
             inputStream.close()
             with self._listenerLock:

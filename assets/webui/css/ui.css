@@ -1,0 +1,24 @@
+/*
+.ui-li-thumb
+{
+    max-height: 45px;
+    max-width: 45px;
+    padding-top: 10px;
+}
+
+.ui-li .ui-btn-inner a.ui-link-inherit, .ui-li-static.ui-li
+{
+    padding: .3em 50px .3em 8px;
+}
+
+.ui-li-has-thumb .ui-btn-inner a.ui-link-inherit, .ui-li-static.ui-li-has-thumb
+{
+    min-height: 50px;
+    padding-left: 55px;
+}
+*/
+
+.video_pip
+{
+    width: 100%;
+}

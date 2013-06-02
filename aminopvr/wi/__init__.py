@@ -15,6 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from Cheetah.Template import Template
+from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.wi.api import AminoPVRWI
 from cherrypy.lib.static import serve_file, serve_fileobj
@@ -29,8 +31,18 @@ import urllib
 
 _logger = logging.getLogger( "aminopvr.WI" )
 
+class WebUI( object ):
+    _logger = logging.getLogger( "aminopvr.WI.WebUI" )
+
+    @cherrypy.expose
+    def index( self ):
+        template = Template( file=os.path.join( DATA_ROOT, "assets/webui/index.html.tmpl" ) )
+        return template.respond()
+
+
 class WebInterface( object ):
     aminopvr = AminoPVRWI()
+    webui = WebUI()
 
 def stopWebserver():
     _logger.warning( "Stopping CherryPy Engine" )
@@ -112,6 +124,14 @@ def initWebserver( serverPort=8080 ):
         '/assets/css':    {
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/css'
+        },
+        '/assets/webui/js':     {
+            'tools.staticdir.on':  True,
+            'tools.staticdir.dir': 'assets/webui/js'
+        },
+        '/assets/webui/css':    {
+            'tools.staticdir.on':  True,
+            'tools.staticdir.dir': 'assets/webui/css'
         },
     }
 
