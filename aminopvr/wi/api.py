@@ -226,10 +226,10 @@ class AminoPVRAPI( API ):
         conn = DBConnection()
         return self._createResponse( API.STATUS_SUCCESS, { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
 
-    @cherrypy.expose
+    @cherrypy.expose( alias="getChannels" ) # TODO: remove alias
     @API._grantAccess
-    def getChannels( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
-        self._logger.debug( "getChannels" )
+    def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
+        self._logger.debug( "getChannelList" )
         conn          = DBConnection()
         channels      = Channel.getAllFromDb( conn, includeRadio=radio, tv=tv )
         channelsArray = []
@@ -260,6 +260,19 @@ class AminoPVRAPI( API ):
         for epg in epgData:
             epgArray.append( epg.toDict() )
         return self._createResponse( API.STATUS_SUCCESS, epgArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getNowNextProgramList( self ):
+        self._logger.debug( "getNowNextProgramList" )
+        conn     = DBConnection()
+        epgData  = EpgProgram.getNowNextFromDb( conn )
+        epgDict  = {}
+        for epg in epgData:
+            if epg.epgId not in epgDict:
+                epgDict[epg.epgId] = []
+            epgDict[epg.epgId].append( epg.toDict() )
+        return self._createResponse( API.STATUS_SUCCESS, epgDict )
 
     @cherrypy.expose
     @API._grantAccess

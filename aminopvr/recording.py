@@ -199,7 +199,7 @@ class RecordingAbstract( object ):
             where = ""
 
             if offset != None and count != None:
-                limit = " LIMIT %d, %d" % ( offset, count )
+                limit = " LIMIT %d, %d" % ( int( offset ), int( count ) )
 
             if sort != None:
                 sort = "%s ASC" % ( sort )

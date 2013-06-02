@@ -18,7 +18,7 @@
 
 var __module = "service."
 
-function LoggerClass()
+/*function LoggerClass()
 {
     this.DEBUG    = 0;
     this.INFO     = 1;
@@ -240,7 +240,7 @@ function LoggerClass()
             }
         }
     };
-}
+}*/
 
 function RemoteServiceClass()
 {
@@ -249,13 +249,9 @@ function RemoteServiceClass()
 
     this._pollServiceActive = false;
 
-    this._pollRequest = null;
-    this._statusRequest = null;
-    this._channelRequest = null;
-
     this.__module = function()
     {
-        return "service." + this.constructor.name;
+        return __module + this.constructor.name;
     };
     this.init = function()
     {
@@ -302,6 +298,7 @@ function RemoteServiceClass()
 
     this._poll = function()
     {
+        var pvr = this;
         if ( !this._pollServerActive )
         {
             logger.warning( this.__module(), "Poll: Starting polling service" );
@@ -309,14 +306,13 @@ function RemoteServiceClass()
 
             try
             {
-                this._pollRequest = new XMLHttpRequest();
-                this._pollRequest.open( "GET", "/aminopvr/api/stb/poll?init", true );
-                this._pollRequest.onreadystatechange = this._pollStateChange;
-                this._pollRequest.send();
+                var self    = this;
+                var request = new JsonAjaxRequest();
+                request.setCallback( self._pollStateChange );
+                request.send( "GET", "/aminopvr/api/stb/poll?init", true );
             }
             catch ( e )
             {
-                this._pollRequest = false;
                 logger.critical( this.__module(), "Poll: exception: " + e );
             }
         }
@@ -324,125 +320,116 @@ function RemoteServiceClass()
         {
             try
             {
-                this._pollRequest = new XMLHttpRequest();
-                this._pollRequest.open( "GET", "/aminopvr/api/stb/poll", true );
-                this._pollRequest.onreadystatechange = this._pollStateChange;
-                this._pollRequest.send();
+                var self    = this;
+                var request = new JsonAjaxRequest();
+                request.setCallback( self._pollStateChange );
+                request.send( "GET", "/aminopvr/api/stb/poll", true );
             }
             catch ( e )
             {
-                this._pollRequest = false;
+//                this._pollRequest = false;
                 logger.critical( this.__module(), "Poll: exception: " + e );
             }
         }
     };
 
-    this._pollStateChange = function()
+    this._pollStateChange = function( state, context, data )
     {
-        if ( remoteService._pollRequest.readyState == 4 )
+        if ( status )
         {
             try
             {
-                if ( remoteService._pollRequest.responseText.length > 0 )
-                {
-                    var responseItem = eval( '(' + remoteService._pollRequest.responseText + ')' );
-                    if ( responseItem['status'] == 'success' )
-                    {
-                    	if ( responseItem['data']['type'] == 'command' )
-                    	{
-                        	if ( responseItem['data']['command'] == 'show_osd' )
-                        	{
-                            	logger.info( this.__module(), "_pollStateChange: command: show_osd." );
-//                                stbApi.setChannelInstance().$(5000);
-	                        }
-    	                    else if ( responseItem['data']['command'] == 'play_stream' )
-        	                {
-            	                logger.warning( this.__module(), "_pollStateChange: command: play_stream: url=" + responseItem['data']['url'] );
+            	if ( data['type'] == 'command' )
+            	{
+                	if ( data['command'] == 'show_osd' )
+                	{
+                    	logger.info( this.__module(), "_pollStateChange: command: show_osd." );
+//                        stbApi.setChannelInstance().$(5000);
+                    }
+                    else if ( data['command'] == 'play_stream' )
+	                {
+    	                logger.warning( this.__module(), "_pollStateChange: command: play_stream: url=" + data['url'] );
 
-                	            stbApi.playStreamAction1( stbApi.setChannelInstance() );
-                    	        b = new stbApi.playStreamClass( responseItem['data']['url'], "", true );
-                        	    stbApi.playStreamAction2( b );
-	                        }
-    	                    else if ( responseItem['data']['command'] == 'get_channel_list' )
-        	                {
-            	                window.setTimeout( function()
-                	            {
-                    	            remoteService._sendChannelList();
-                        	    }, 5000 );
-	                        }
-    	                    else if ( responseItem['data']['command'] == 'remote_debug' )
-        	                {
-            	                if ( !logger.getRemoteDebugEnabled() )
-                	            {
-                    	            logger.enableRemoteDebug( true );
-                        	    }
-	                            else
-    	                        {
-        	                        logger.enableRemoteDebug( false );
-            	                }
-                	        }
-                    	    // else if ( responseItem['data']['command'] == 'debug' )
-                        	// {
-                            	// if ( logger.debugDiv !== undefined && logger.debugDiv != null )
-	                            // {
-    	                            // if ( logger.debugDiv.style.display == "none" )
-        	                        // {
-            	                        // logger.warning( "RemoteServiceClass._pollStateChange: Enable Debug Logging." );
-                	                    // logger.debugDiv.style.display = "block";
-                    	            // }
-                        	        // else
-                            	    // {
-                                	    // logger.warning( "RemoteServiceClass._pollStateChange: Disable Debug Logging." );
-                                    	// logger.debugDiv.style.display = "none";
-	                                // }
-    	                        // }
-        	                // }
-            	            else
-                	        {
-                    	        logger.warning( this.__module(), "_pollStateChange: other command: " + responseItem['command'] );
-                        	}
-	                    }
-    	                else if ( responseItem['data']['type'] == 'channel' )
+        	            stbApi.playStreamAction1( stbApi.setChannelInstance() );
+            	        b = new stbApi.playStreamClass( data['url'], "", true );
+                	    stbApi.playStreamAction2( b );
+                    }
+                    else if ( data['command'] == 'get_channel_list' )
+	                {
+    	                window.setTimeout( function()
         	            {
-            	            stbApi.setChannelFunction( responseItem['channel'], 0 );
-                	    }
-                    	else if ( responseItem['data']['type'] == 'key' )
-	                    {
-    	                    evt          = new API_KeyboardEvent;
-        	                evt.keyCode  = responseItem['data']['key'];
-            	            logger.info( this.__module(), "_pollStateChange: key: " + responseItem['data']['key'] );
-                	        remoteService._keyListener( evt );
-                    	}
-	                    else if ( responseItem['data']['type'] == 'unknown_message' )
-    	                {
-        	                logger.warning( this.__module(), "_pollStateChange: unknown message received." );
-            	        }
-                	    else if ( responseItem['data']['type'] == 'timeout' )
-                    	{
-//                      	  logger.debug( "RemoteServiceClass._pollStateChange: timeout." );
-	                    }
-    	                else
+            	            remoteService._sendChannelList();
+                	    }, 5000 );
+                    }
+                    else if ( data['command'] == 'remote_debug' )
+	                {
+    	                if ( !logger.getRemoteDebugEnabled() )
         	            {
-//          	              logger.warning( "RemoteServiceClass._pollStateChange: " + responseItem );
+            	            logger.enableRemoteDebug( true );
                 	    }
+                        else
+                        {
+	                        logger.enableRemoteDebug( false );
+    	                }
+        	        }
+            	    // else if ( data['command'] == 'debug' )
+                	// {
+                    	// if ( logger.debugDiv !== undefined && logger.debugDiv != null )
+                        // {
+                            // if ( logger.debugDiv.style.display == "none" )
+	                        // {
+    	                        // logger.warning( "RemoteServiceClass._pollStateChange: Enable Debug Logging." );
+        	                    // logger.debugDiv.style.display = "block";
+            	            // }
+                	        // else
+                    	    // {
+                        	    // logger.warning( "RemoteServiceClass._pollStateChange: Disable Debug Logging." );
+                            	// logger.debugDiv.style.display = "none";
+                            // }
+                        // }
+	                // }
+    	            else
+        	        {
+            	        logger.warning( this.__module(), "_pollStateChange: other command: " + data['command'] );
                 	}
                 }
+                else if ( data['type'] == 'channel' )
+	            {
+    	            stbApi.setChannelFunction( data['channel'], 0 );
+        	    }
+            	else if ( data['type'] == 'key' )
+                {
+                    evt          = new API_KeyboardEvent;
+	                evt.keyCode  = data['key'];
+    	            logger.info( this.__module(), "_pollStateChange: key: " + data['key'] );
+        	        this._keyListener( evt );
+            	}
+                else if ( data['type'] == 'unknown_message' )
+                {
+	                logger.warning( this.__module(), "_pollStateChange: unknown message received." );
+    	        }
+        	    else if ( data['type'] == 'timeout' )
+            	{
+//                    logger.debug( this.__module(), "_pollStateChange: timeout." );
+                }
+                else
+	            {
+//                    logger.warning( this.__module(), "_pollStateChange: " + responseItem );
+        	    }
 
                 window.setTimeout( function()
                 {
                     remoteService._poll();
-                }, removeService._POLL_SHORT_INTERVAL );
+                }, this._POLL_SHORT_INTERVAL );
             }
             catch ( e )
             {
-                logger.error( this.__module(), "_pollStateChange: exception: " + e + ", responseText: " + _remoteService._pollRequest.responseText );
+                logger.error( this.__module(), "_pollStateChange: exception: " + e + ", data: " + data );
                 window.setTimeout( function()
                 {
-                    _remoteService._poll();
-                } , _remoteService._POLL_LONG_INTERVAL );
+                    remoteService._poll();
+                }, this._POLL_LONG_INTERVAL );
             }
-
-            _remoteService._pollRequest = false;
         }
     };
 
@@ -452,20 +439,19 @@ function RemoteServiceClass()
         {
             logger.info( this.__module(), "setActiveChannel: " + channel );
 
-            this._statusRequest = new XMLHttpRequest();
-            this._statusRequest.onreadystatechange = function()
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setCallback( function( status, context, data )
             {
-                if ( (this.readyState == 4) && (this.status == 200) )
+                if ( status )
                 {
-                    logger.info( this.__module(), "setActiveChannel.onreadystatechange: done: " + this.responseText );
+                    logger.info( self.__module(), "setActiveChannel.callback: done: " + data );
                 }
-            };
-            this._statusRequest.open( "GET", "/aminopvr/api/stb/setActiveChannel?channel=" + channel, true );
-            this._statusRequest.send();
+            } );
+            request.send( "GET", "/aminopvr/api/stb/setActiveChannel?channel=" + channel, true );
         }
         catch ( e )
         {
-            this._statusRequest = false;
             logger.error( this.__module(), "setActiveChannel: exception: " + e );
         }
     };
@@ -505,21 +491,21 @@ function RemoteServiceClass()
 
             logger.debug( this.__module(), "_sendChannelList" );
 
-            this._channelRequest = new XMLHttpRequest();
-            this._channelRequest.onreadystatechange = function()
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setCallback( function( status, context, data )
             {
-                if ( (this.readyState == 4) && (this.status == 200) )
+                if ( status )
                 {
-                    logger.info( this.__module(), "_sendChannelList.onreadystatechange: done: " + this.responseText );
+                    logger.info( self.__module(), "_sendChannelList.callback: done: " + data );
                 }
-            };
-            this._channelRequest.open( "POST", "/aminopvr/api/stb/setChannelList", true );
-            this._channelRequest.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-            this._channelRequest.send( "channelList=" + encodeURIComponent( channelList ) );
+            } );
+            request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+            request.setPostData( "channelList=" + encodeURIComponent( channelList ) );
+            request.send( "POST", "/aminopvr/api/stb/setChannelList", true );
         }
         catch ( e )
         {
-            this._channelRequest = false;
             logger.error( this.__module(), "_sendChannelList: exception: " + e );
         }
     };
@@ -542,7 +528,7 @@ function RemoteServiceClass()
 }
 
 var stbApi        = new APIClass();
-var logger        = new LoggerClass();
+//var logger        = new LoggerClass();
 var remoteService = new RemoteServiceClass();
 remoteService.init();
 

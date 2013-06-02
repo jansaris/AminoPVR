@@ -180,34 +180,27 @@ function RecordingAsset()
     {
         if ( this.marker == -1 )
         {
-            var asset = this;
+            var context = new Array();
+            context["asset"] = this;
 
-            var recordingRequest = new XMLHttpRequest();
-
-            recordingRequest.onreadystatechange = function()
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setContext( context );
+            request.setCallback( function( status, context, data )
             {
-                if ( this.readyState == 4 )
+                asset = context["asset"];
+                if ( status )
                 {
-                    if ( this.status == 200 )
-                    {
-                        var responseItem = eval( '(' + this.responseText + ')' );
+                    asset.marker = data["marker"];
 
-						if ( repsonseItem["status"] == "success" )
-						{
-                        	asset.marker = responseItem["data"]["marker"];
-
-                        	logger.info( this.__module(), "ReadMeta: onreadystatechange: read meta data: marker=" + responseItem["data"]["marker"] );
-                        }
-                    }
+                    logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
                 }
-            };
-
-            recordingRequest.open( "GET", "/aminopvr/api/getRecordingMeta?id=" + this.assetId, false );
-            recordingRequest.send();
+            } );
+            request.send( "GET", "/aminopvr/api/getRecordingMeta?id=" + this.assetId, false );
         }
 
         return "{'marker':" + this.marker + "}";
-    }
+    };
     this.WriteMeta = function( meta )
     {
         logger.info( this.__module(), "WriteMeta( " + meta + " )" );
@@ -215,22 +208,17 @@ function RecordingAsset()
         var meta = eval( "(" + meta + ")" );
         this.marker = meta.marker;
 
-        var recordingRequest = new XMLHttpRequest();
-
-        recordingRequest.onreadystatechange = function()
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setCallback( function( status, context, data )
         {
-            if ( this.readyState == 4 )
+            if ( status )
             {
-                if ( this.status == 200 )
-                {
-                    logger.info( this.__module(), "WriteMeta: onreadystatechange: saved meta data" );
-                }
+                logger.info( self.__module(), "WriteMeta.callback: saved meta data" );
             }
-        };
-
-        recordingRequest.open( "GET", "/aminopvr/api/setRecordingMeta?id=" + this.assetId + "&marker=" + this.marker, false );
-        recordingRequest.send();
-    }
+        } );
+        request.send( "GET", "/aminopvr/api/setRecordingMeta?id=" + this.assetId + "&marker=" + this.marker, false );
+    };
 }
 
 function PVRClass()
@@ -256,44 +244,29 @@ function PVRClass()
     {
         if ( this.storage_info == null )
         {
-            var pvr             = this;
-            var storageRequest = new XMLHttpRequest();
-
             logger.info( this.__module(), "GetStorageInfo: Downloading storage info" );
 
-            storageRequest.onreadystatechange = function()
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setCallback( function( status, context, data )
             {
-                if ( this.readyState == 4 )
+                if ( status )
                 {
-                    if ( this.status == 200 )
+                    try
                     {
-                        try
-                        {
-                            var responseItem = eval( '(' + this.responseText + ')' );
-                            var i = 1;
+                        self.storage_info               = new StorageInfo;
+                        self.storage_info.availableSize = data["available_size"];
+                        self.storage_info.totalSize     = data["total_size"];
 
-							if ( responseItem["status"] == "success" )
-							{
-                            	pvr.storage_info               = new StorageInfo;
-                            	pvr.storage_info.availableSize = responseItem["data"]["available_size"];
-                            	pvr.storage_info.totalSize     = responseItem["data"]["total_size"];
-
-                            	logger.info( this.__module(), "GetStorageInfo: onreadystatechange: Downloaded storage info" );
-                            }
-                            else
-                            {
-                            	logger.error( this.__module(), "GetStorageInfo: onreadystatechange: Failed to get storage info: " + responseItem["status"] )
-                            }
-                        }
-                        catch ( e )
-                        {
-                            logger.error( this.__module(), "GetStorageInfo: onreadystatechange: exception: " + e );
-                        }
+                        logger.info( self.__module(), "GetStorageInfo.callback: Downloaded storage info" );
+                    }
+                    catch ( e )
+                    {
+                        logger.error( self.__module(), "GetStorageInfo.callback: exception: " + e );
                     }
                 }
-            };
-            storageRequest.open( "GET", "/aminopvr/api/getStorageInfo", false );
-            storageRequest.send();
+            } );
+            request.send( "GET", "/aminopvr/api/getStorageInfo", false );
         }
 
         return this.storage_info;
@@ -319,113 +292,79 @@ function PVRClass()
     {
         if ( this.recording_ids.count == 0 )
         {
-            var pvr               = this;
-            var recordingsRequest = new XMLHttpRequest();
+            var pvr     = this;
+            var context = new Array();
 
-            logger.info( this.__module(), "GetAssetIdList: Downloading recording list" );
-
-            recordingsRequest.onreadystatechange = function()
-            {
-                if ( this.readyState == 4 )
-                {
-                    if ( this.status == 200 )
-                    {
-                        try
-                        {
-                            var responseItem = eval( '(' + this.responseText + ')' );
-                            var i = 1;
-
-							if ( responseItem["status"] == "success" )
-							{
-	                            for ( var row in responseItem["data"] )
-	                            {
-	                                asset                = new RecordingAsset;
-	                                asset.assetId        = responseItem["data"][row]["id"];
-	                                asset.title          = responseItem["data"][row]["title"];
-	                                asset.startTime      = responseItem["data"][row]["start_time"];
-	                                asset.duration       = responseItem["data"][row]["end_time"] - responseItem["data"][row]["start_time"];
-	                                asset.viewingControl = 12;
-	                                asset.position       = 0;
-	                                asset.url            = "src=" + responseItem["data"][row]["url"] + ";servertype=mediabase";
-	                                asset.marker         = responseItem["data"][row]["marker"];
-
-	                                if ( responseItem["data"][row]["subtitle"] != "" )
-	                                {
-	                                    asset.title += ": " + responseItem["data"][row]["subtitle"];
-	                                }
-
-	                                pvr.recordings[asset.assetId] = asset;
-	                                pvr.recording_ids[i] = asset.assetId;
-	                                i++;
-	                            }
-
-	                            pvr.recording_ids.count = i - 1;
-	                        }
-
-                            logger.info( this.__module(), "GetAssetIdList: onreadystatechange: Downloaded recording list; count = " + pvr.recording_ids.count );
-                        }
-                        catch ( e )
-                        {
-                            logger.error( this.__module(), "GetAssetIdList: onreadystatechange: exception: " + e );
-                        }
-                    }
-                }
-            };
-            recordingsRequest.open( "GET", "/aminopvr/api/getRecordingList", false );
-            recordingsRequest.send();
+            aminopvr.getRecordingList( context, pvr._recordingListCallback, false );
         }
 
         return this.recording_ids;
+    };
+    this._recordingListCallback = function( status, context, recordings )
+    {
+        if ( status )
+        {
+            for ( var row in recordings )
+            {
+                recording            = recordings[row];
+                asset                = new RecordingAsset;
+                asset.assetId        = recording.getId();
+                asset.title          = recording.getFullTitle();
+                asset.startTime      = recording.getStartTime();
+                asset.duration       = recording.getEndTime();
+                asset.viewingControl = 12;
+                asset.position       = 0;
+                asset.url            = "src=" + recording.getUrl() + ";servertype=mediabase";
+                asset.marker         = recording.getMarker();
+
+                pvr.recordings[asset.assetId] = asset;
+                pvr.recording_ids[i]          = asset.assetId;
+                i++;
+            }
+
+            pvr.recording_ids.count = i - 1;
+        }
     };
     this.GetScheduleList = function()
     {
         if ( this.schedule_list.count == 0 )
         {
-            var pvr             = this;
-            var scheduleRequest = new XMLHttpRequest();
-
             logger.info( this.__module(), "GetScheduleList: Downloading schedule list" );
 
-            scheduleRequest.onreadystatechange = function()
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setCallback( function( status, context, data )
             {
-                if ( this.readyState == 4 )
+                if ( status )
                 {
-                    if ( this.status == 200 )
+                    try
                     {
-                        try
+                        var i = 1;
+
+                        for ( var row in data )
                         {
-                            var responseItem = eval( '(' + this.responseText + ')' );
-                            var i = 1;
+                            schedItem                = new ScheduleItem;
+                            schedItem.title          = data[row]["title"];
+                            schedItem.startTime      = data[row]["start_time"];
+                            schedItem.endTime        = data[row]["end_time"];
+                            schedItem.viewingControl = data[row]["viewing_control"];
+                            schedItem.active         = data[row]["active"];
 
-							if ( responseItem["status"] == "success" )
-							{
-	                            for ( var row in responseItem["data"] )
-    	                        {
-        	                        schedItem                = new ScheduleItem;
-            	                    schedItem.title          = responseItem["data"][row]["title"];
-                	                schedItem.startTime      = responseItem["data"][row]["start_time"];
-                    	            schedItem.endTime        = responseItem["data"][row]["end_time"];
-                        	        schedItem.viewingControl = responseItem["data"][row]["viewing_control"];
-                            	    schedItem.active         = responseItem["data"][row]["active"];
-
-	                                pvr.schedule_list[i] = schedItem;
-    	                            i++;
-        	                    }
-
-            	                pvr.schedule_list.count = i - 1;
-            	            }
-
-                            logger.info( this.__module(), "GetScheduleList: onreadystatechange: Downloaded schedule list; count = " + pvr.schedule_list.count );
+                            pvr.schedule_list[i] = schedItem;
+                            i++;
                         }
-                        catch ( e )
-                        {
-                            logger.error( this.__module(), "GetScheduleList: onreadystatechange: exception: " + e );
-                        }
+
+                        pvr.schedule_list.count = i - 1;
+
+                        logger.info( self.__module(), "GetScheduleList.callback: Downloaded schedule list; count = " + self.schedule_list.count );
+                    }
+                    catch ( e )
+                    {
+                        logger.error( self.__module(), "GetScheduleList.callback: exception: " + e );
                     }
                 }
-            };
-            scheduleRequest.open( "GET", "/aminopvr/api/getScheduleList", false );
-            scheduleRequest.send();
+            } );
+            request.send( "GET", "/aminopvr/api/getScheduleList", false );
         }
 
         return this.schedule_list;
@@ -434,18 +373,18 @@ function PVRClass()
     this.AddSchedule = function( url, titleId, starttime, endtime, aa )
     {
         var schedule = "{\"url\":\"" + url + "\",\"titleid\":\"" + titleId + "\",\"starttime\":" + starttime + ",\"endtime\":" + endtime + ",\"aa\":\"" + aa + "\"}";
-
-        var scheduleRequest = new XMLHttpRequest();
-        scheduleRequest.onreadystatechange = function()
+        var self     = this;
+        var request  = new JsonAjaxRequest();
+        request.setCallback( function( status, context, data )
         {
-            if ( (this.readyState == 4) && (this.status == 200) )
+            if ( status )
             {
-                logger.info( this.__module(), "AddSchedule.onreadystatechange: done: " + this.responseText );
+                logger.info( self.__module(), "AddSchedule.callback: done: " + data );
             }
-        };
-        scheduleRequest.open( "POST", "/aminopvr/api/addSchedule", false );
-        scheduleRequest.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-        scheduleRequest.send( "schedule=" + encodeURIComponent( schedule ) );
+        } );
+        request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+        request.setPostData( "schedule=" + encodeURIComponent( schedule ) );
+        request.send( "POST", "/aminopvr/api/addSchedule", false );
 
         return "OK";
     };

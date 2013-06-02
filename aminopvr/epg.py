@@ -18,8 +18,10 @@
 from aminopvr.db import DBConnection
 import channel
 import copy
+import datetime
 import logging
 import sys
+import time
 
 class EpgId( object ):
     _logger = logging.getLogger( 'aminopvr.EPG.EpgId' )
@@ -821,6 +823,17 @@ class ProgramAbstract( object ):
             programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
         return programs
 
+    @classmethod
+    def getNowNextFromDb( cls, conn ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        programs = []
+        if conn:
+            now      = int( time.mktime( datetime.datetime.now().timetuple() ) )
+            query    = "SELECT t2.* FROM %s t1 LEFT JOIN %s t2 ON ( t1.epg_id=t2.epg_id AND (t2.start_time=t1.end_time OR t2.start_time=t1.start_time) ) WHERE t1.start_time <= ? AND t1.end_time > ? ORDER BY t2.epg_id ASC, t2.start_time ASC, t2.end_time ASC;" % ( cls._tableName, cls._tableName )
+            rows     = conn.execute( query, [ now, now ] )
+            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
+        return programs
+
     def deleteFromDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
@@ -835,19 +848,33 @@ class ProgramAbstract( object ):
                 presenter.deleteFromDb( conn )
 
     def toDict( self ):
-        return { "id":              self.id,
-                 "title":           self.title,
-                 "subtitle":        self.subtitle,
-                 "description":     self.description,
-                 "start_time":      self.startTime,
-                 "end_time":        self.endTime,
-                 "genre":           [ genre.genre.genre       for genre     in self._genres ],
-                 "actors":          [ actor.person.person     for actor     in self._actors ],
-                 "directors":       [ director.person.person  for director  in self._directors ],
-                 "presenters":      [ presenter.person.person for presenter in self._presenters ],
-                 "aspect_ratio":    self.aspectRatio,
-                 "parental_rating": self.parentalRating,
-                 "ratings":         self.ratings }
+        epgProgramDict = { "epg_id":     self._epgId,
+                           "id":         self._id,
+                           "title":      self._title,
+                           "start_time": self._startTime,
+                           "end_time":   self._endTime }
+
+        # To reduce size of json object / dictionary, only add following elements when they're set
+        if self._subtitle != "":
+            epgProgramDict["subtitle"]        = self._subtitle
+        if self._description != "":
+            epgProgramDict["description"]     = self._description
+        if len( self._genres ) > 0:
+            epgProgramDict["genres"]          = [ genre.genre.genre       for genre     in self._genres ]
+        if len( self._actors ) > 0:
+            epgProgramDict["actors"]          = [ actor.person.person     for actor     in self._actors ]
+        if len( self._directors ) > 0:
+            epgProgramDict["directors"]       = [ director.person.person  for director  in self._directors ]
+        if len( self._presenters ) > 0:
+            epgProgramDict["presenters"]      = [ presenter.person.person for presenter in self._presenters ]
+        if len( self._ratings ) > 0:
+            epgProgramDict["presenters"]      = self._ratings
+        if self._aspectRatio != "":
+            epgProgramDict["aspect_ratio"]    = self._aspectRatio
+        if self._parentalRating != "":
+            epgProgramDict["parental_rating"] = self._parentalRating
+
+        return epgProgramDict
 
     def dump( self ):
         genres     = [ genre.dump()     for genre     in self._genres ];

@@ -538,7 +538,12 @@ class ChannelAbstract( object ):
     def toDict( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
         channelUrl = self.getChannelUrl( protocol, includeScrambled, includeHd )
         if channelUrl:
-            return { "id": self.id, "number": self.number, "name": self.name, "url": channelUrl, "logo_path": "/assets/images/channels/logos/" + self.logo }
+            return { "id":        self._id,
+                     "epg_id":    self._epgId,
+                     "number":    self._number,
+                     "name":      self._name,
+                     "url":       channelUrl,
+                     "logo_path": "/assets/images/channels/logos/" + self.logo }
         else:
             return None
 
