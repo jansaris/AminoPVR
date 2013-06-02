@@ -56,11 +56,18 @@ function JsonAjaxRequest()
         this._request = new XMLHttpRequest();
         this._request.onreadystatechange = function() { self._onReadyStateChange() };
         this._request.open( method, path, async );
-        for ( var key in this._headers )
+        if ( method == "POST" )
         {
-            this._request.setRequestHeader( key, this._headers[key] );
+            for ( var key in this._headers )
+            {
+                this._request.setRequestHeader( key, this._headers[key] );
+            }
+            this._request.send( this._postData );
         }
-        this._request.send( this._postData );
+        else
+        {
+            this._request.send();
+        }
     };
     this._onReadyStateChange = function()
     {
@@ -542,24 +549,27 @@ function AminoPVRClass()
     this._formatArguments = function( arguments )
     {
         var argString = "";
-        for ( key in arguments )
+        if ( arguments != {} )
         {
-            if ( argString == "" )
+            for ( var key in arguments )
             {
-                argString += "?";
+                if ( argString == "" )
+                {
+                    argString += "?";
+                }
+                else
+                {
+                    argString += "&";
+                }
+                argString += key + "=" + arguments[key];
             }
-            else
-            {
-                argString += "&";
-            }
-            argString += key + "=" + arguments[key];
         }
         return argString;
     }
 
     this.getChannelList = function( context, callback, async )
     {
-        var requestContext         = new Array();
+        var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
 
@@ -569,7 +579,7 @@ function AminoPVRClass()
 
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( aminopvr._channelListCallback );
+        request.setCallback( function( status, context, channels ) { self._channelListCallback( status, context, channels ) } );
         request.send( "GET", "/aminopvr/api/getChannelList", async );
     };
 
@@ -614,15 +624,16 @@ function AminoPVRClass()
 
     this.getNowNextProgramList = function( context, callback, async )
     {
-        var requestContext         = new Array();
+        var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
 
         logger.info( this.__module(), "getNowNextProgramList: Downloading now/next program list" );
 
+        var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( aminopvr._nowNextProgramListCallback );
+        request.setCallback( function( status, context, programs ) { self._nowNextProgramListCallback( status, context, programs ) } );
         request.send( "GET", "/aminopvr/api/getNowNextProgramList", async );
     };
     this._nowNextProgramListCallback = function( status, context, programs )
@@ -670,26 +681,31 @@ function AminoPVRClass()
 
     this.getRecordingList = function( context, callback, async, offset, count )
     {
-        var requestContext         = new Array();
+        var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
 
         logger.info( this.__module(), "getRecordingList: Downloading recording list" );
 
-        var arguments = new Array()
+        var arguments = "";
         if ( offset != undefined )
         {
-            arguments["offset"] = offset;
+            arguments += "offset=" + offset + "&";
         }
         if ( count != undefined )
         {
-            arguments["count"] = count;
+            arguments += "count" + count;
+        }
+        if ( arguments != "" )
+        {
+            arguments = "?" + arguments;
         }
 
+        var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( aminopvr._recordingListCallback );
-        request.send( "GET", "/aminopvr/api/getRecordingList" + this._formatArguments( arguments ), async );
+        request.setCallback( function( status, context, recordings ) { self._recordingListCallback } );
+        request.send( "GET", "/aminopvr/api/getRecordingList" + arguments, async );
     };
     this._recordingListCallback = function( status, context, recordings )
     {
@@ -731,5 +747,5 @@ function AminoPVRClass()
     };
 }
 
-var logger = new LoggerClass();
+var logger   = new LoggerClass();
 var aminopvr = new AminoPVRClass();

@@ -308,7 +308,7 @@ function RemoteServiceClass()
             {
                 var self    = this;
                 var request = new JsonAjaxRequest();
-                request.setCallback( self._pollStateChange );
+                request.setCallback( function( status, context, data ) { self._pollStateChange( status, context, data ) } );
                 request.send( "GET", "/aminopvr/api/stb/poll?init", true );
             }
             catch ( e )
@@ -322,7 +322,7 @@ function RemoteServiceClass()
             {
                 var self    = this;
                 var request = new JsonAjaxRequest();
-                request.setCallback( self._pollStateChange );
+                request.setCallback( function( status, context, data ) { self._pollStateChange( status, context, data ) } );
                 request.send( "GET", "/aminopvr/api/stb/poll", true );
             }
             catch ( e )
@@ -333,7 +333,7 @@ function RemoteServiceClass()
         }
     };
 
-    this._pollStateChange = function( state, context, data )
+    this._pollStateChange = function( status, context, data )
     {
         if ( status )
         {

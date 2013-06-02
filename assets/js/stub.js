@@ -290,12 +290,13 @@ function PVRClass()
     };
     this.GetAssetIdList = function()
     {
+        logger.error( this.__module(), "GetAssetIdList" );
         if ( this.recording_ids.count == 0 )
         {
-            var pvr     = this;
-            var context = new Array();
+            var self    = this;
+            var context = {};
 
-            aminopvr.getRecordingList( context, pvr._recordingListCallback, false );
+            aminopvr.getRecordingList( context, function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ) }, false );
         }
 
         return this.recording_ids;
@@ -304,25 +305,32 @@ function PVRClass()
     {
         if ( status )
         {
-            for ( var row in recordings )
+            try
             {
-                recording            = recordings[row];
-                asset                = new RecordingAsset;
-                asset.assetId        = recording.getId();
-                asset.title          = recording.getFullTitle();
-                asset.startTime      = recording.getStartTime();
-                asset.duration       = recording.getEndTime();
-                asset.viewingControl = 12;
-                asset.position       = 0;
-                asset.url            = "src=" + recording.getUrl() + ";servertype=mediabase";
-                asset.marker         = recording.getMarker();
+                for ( var row in recordings )
+                {
+                    recording            = recordings[row];
+                    asset                = new RecordingAsset;
+                    asset.assetId        = recording.getId();
+                    asset.title          = recording.getFullTitle();
+                    asset.startTime      = recording.getStartTime();
+                    asset.duration       = recording.getEndTime();
+                    asset.viewingControl = 12;
+                    asset.position       = 0;
+                    asset.url            = "src=" + recording.getUrl() + ";servertype=mediabase";
+                    asset.marker         = recording.getMarker();
+    
+                    this.recordings[asset.assetId] = asset;
+                    this.recording_ids[i]          = asset.assetId;
+                    i++;
+                }
 
-                pvr.recordings[asset.assetId] = asset;
-                pvr.recording_ids[i]          = asset.assetId;
-                i++;
+                this.recording_ids.count = i - 1;
             }
-
-            pvr.recording_ids.count = i - 1;
+            catch ( e )
+            {
+                logger.error( this.__module(), "_recordingListCallback.callback: exception: " + e );
+            }
         }
     };
     this.GetScheduleList = function()
