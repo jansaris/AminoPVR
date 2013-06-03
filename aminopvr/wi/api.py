@@ -169,7 +169,7 @@ class STBAPI( API ):
         self._logger.debug( "postLog( %s )" % ( logData ) )
         logs = json.loads( logData )
         for log in logs:
-            logger = logging.getLogger( "STB.%s" % ( log["module"] ) )
+            logger = logging.getLogger( "aminopvr.STB.%s" % ( log["module"] ) )
             if log["level"] == 0:
                 logger.debug( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
             elif log["level"] == 1:

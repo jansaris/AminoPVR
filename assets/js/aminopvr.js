@@ -28,7 +28,7 @@ function JsonAjaxRequest()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
 
     this.setContext = function( context )
@@ -122,7 +122,7 @@ function LoggerClass()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
     this.init = function( consoleLogging )
     {
@@ -352,7 +352,7 @@ function AminoPVRChannel()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
 
     this.fromJson = function ( json )
@@ -403,7 +403,7 @@ function AminoPVREpgProgram()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
 
     this.fromJson = function( json )
@@ -471,7 +471,7 @@ function AminoPVRRecording()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
 
     this.fromJson = function( json )
@@ -543,7 +543,7 @@ function AminoPVRClass()
 {
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
 
     this._formatArguments = function( arguments )
@@ -704,7 +704,7 @@ function AminoPVRClass()
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, recordings ) { self._recordingListCallback } );
+        request.setCallback( function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ) } );
         request.send( "GET", "/aminopvr/api/getRecordingList" + arguments, async );
     };
     this._recordingListCallback = function( status, context, recordings )

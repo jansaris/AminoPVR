@@ -251,7 +251,7 @@ function RemoteServiceClass()
 
     this.__module = function()
     {
-        return __module + this.constructor.name;
+        return "service." + this.constructor.name;
     };
     this.init = function()
     {
@@ -514,6 +514,32 @@ function RemoteServiceClass()
     {
         key = b.keyCode || b.charCode;
         logger.info( this.__module(), "_keyListener: key=" + key );
+
+        switch ( key )
+        {
+            case 44:   // '<'
+                b = new API_KeyboardEvent;
+                b.keyCode = 37;     // left
+                break;
+            case 46:   // '>'
+                b = new API_KeyboardEvent;
+                b.keyCode = 39;     // right
+                break;
+            case 97:   // 'a'
+                b = new API_KeyboardEvent;
+                b.keyCode = 38;     // up
+                break;
+            case 109:   // 'm'
+                b = new API_KeyboardEvent;
+                b.keyCode = 8516;   // down
+                break;
+            case 122:   // 'z'
+                b = new API_KeyboardEvent;
+                b.keyCode = 40;
+                break;
+            default:
+                break;
+        }
 
         try
         {

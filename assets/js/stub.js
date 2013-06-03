@@ -290,7 +290,7 @@ function PVRClass()
     };
     this.GetAssetIdList = function()
     {
-        logger.error( this.__module(), "GetAssetIdList" );
+        logger.debug( this.__module(), "GetAssetIdList" );
         if ( this.recording_ids.count == 0 )
         {
             var self    = this;
@@ -307,6 +307,8 @@ function PVRClass()
         {
             try
             {
+                var i = 1;
+
                 for ( var row in recordings )
                 {
                     recording            = recordings[row];
@@ -326,10 +328,12 @@ function PVRClass()
                 }
 
                 this.recording_ids.count = i - 1;
+
+                logger.info( this.__module(), "_recordingListCallback: Downloaded recording list; count = " + this.recording_ids.count );
             }
             catch ( e )
             {
-                logger.error( this.__module(), "_recordingListCallback.callback: exception: " + e );
+                logger.error( this.__module(), "_recordingListCallback: exception: " + e );
             }
         }
     };
@@ -358,11 +362,11 @@ function PVRClass()
                             schedItem.viewingControl = data[row]["viewing_control"];
                             schedItem.active         = data[row]["active"];
 
-                            pvr.schedule_list[i] = schedItem;
+                            self.schedule_list[i] = schedItem;
                             i++;
                         }
 
-                        pvr.schedule_list.count = i - 1;
+                        self.schedule_list.count = i - 1;
 
                         logger.info( self.__module(), "GetScheduleList.callback: Downloaded schedule list; count = " + self.schedule_list.count );
                     }
