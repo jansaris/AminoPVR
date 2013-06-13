@@ -25,6 +25,7 @@ function JsonAjaxRequest()
     this._callback = null;
     this._headers  = new Array();
     this._postData = null;
+    this._path     = "";
 
     this.__module = function()
     {
@@ -53,6 +54,7 @@ function JsonAjaxRequest()
 
         async = async || false;
 
+        this._path    = path;
         this._request = new XMLHttpRequest();
         this._request.onreadystatechange = function() { self._onReadyStateChange() };
         this._request.open( method, path, async );
@@ -95,7 +97,7 @@ function JsonAjaxRequest()
             }
             else
             {
-                logger.error( this.__module(), "_onReadyStateChange: status=" + this._request.status );
+                logger.warning( this.__module(), "_onReadyStateChange: status=" + this._request.status + ", path=" + this._path );
                 this._callback && this._callback( false, this._context );
             }
         }
