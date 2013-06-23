@@ -3,7 +3,7 @@ var CHANNEL_COUNT               = 25;
 var RECORDING_COUNT             = 25;
 
 var devices                     = [];
-var current_ip                  = '127.0.0.1:8080';
+var current_renderer            = -1;
 
 var channel_offset              = 0;
 var channel_list_complete       = false;
@@ -28,9 +28,9 @@ var recording_id                = 0;
 var channel_pip_interval        = null;
 var recording_pip_interval      = null;
 
-function SetDeviceIP( ip )
+function SetRenderer( id )
 {
-    current_ip = ip;
+    current_renderer = id;
 }
 
 function FormatTime( time )
@@ -588,6 +588,141 @@ function RecordingPlayTV()
     }
 }
 
+function UIController()
+{
+    this._controller = new AminoPVRController( CONTROLLER_TYPE_CONTROLLER, this );
+
+    this.__module = function()
+    {
+        return "aminopvr.ui." + this.constructor.name;
+    };
+
+    this.init = function()
+    {
+        try
+        {
+            var self = this;
+            window.addEventListener( "load", function()
+            {
+                self._onLoad();
+            }, false );
+        }
+        catch ( e )
+        {
+            logger.critical( this.__module(), "init: exception: " + e );
+        }
+    };
+    this.getRendererList = function()
+    {
+        var context = new Array();
+        context["self"] = this;
+        this._controller.getListenerList( context, this.__listenerListCallback, true );
+    };
+    this.__listenerListCallback = function( status, context, listeners )
+    {
+        var renderers = [];
+        if ( status )
+        {
+            for ( var i in listeners )
+            {
+                if ( listeners[i]["type"] == CONTROLLER_TYPE_RENDERER )
+                {
+                    renderers.push( listeners[i] );
+                }
+            }
+        }
+        context["self"]._rendererListCallback( renderers );
+    };
+    this._rendererListCallback = function( renderers )
+    {
+        $.each( renderers, function( i, item )
+        {
+            devices.push( item );
+        } );
+
+        if ( devices.length > 0 )
+        {
+            SetRenderer( devices[0].id );
+        }
+    };
+
+    this._onLoad = function()
+    {
+        var self = this;
+        window.setTimeout( function()
+        {
+            if ( self._controller )
+            {
+                self._controller.init();
+            }
+            self.getRendererList();
+        }, 100 );
+    };
+    this._callback = function( data )
+    {
+        try
+        {
+            if ( data["type"] == "status" )
+            {
+                this._handleStatus( data["data"] );
+            }
+            else if ( data["type"] == "timeout" )
+            {
+//                    logger.debug( this.__module(), "_pollStateChange: timeout." );
+            }
+            else
+            {
+//                    logger.warning( this.__module(), "_pollStateChange: " + responseItem );
+            }
+            // else if ( data['type'] == 'channel' )
+            // {
+                // stbApi.setChannelFunction( data['channel'], 0 );
+            // }
+            // else if ( data['type'] == 'key' )
+            // {
+                // evt          = new API_KeyboardEvent;
+                // evt.keyCode  = data['key'];
+                // logger.info( this.__module(), "_pollStateChange: key: " + data['key'] );
+                // this._keyListener( evt );
+            // }
+            // else if ( data['type'] == 'unknown_message' )
+            // {
+                // logger.warning( this.__module(), "_pollStateChange: unknown message received." );
+            // }
+            // else if ( data['type'] == 'timeout' )
+            // {
+// //                    logger.debug( this.__module(), "_pollStateChange: timeout." );
+            // }
+            // else
+            // {
+// //                    logger.warning( this.__module(), "_pollStateChange: " + responseItem );
+            // }
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_controllerCallback: exception: " + e + ", data: " + data );
+            throw e;
+        }
+    };
+
+    this._handleStatus = function( data )
+    {
+        logger.info( this.__module(), "_handleStatus: command: " + data["status"] );
+        try
+        {
+            {
+                logger.warning( this.__module(), "_handleStatus: other command: " + data["status"] );
+            }
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_handleStatus: exception: " + e + ", data: " + data );
+            throw e;
+        }
+    };
+
+}
+
 //$.event.special.swipe.verticalDistanceThreshold = 30;
 
 $( '#menu' ).bind( 'pagecreate', function( event )
@@ -660,21 +795,29 @@ $( '#channel' ).bind( 'pagehide', function( event )
 //{
 //    $.mobile.changePage( $( '#recordings' ), { reverse: true } );
 //} );
-$( '#devices' ).bind( 'pagecreate', function( event )
-{
-    var items = [];
-
-    $.each( devices, function( i, item )
-    {
-//        items.push( '<li><a href="#menu" data-rel="back"><h3>' + item.ip + '</h3></a></li>' );
-        items.push( '<a href="#menu" data-rel="back" data-role="button" onclick="SetDeviceIP( \'' + item.ip + '\' );">' + item.ip + '</a>' );
-    } );
-
-    $( '#devices_content' ).append( items.join( '' ) );
-    $( '#devices_content' ).trigger( 'create' );
-//    $( '#devices_list' ).append( items.join( '' ) );
-//    $( '#devices_list' ).listview( 'refresh' );
-} );
+// $( '#devices' ).bind( 'pagecreate', function( event )
+// {
+    // var items = [];
+// 
+    // $.each( devices, function( i, item )
+    // {
+// //        items.push( '<li><a href="#menu" data-rel="back"><h3>' + item.ip + '</h3></a></li>' );
+        // items.push( '<li><a href="#menu" data-rel="back" data-role="button" onclick="SetRenderer( \'' + item.id + '\' );">' + item.ip + '</a></li>' );
+    // } );
+// 
+    // $( '#devices_list' ).append( items.join( '' ) );
+    // if ( $( '#devices_list' )[0].className == "" )
+    // {
+        // $( '#devices_list' ).trigger( 'create' );
+    // }
+    // else
+    // {
+        // $( '#devices_list' ).listview( 'refresh' );
+    // }
+// 
+    // //$( '#devices_list' ).append( items.join( '' ) );
+    // //$( '#devices_content' ).trigger( 'create' );
+// } );
 
 $( document ).bind( "pagebeforechange", function( e, data )
 {
@@ -688,7 +831,32 @@ $( document ).bind( "pagebeforechange", function( e, data )
 
         console.log( "pagebeforechange: u=" + u.hash );
 
-        if ( u.hash == "#channels" )
+        if ( u.hash == "#devices" )
+        {
+            var items = [];
+
+            $.each( devices, function( i, item )
+            {
+//        items.push( '<li><a href="#menu" data-rel="back"><h3>' + item.ip + '</h3></a></li>' );
+                items.push( '<a href="#menu" data-rel="back" data-role="button" onclick="SetRenderer( \'' + item.id + '\' );">' + item.ip + '</a>' );
+            } );
+
+            $( '#devices_content' ).append( items.join( '' ) );
+            if ( $( '#devices_content' )[0].className == "" )
+            {
+                $( '#devices_content' ).trigger( 'create' );
+                $.mobile.changePage( $( '#devices' ) );
+
+                e.preventDefault();
+            }
+            else
+            {
+                //$( '#devices_list' ).listview( 'refresh' );
+                $( '#devices_content a' ).buttonMarkup();
+                $( '#devices_content' ).controlgroup();
+            }
+        }
+        else if ( u.hash == "#channels" )
         {
             if ( $.mobile.activePage && $.mobile.activePage.length > 0 && $.mobile.activePage[0].id == 'channels_favorites' )
             {
@@ -815,3 +983,7 @@ function( data )
 } );*/
 
 logger.init( true );
+
+uiController = new UIController();
+uiController.init();
+

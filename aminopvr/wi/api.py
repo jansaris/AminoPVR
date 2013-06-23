@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from Queue import Queue, Empty
 from aminopvr import schedule
 from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel, \
     ChannelUrl
@@ -26,6 +27,7 @@ from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording
 from aminopvr.schedule import Schedule
 from aminopvr.scheduler import Scheduler
+from aminopvr.tools import Singleton
 import aminopvr.providers
 import cherrypy
 import json
@@ -33,9 +35,87 @@ import logging
 import re
 import socket
 import struct
+import threading
 import time
 import types
 import urllib
+
+class Controller( object ):
+    __metaclass__ = Singleton
+
+    TYPE_CONTROLLER = 1
+    TYPE_RENDERER   = 2
+
+    def __init__( self ):
+        self._listeners  = {}
+        self._listenerId = 0
+        self._lock       = threading.RLock()
+
+    def addListener( self, ip, type ):
+        listenerId = -1
+        with self._lock:
+            for id in self._listeners:
+                if ip == self._listeners[id]["ip"] and type == self._listeners[id]["type"]:
+                    listenerId = id
+                    break
+            if listenerId != -1:
+                self.removeController( id )
+
+            listener   = { "ip": ip, "type": type, "queue": Queue() }
+            listenerId = self._listenerId
+            self._listeners[listenerId] = listener
+            self._listenerId += 1
+        return listenerId
+
+    def removeController( self, id ):
+        with self._lock:
+            if id in self._listeners:
+                del self._listeners[id]
+
+    def isListener( self, id ):
+        with self._lock:
+            if id in self._listeners:
+                return True
+        return False
+
+    def getListeners( self ):
+        listeners = []
+        with self._lock:
+            for id in self._listeners:
+                listeners.append( { "id": id, "ip": self._listeners[id]["ip"], "type": self._listeners[id]["type"] } )
+        return listeners
+
+    def sendMessage( self, fromId, toIp, toType, message ):
+        with self._lock:
+            if fromId not in self._listeners:
+                return False
+        listener = self._getListener( toIp, toType )
+        if listener:
+            if "from" not in message:
+                message["from"] = fromId
+            listener["queue"].put( message )
+            return True
+        return False
+
+    def getMessage( self, id, timeout=25.0 ):
+        listener = None
+        with self._lock:
+            if id in self._listeners:
+                listener = self._listeners[id]
+        if listener:
+            try:
+                message = listener["queue"].get( True, timeout )
+            except Empty:
+                return None
+            return message
+        return None
+
+    def _getListener( self, ip, type ):
+        with self._lock:
+            for id in self._listeners:
+                if ip == self._listeners[id]["ip"] and type == self._listeners[id]["type"]:
+                    return self._listeners[id]
+        return None
 
 class API( object ):
 
@@ -116,7 +196,6 @@ class STBAPI( API ):
     def poll( self, init=None ):
         self._logger.debug( "poll( %s )" % ( init ) )
         if init == None:
-            time.sleep( 25 )
             return self._createResponse( API.STATUS_SUCCESS, { "type": "timeout" } )
         else:
             return self._createResponse( API.STATUS_SUCCESS, { "type": "command", "command": "get_channel_list" } )
@@ -207,12 +286,70 @@ class STBAPI( API ):
                 channel.addUrl( PendingChannelUrl( urlType, protocol, ip, port, arguments ) )
         return channel
 
+class ControllerAPI( API ):
+    _logger = logging.getLogger( "aminopvr.WI.ControllerAPI" )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def init( self, type=0 ):
+        self._logger.debug( "init( type=%s )" % ( type ) )
+        type       = int( type )
+        controller = Controller()
+        id = controller.addListener( cherrypy.request.remote.ip, type )
+        self._logger.warning( "init: added listener with id=%d for ip=%s and type=%d" % ( id, cherrypy.request.remote.ip, type ) )
+        # Send a message to the requester if it is a RENDERER to set the channel list
+        if type == Controller.TYPE_RENDERER:
+            if controller.sendMessage( id, cherrypy.request.remote.ip, type, { "type": "command", "data": { "command": "setChannelList" } } ):
+                self._logger.warning( "init: send message to self request channel list" )
+            else:
+                self._logger.error( "init: failed to send message to self" )
+        return self._createResponse( API.STATUS_SUCCESS, { "id": id } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def poll( self, id=-1 ):
+        self._logger.debug( "poll( id=%s )" % ( id ) )
+        id         = int( id )
+        controller = Controller()
+        if controller.isListener( id ):
+            message    = controller.getMessage( id, 25 )
+            if message:
+                self._logger.warning( "poll: message received: from=%d, type=%s" % ( message["from"], message["type"] ) )
+                return self._createResponse( API.STATUS_SUCCESS, message )
+            else:
+                return self._createResponse( API.STATUS_SUCCESS, { "type": "timeout" } )
+        else:
+            self._logger.warning( "poll: listener with id=%d not registered" % ( id ) )
+            return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( id ) } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def sendMessage( self, fromId, toId, message ):
+        self._logger.debug( "sendMessage( fromId=%s, toId=%s, message=%s )" %  fromId, toId, message )
+        fromId = int( fromId )
+        toId   = int( toId )
+        controller = Controller()
+        if not controller.isListener( fromId ):
+            return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( fromId ) } )
+        if not controller.isListener( toId ):
+            return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( toId ) } )
+        if controller.sendMessage( fromId, toId, message ):
+            return self._createResponse( API.STATUS_SUCCESS, None )
+        return self._createResponse( API.STATUS_FAIL, { "message": "Couldn't send message from %d to %d" % ( fromId, toId ) } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getListenerList( self ):
+        controller = Controller()
+        listeners  = controller.getListeners()
+        return self._createResponse( API.STATUS_SUCCESS, listeners )
 
 class AminoPVRAPI( API ):
 
     _logger = logging.getLogger( "aminopvr.WI.AminoPVRAPI" )
 
-    stb = STBAPI()
+    stb        = STBAPI()
+    controller = ControllerAPI()
 
     @cherrypy.expose
     @API._grantAccess

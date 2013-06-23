@@ -150,7 +150,7 @@ class Genre( object ):
         genres = []
         if conn:
             rows = conn.execute( "SELECT * FROM genres" )
-            genres = [ cls._createGenreFromDbDict( row ) for row in rows ]
+            genres = [ cls._createGenreFromDbDict( row ) for row in rows if row ]
 
         return genres
 
@@ -241,7 +241,7 @@ class Person( object ):
         persons = []
         if conn:
             rows    = conn.execute( "SELECT * FROM persons" )
-            persons = [ cls._createPersonFromDbDict( row ) for row in rows ]
+            persons = [ cls._createPersonFromDbDict( row ) for row in rows if row ]
 
         return persons
 
@@ -334,6 +334,7 @@ class ProgramGenreAbstract( object ):
 
     @property
     def genre( self ):
+        assert self._genre != None, "Genre not set"
         return self._genre
 
     @classmethod
@@ -353,7 +354,7 @@ class ProgramGenreAbstract( object ):
         programGenres = []
         if conn:
             rows          = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
-            programGenres = [ cls._createProgramGenreFromDbDict( conn, row ) for row in rows  ]
+            programGenres = [ cls._createProgramGenreFromDbDict( conn, row ) for row in rows if row ]
 
         return programGenres
 
@@ -456,6 +457,7 @@ class ProgramPersonAbstract( object ):
 
     @property
     def person( self ):
+        assert self._person != None, "Person not set"
         self._person
 
     @classmethod
@@ -475,7 +477,7 @@ class ProgramPersonAbstract( object ):
         programPersons = []
         if conn:
             rows           = conn.execute( "SELECT * FROM %s WHERE program_id=?" % ( cls._tableName ), ( programId, ) )
-            programPersons = [ cls._createProgramPersonFromDbDict( conn, row ) for row in rows ]
+            programPersons = [ cls._createProgramPersonFromDbDict( conn, row ) for row in rows if row ]
 
         return programPersons
 
@@ -484,9 +486,9 @@ class ProgramPersonAbstract( object ):
         programPerson = None
         if programPersonData:
             try:
-                genre = Person.getFromDb( conn, programPersonData["person_id"] )
-                if genre:
-                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"], genre )
+                person = Person.getFromDb( conn, programPersonData["person_id"] )
+                if person:
+                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"], person )
                 else:
                     cls._logger.warning( "_createProgramPersonFromDbDict: Person with id %s not in database." % ( programPersonData["person_id"] ) )
                     programPerson = cls( programPersonData["program_id"], programPersonData["person_id"] )
@@ -744,7 +746,7 @@ class ProgramAbstract( object ):
                 rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ) )
             else:
                 rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) )
-            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
+            programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows if row ]
 
         return programs
 
@@ -860,15 +862,15 @@ class ProgramAbstract( object ):
         if self._description != "":
             epgProgramDict["description"]     = self._description
         if len( self._genres ) > 0:
-            epgProgramDict["genres"]          = [ genre.genre.genre       for genre     in self._genres ]
+            epgProgramDict["genres"]          = [ genre.genre.genre       for genre     in self._genres     if genre ]
         if len( self._actors ) > 0:
-            epgProgramDict["actors"]          = [ actor.person.person     for actor     in self._actors ]
+            epgProgramDict["actors"]          = [ actor.person.person     for actor     in self._actors     if actor ]
         if len( self._directors ) > 0:
-            epgProgramDict["directors"]       = [ director.person.person  for director  in self._directors ]
+            epgProgramDict["directors"]       = [ director.person.person  for director  in self._directors  if director ]
         if len( self._presenters ) > 0:
-            epgProgramDict["presenters"]      = [ presenter.person.person for presenter in self._presenters ]
+            epgProgramDict["presenters"]      = [ presenter.person.person for presenter in self._presenters if presenter ]
         if len( self._ratings ) > 0:
-            epgProgramDict["presenters"]      = self._ratings
+            epgProgramDict["ratings"]         = self._ratings
         if self._aspectRatio != "":
             epgProgramDict["aspect_ratio"]    = self._aspectRatio
         if self._parentalRating != "":

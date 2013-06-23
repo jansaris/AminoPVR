@@ -16,238 +16,291 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var __module = "service."
-
-/*function LoggerClass()
+function StbController()
 {
-    this.DEBUG    = 0;
-    this.INFO     = 1;
-    this.WARNING  = 2;
-    this.ERROR    = 3;
-    this.CRITICAL = 4;
-
-    this._SEND_DEBUG_LOG_INTERVAL  = 5000;
-    this._SEND_DEBUG_LOG_LIMIT     = 10;
-    this._ONSCREEN_DEBUG_LOG_LIMIT = 20;
-
-    this._debugLog         = [];
-    this._debugDiv         = null;
-    this._remoteDebug      = false;
-    this._removeLogTimeout = null;
-    this._remoteLogRequest = null;
+    this._controller = new AminoPVRController( CONTROLLER_TYPE_RENDERER, this );
 
     this.__module = function()
     {
-        return "service." + this.constructor.name;
+        return "aminopvr." + this.constructor.name;
     };
+
     this.init = function()
     {
         try
         {
-            this._debugDiv = document.createElement( 'div' );
-            this._debugDiv.setAttribute( 'id', 'debugLog' );
-
-            this._debugDiv.style.width      = 710;
-            this._debugDiv.style.height     = 350;
-            this._debugDiv.style.position   = "absolute";
-            this._debugDiv.style.left       = 5;
-            this._debugDiv.style.top        = 5;
-            this._debugDiv.style.background = "#00000C";
-            this._debugDiv.style.border     = "1px solid #000000";
-            this._debugDiv.style.fontSize   = "12px";
-            this._debugDiv.style.display    = "none";
-            this._debugDiv.style.opacity    = 0.8;
-
-            document.body.appendChild( this._debugDiv );
+            var self = this;
+            window.addEventListener( "load", function()
+            {
+                self._onLoad();
+            }, false );
         }
         catch ( e )
         {
-            if ( window.console )
-            {
-                window.console.log( "LoggerClass.init: exception: " + e );
-            }
+            logger.critical( this.__module(), "init: exception: " + e );
         }
     };
-
-    this.debug = function( module, text )
+    this._onLoad = function()
     {
-        this._print( this.DEBUG, module, text );
-    };
+//        logger.init();
 
-    this.info = function( module, text )
-    {
-        this._print( this.INFO, module, text );
-    };
-
-    this.warning = function( module, text )
-    {
-        this._print( this.WARNING, module, text );
-    };
-
-    this.error = function( module, text )
-    {
-        this._print( this.ERROR, module, text );
-    };
-
-    this.critical = function( module, text )
-    {
-        this._print( this.CRITICAL, module, text );
-    };
-
-    this.getRemoteDebugEnabled = function()
-    {
-        return this._remoteDebug;
-    }
-
-    this.enableRemoteDebug = function( enable )
-    {
-        this._remoteDebug = enable;
-
-        if ( enable )
+        var self = this;
+        window.setTimeout( function()
         {
-            if ( (this._debugDiv != null) && (this._debugDiv !== undefined) )
+            if ( self._controller )
             {
-                if ( this._debugDiv.style.display == "block" )
-                {
-                    this.info( this.__module(), "Disable Debug Logging." );
-                    this._debugDiv.style.display = "none";
-                }
+                self._controller.init();
             }
-
-            this._remoteLogTimeout = window.setTimeout( function()
-            {
-                logger._sendDebugLog();
-            }, this._SEND_DEBUG_LOG_INTERVAL );
-        }
-        else
-        {
-            if ( this._remoteLogTimeout )
-            {
-                window.clearTimeout( this._remoteLogTimeout );
-            }
-        }
+        }, 100 );
     };
-
-    this._print = function( level, module, text )
+    this.powerOn = function()
     {
         try
         {
-            if ( this._remoteDebug )
+            var self = this;
+            window.addEventListener( "keypress", function( key )
             {
-                if ( this._debugLog.length > this._SEND_DEBUG_LOG_LIMIT )
-                {
-                    if ( this._remoteLogTimeout )
-                    {
-                        window.clearTimeout( this._remoteLogTimeout );
-                    }
-                    this._sendDebugLog();
-                }
+                self._keyListener( key );
+            }, false );
+            window.removeEventListener( "keypress", stbApi.keyEventFunctionPtr(), false );
+        }
+        catch ( e )
+        {
+            logger.critical( this.__module(), "powerOn: exception: " + e );
+        }
+    };
+    this._callback = function( data )
+    {
+        try
+        {
+            if ( data["type"] == "command" )
+            {
+                this._handleCommand( data["data"] );
+            }
+            else if ( data["type"] == "status" )
+            {
+                this._handleStatus( data["data"] );
+            }
+            else if ( data["type"] == "key" )
+            {
+                evt          = new API_KeyboardEvent;
+                evt.keyCode  = data["data"];
+                logger.info( this.__module(), "_callback: key: " + data["data"] );
+                this._keyListener( evt );
+            }
+            else if ( data["type"] == "timeout" )
+            {
+//                    logger.debug( this.__module(), "_pollStateChange: timeout." );
             }
             else
             {
-                if ( this._debugLog.length >= this._ONSCREEN_DEBUG_LOG_LIMIT )
+//                    logger.warning( this.__module(), "_pollStateChange: " + responseItem );
+            }
+            // else if ( data['type'] == 'channel' )
+            // {
+                // stbApi.setChannelFunction( data['channel'], 0 );
+            // }
+            // else if ( data['type'] == 'key' )
+            // {
+                // evt          = new API_KeyboardEvent;
+                // evt.keyCode  = data['key'];
+                // logger.info( this.__module(), "_pollStateChange: key: " + data['key'] );
+                // this._keyListener( evt );
+            // }
+            // else if ( data['type'] == 'unknown_message' )
+            // {
+                // logger.warning( this.__module(), "_pollStateChange: unknown message received." );
+            // }
+            // else if ( data['type'] == 'timeout' )
+            // {
+// //                    logger.debug( this.__module(), "_pollStateChange: timeout." );
+            // }
+            // else
+            // {
+// //                    logger.warning( this.__module(), "_pollStateChange: " + responseItem );
+            // }
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_controllerCallback: exception: " + e + ", data: " + data );
+        }
+    };
+
+    this._handleCommand = function( data )
+    {
+        logger.info( this.__module(), "_handleCommand: command: " + data["command"] );
+        try
+        {
+            if ( data["command"] == "showOsd" )
+            {
+//                stbApi.setChannelInstance().$(5000);
+            }
+            else if ( data["command"] == "playStream" )
+            {
+                logger.warning( this.__module(), "_handleCommand: command: playStream: url=" + data['url'] );
+    
+                stbApi.playStreamAction1( stbApi.setChannelInstance() );
+                b = new stbApi.playStreamClass( data['url'], "", true );
+                stbApi.playStreamAction2( b );
+            }
+            else if ( data["command"] == "setChannelList" )
+            {
+                var self = this;
+                window.setTimeout( function()
                 {
-                    this._debugLog.splice( 0, this._debugLog.length - (this._ONSCREEN_DEBUG_LOG_LIMIT - 1) );
+                    self._setChannelList();
+                }, 5000 );
+            }
+            else if ( data["command"] == 'setChannel' )
+            {
+                stbApi.setChannelFunction( data["channel"], 0 );
+            }
+            else if ( data["command"] == "remoteDebug" )
+            {
+                if ( !logger.getRemoteDebugEnabled() )
+                {
+                    logger.enableRemoteDebug( true );
+                }
+                else
+                {
+                    logger.enableRemoteDebug( false );
                 }
             }
-
-            var logItem = {
-                              timestamp: (new Date).getTime(),
-                              level:     level,
-                              module:    module,
-                              log_text:  encodeURIComponent( text )
-                          };
-
-            this._debugLog.push( logItem );
-
-            if ( !this._remoteDebug )
+            // else if ( data['command'] == 'debug' )
+            // {
+                // if ( logger.debugDiv !== undefined && logger.debugDiv != null )
+                // {
+                    // if ( logger.debugDiv.style.display == "none" )
+                    // {
+                        // logger.warning( "RemoteServiceClass._pollStateChange: Enable Debug Logging." );
+                        // logger.debugDiv.style.display = "block";
+                    // }
+                    // else
+                    // {
+                        // logger.warning( "RemoteServiceClass._pollStateChange: Disable Debug Logging." );
+                        // logger.debugDiv.style.display = "none";
+                    // }
+                // }
+            // }
+            else
             {
-                html = "";
-
-                for ( i = 0; i < this._debugLog.length; i++ )
-                {
-                    html += "[" + this._debugLog[i].level + "] " + this._debugLog[i].timestamp + ": <" + this._debugLog[i].module + "> " + this._debugLog[i].log_text + "<br\>";
-                }
-
-                if ( (this._debugDiv != null) && (this._debugDiv !== undefined) )
-                {
-                    this._debugDiv.innerHTML = html;
-                }
+                logger.warning( this.__module(), "_handleCommand: other command: " + data["command"] );
             }
         }
         catch ( e )
         {
-           if ( window.console )
-           {
-               window.console.log( "LoggerClass._print: exception: " + e );
-               window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text )
-           }
+            logger.error( this.__module(), "_handleCommand: exception: " + e + ", data: " + data );
+            throw e;
         }
     };
-
-    this._sendDebugLog = function()
+    this._handleStatus = function( data )
     {
-        if ( this._remoteDebug )
+    };
+
+    this._keyListener = function( b )
+    {
+        key = b.keyCode || b.charCode;
+        logger.info( this.__module(), "_keyListener: key=" + key );
+
+        switch ( key )
         {
-            try
-            {
-                if ( this._debugLog.length > 0 )
-                {
-                    // debugLogText = "[";
-                    // for ( i = 0; i < this._debugLog.length; i++ )
-                    // {
-                        // if ( i > 0 )
-                        // {
-                            // debugLogText += ",";
-                        // }
-                        // debugLogText += "{\"timestamp\":" + this._debugLog[i].timestamp + ",\"level\":" + this._debugLog[i].level + ",\"log_text\":\"" + encodeURIComponent( this._debugLog[i].log_text ) + "\"}";
-                    // }
-                    // debugLogText += "]";
+            case 44:   // '<'
+                b = new API_KeyboardEvent;
+                b.keyCode = 37;     // left
+                break;
+            case 46:   // '>'
+                b = new API_KeyboardEvent;
+                b.keyCode = 39;     // right
+                break;
+            case 97:   // 'a'
+                b = new API_KeyboardEvent;
+                b.keyCode = 38;     // up
+                break;
+            case 109:   // 'm'
+                b = new API_KeyboardEvent;
+                b.keyCode = 8516;   // down
+                break;
+            case 122:   // 'z'
+                b = new API_KeyboardEvent;
+                b.keyCode = 40;
+                break;
+            default:
+                break;
+        }
 
-                    debugLogText = Array2JSON( this._debugLog );
-
-                    this._debugLog.splice( 0, this._debugLog.length );
-
-                    this._remoteLogRequest = new XMLHttpRequest;
-                    this._remoteLogRequest.onreadystatechange = function()
-                    {
-                        if ( (this.readyState == 4) && (this.status == 200) )
-                        {
-                            logger._remoteLogTimeout = window.setTimeout( function()
-                            {
-                                logger._sendDebugLog();
-                            }, logger._SEND_DEBUG_LOG_INTERVAL );
-                        }
-                    };
-                    this._remoteLogRequest.open( "POST", "/aminopvr/api/stb/postLog", true );
-                    this._remoteLogRequest.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
-                    this._remoteLogRequest.send( "logData=" + encodeURIComponent( debugLogText ) );
-                }
-                else
-                {
-                    window.setTimeout( function()
-                    {
-                        logger._sendDebugLog();
-                    }, logger._SEND_DEBUG_LOG_INTERVAL );
-                }
-            }
-            catch ( e )
-            {
-                if ( window.console )
-                {
-                    window.console.log( "LoggerClass._sendDebugLog: exception: " + e );
-                }
-            }
+        try
+        {
+            stbApi.keyEventFunction( b );
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_keyListener: exception: " + e );
         }
     };
-}*/
+
+    this._setChannelList = function()
+    {
+        try
+        {
+            logger.warning( this.__module(), "_setChannelList" );
+            channels = []
+            for ( var i = 0; i < stbApi.channelList().length; i++ )
+            {
+                if ( stbApi.channelList()[i] != null )
+                {
+                    var channel = new API_ChannelClass();
+                    channel.getChannel( stbApi.channelList()[i] );
+                    channelStreams = []
+                    if ( channel.URLHD != "" )
+                    {
+                        channelStreams.push( { url: channel.URLHD, is_hd: 1 } );
+                    }
+                    if ( channel.URL != "" )
+                    {
+                        channelStreams.push( { url: channel.URL, is_hd: 0 } );
+                    }
+                    channelObject = { id:         i,
+                                      epg_id:     channel.EPGID2,
+                                      name:       channel.NameLong,
+                                      name_short: channel.NameShort,
+                                      logo:       channel.Logo1,
+                                      thumbnail:  channel.Logo2,
+                                      radio:      channel.Radio,
+                                      streams:    channelStreams };
+                    channels.push( channelObject );
+                }
+            }
+            channelList = Array2JSON( channels );
+
+            logger.debug( this.__module(), "_setChannelList" );
+
+            var self    = this;
+            var request = new JsonAjaxRequest();
+            request.setCallback( function( status, context, data )
+            {
+                if ( status )
+                {
+                    logger.info( self.__module(), "_setChannelList.callback: done: " + data );
+                }
+            } );
+            request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+            request.setPostData( "channelList=" + encodeURIComponent( channelList ) );
+            request.send( "POST", "/aminopvr/api/stb/setChannelList", true );
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_setChannelList: exception: " + e );
+        }
+    };
+
+}
 
 function RemoteServiceClass()
 {
-    this._POLL_SHORT_INTERVAL = 100;
-    this._POLL_LONG_INTERVAL  = 5000;
+    // this._POLL_SHORT_INTERVAL = 100;
+    // this._POLL_LONG_INTERVAL  = 5000;
 
-    this._pollServiceActive = false;
+    // this._pollServiceActive = false;
 
     this.__module = function()
     {
@@ -272,28 +325,28 @@ function RemoteServiceClass()
 
     this.powerOn = function()
     {
-        try
-        {
-            window.addEventListener( "keypress", function( key )
-            {
-                remoteService._keyListener( key );
-            }, false );
-            window.removeEventListener( "keypress", stbApi.keyEventFunctionPtr(), false );
-        }
-        catch ( e )
-        {
-            logger.critical( this.__module(), "PowerOn: exception: " + e );
-        }
+        // try
+        // {
+            // window.addEventListener( "keypress", function( key )
+            // {
+                // remoteService._keyListener( key );
+            // }, false );
+            // window.removeEventListener( "keypress", stbApi.keyEventFunctionPtr(), false );
+        // }
+        // catch ( e )
+        // {
+            // logger.critical( this.__module(), "PowerOn: exception: " + e );
+        // }
     };
 
     this._onLoad = function()
     {
         logger.init();
 
-        window.setTimeout( function()
-        {
-            remoteService._poll();
-        }, remoteService._POLL_SHORT_INTERVAL );
+        // window.setTimeout( function()
+        // {
+            // remoteService._poll();
+        // }, remoteService._POLL_SHORT_INTERVAL );
     };
 
     this._poll = function()
@@ -341,37 +394,37 @@ function RemoteServiceClass()
             {
             	if ( data['type'] == 'command' )
             	{
-                	if ( data['command'] == 'show_osd' )
-                	{
-                    	logger.info( this.__module(), "_pollStateChange: command: show_osd." );
-//                        stbApi.setChannelInstance().$(5000);
-                    }
-                    else if ( data['command'] == 'play_stream' )
-	                {
-    	                logger.warning( this.__module(), "_pollStateChange: command: play_stream: url=" + data['url'] );
-
-        	            stbApi.playStreamAction1( stbApi.setChannelInstance() );
-            	        b = new stbApi.playStreamClass( data['url'], "", true );
-                	    stbApi.playStreamAction2( b );
-                    }
-                    else if ( data['command'] == 'get_channel_list' )
-	                {
-    	                window.setTimeout( function()
-        	            {
-            	            remoteService._sendChannelList();
-                	    }, 5000 );
-                    }
-                    else if ( data['command'] == 'remote_debug' )
-	                {
-    	                if ( !logger.getRemoteDebugEnabled() )
-        	            {
-            	            logger.enableRemoteDebug( true );
-                	    }
-                        else
-                        {
-	                        logger.enableRemoteDebug( false );
-    	                }
-        	        }
+                	// if ( data['command'] == 'show_osd' )
+                	// {
+                    	// logger.info( this.__module(), "_pollStateChange: command: show_osd." );
+// //                        stbApi.setChannelInstance().$(5000);
+                    // }
+                    // else if ( data['command'] == 'play_stream' )
+	                // {
+    	                // logger.warning( this.__module(), "_pollStateChange: command: play_stream: url=" + data['url'] );
+// 
+        	            // stbApi.playStreamAction1( stbApi.setChannelInstance() );
+            	        // b = new stbApi.playStreamClass( data['url'], "", true );
+                	    // stbApi.playStreamAction2( b );
+                    // }
+                    // else if ( data['command'] == 'get_channel_list' )
+	                // {
+    	                // window.setTimeout( function()
+        	            // {
+            	            // remoteService._sendChannelList();
+                	    // }, 5000 );
+                    // }
+                    // else if ( data['command'] == 'remote_debug' )
+	                // {
+    	                // if ( !logger.getRemoteDebugEnabled() )
+        	            // {
+            	            // logger.enableRemoteDebug( true );
+                	    // }
+                        // else
+                        // {
+	                        // logger.enableRemoteDebug( false );
+    	                // }
+        	        // }
             	    // else if ( data['command'] == 'debug' )
                 	// {
                     	// if ( logger.debugDiv !== undefined && logger.debugDiv != null )
@@ -388,22 +441,22 @@ function RemoteServiceClass()
                             // }
                         // }
 	                // }
-    	            else
-        	        {
-            	        logger.warning( this.__module(), "_pollStateChange: other command: " + data['command'] );
-                	}
+    	            // else
+        	        // {
+            	        // logger.warning( this.__module(), "_pollStateChange: other command: " + data['command'] );
+                	// }
                 }
-                else if ( data['type'] == 'channel' )
-	            {
-    	            stbApi.setChannelFunction( data['channel'], 0 );
-        	    }
-            	else if ( data['type'] == 'key' )
-                {
-                    evt          = new API_KeyboardEvent;
-	                evt.keyCode  = data['key'];
-    	            logger.info( this.__module(), "_pollStateChange: key: " + data['key'] );
-        	        this._keyListener( evt );
-            	}
+                // else if ( data['type'] == 'channel' )
+	            // {
+    	            // stbApi.setChannelFunction( data['channel'], 0 );
+        	    // }
+            	// else if ( data['type'] == 'key' )
+                // {
+                    // evt          = new API_KeyboardEvent;
+	                // evt.keyCode  = data['key'];
+    	            // logger.info( this.__module(), "_pollStateChange: key: " + data['key'] );
+        	        // this._keyListener( evt );
+            	// }
                 else if ( data['type'] == 'unknown_message' )
                 {
 	                logger.warning( this.__module(), "_pollStateChange: unknown message received." );
@@ -456,113 +509,116 @@ function RemoteServiceClass()
         }
     };
 
-    this._sendChannelList = function()
-    {
-        try
-        {
-            channels = []
-            for ( var i = 0; i < stbApi.channelList().length; i++ )
-            {
-                if ( stbApi.channelList()[i] != null )
-                {
-                    var channel = new API_ChannelClass();
-                    channel.getChannel( stbApi.channelList()[i] );
-                    channelStreams = []
-                    if ( channel.URLHD != "" )
-                    {
-                        channelStreams.push( { url: channel.URLHD, is_hd: 1 } );
-                    }
-                    if ( channel.URL != "" )
-                    {
-                        channelStreams.push( { url: channel.URL, is_hd: 0 } );
-                    }
-                    channelObject = { id:         i,
-                                      epg_id:     channel.EPGID2,
-                                      name:       channel.NameLong,
-                                      name_short: channel.NameShort,
-                                      logo:       channel.Logo1,
-                                      thumbnail:  channel.Logo2,
-                                      radio:      channel.Radio,
-                                      streams:    channelStreams };
-                    channels.push( channelObject );
-                }
-            }
-            channelList = Array2JSON( channels );
-
-            logger.debug( this.__module(), "_sendChannelList" );
-
-            var self    = this;
-            var request = new JsonAjaxRequest();
-            request.setCallback( function( status, context, data )
-            {
-                if ( status )
-                {
-                    logger.info( self.__module(), "_sendChannelList.callback: done: " + data );
-                }
-            } );
-            request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-            request.setPostData( "channelList=" + encodeURIComponent( channelList ) );
-            request.send( "POST", "/aminopvr/api/stb/setChannelList", true );
-        }
-        catch ( e )
-        {
-            logger.error( this.__module(), "_sendChannelList: exception: " + e );
-        }
-    };
-
-    this._keyListener = function( b )
-    {
-        key = b.keyCode || b.charCode;
-        logger.info( this.__module(), "_keyListener: key=" + key );
-
-        switch ( key )
-        {
-            case 44:   // '<'
-                b = new API_KeyboardEvent;
-                b.keyCode = 37;     // left
-                break;
-            case 46:   // '>'
-                b = new API_KeyboardEvent;
-                b.keyCode = 39;     // right
-                break;
-            case 97:   // 'a'
-                b = new API_KeyboardEvent;
-                b.keyCode = 38;     // up
-                break;
-            case 109:   // 'm'
-                b = new API_KeyboardEvent;
-                b.keyCode = 8516;   // down
-                break;
-            case 122:   // 'z'
-                b = new API_KeyboardEvent;
-                b.keyCode = 40;
-                break;
-            default:
-                break;
-        }
-
-        try
-        {
-            stbApi.keyEventFunction( b );
-        }
-        catch ( e )
-        {
-            logger.error( this.__module(), "_keyListener: exception: " + e );
-        }
-    };
+    // this._sendChannelList = function()
+    // {
+        // try
+        // {
+            // channels = []
+            // for ( var i = 0; i < stbApi.channelList().length; i++ )
+            // {
+                // if ( stbApi.channelList()[i] != null )
+                // {
+                    // var channel = new API_ChannelClass();
+                    // channel.getChannel( stbApi.channelList()[i] );
+                    // channelStreams = []
+                    // if ( channel.URLHD != "" )
+                    // {
+                        // channelStreams.push( { url: channel.URLHD, is_hd: 1 } );
+                    // }
+                    // if ( channel.URL != "" )
+                    // {
+                        // channelStreams.push( { url: channel.URL, is_hd: 0 } );
+                    // }
+                    // channelObject = { id:         i,
+                                      // epg_id:     channel.EPGID2,
+                                      // name:       channel.NameLong,
+                                      // name_short: channel.NameShort,
+                                      // logo:       channel.Logo1,
+                                      // thumbnail:  channel.Logo2,
+                                      // radio:      channel.Radio,
+                                      // streams:    channelStreams };
+                    // channels.push( channelObject );
+                // }
+            // }
+            // channelList = Array2JSON( channels );
+// 
+            // logger.debug( this.__module(), "_sendChannelList" );
+// 
+            // var self    = this;
+            // var request = new JsonAjaxRequest();
+            // request.setCallback( function( status, context, data )
+            // {
+                // if ( status )
+                // {
+                    // logger.info( self.__module(), "_sendChannelList.callback: done: " + data );
+                // }
+            // } );
+            // request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
+            // request.setPostData( "channelList=" + encodeURIComponent( channelList ) );
+            // request.send( "POST", "/aminopvr/api/stb/setChannelList", true );
+        // }
+        // catch ( e )
+        // {
+            // logger.error( this.__module(), "_sendChannelList: exception: " + e );
+        // }
+    // };
+// 
+    // this._keyListener = function( b )
+    // {
+        // key = b.keyCode || b.charCode;
+        // logger.info( this.__module(), "_keyListener: key=" + key );
+// 
+        // switch ( key )
+        // {
+            // case 44:   // '<'
+                // b = new API_KeyboardEvent;
+                // b.keyCode = 37;     // left
+                // break;
+            // case 46:   // '>'
+                // b = new API_KeyboardEvent;
+                // b.keyCode = 39;     // right
+                // break;
+            // case 97:   // 'a'
+                // b = new API_KeyboardEvent;
+                // b.keyCode = 38;     // up
+                // break;
+            // case 109:   // 'm'
+                // b = new API_KeyboardEvent;
+                // b.keyCode = 8516;   // down
+                // break;
+            // case 122:   // 'z'
+                // b = new API_KeyboardEvent;
+                // b.keyCode = 40;
+                // break;
+            // default:
+                // break;
+        // }
+// 
+        // try
+        // {
+            // stbApi.keyEventFunction( b );
+        // }
+        // catch ( e )
+        // {
+            // logger.error( this.__module(), "_keyListener: exception: " + e );
+        // }
+    // };
 
 }
 
 var stbApi        = new APIClass();
 //var logger        = new LoggerClass();
 var remoteService = new RemoteServiceClass();
+var stbController = new StbController();
 remoteService.init();
+stbController.init();
 
 function PowerOn()
 {
     if ( remoteService != null )
     {
         remoteService.powerOn();
+        stbController.powerOn();
     }
 }
 function SetActiveChannel( channel )

@@ -84,9 +84,13 @@ function JsonAjaxRequest()
                     {
                         this._callback && this._callback( true, this._context, responseItem["data"] );
                     }
-                    else
+                    else if ( responseItem["status"] == "success" )
                     {
                         this._callback && this._callback( true, this._context, new Array() );
+                    }
+                    else
+                    {
+                        this._callback && this._callback( false, this._context, new Array() );
                     }
                 }
                 catch ( e )
@@ -623,7 +627,6 @@ function AminoPVRClass()
             }
         }
     };
-
     this.getNowNextProgramList = function( context, callback, async )
     {
         var requestContext         = {};
@@ -747,6 +750,150 @@ function AminoPVRClass()
             }
         }
     };
+}
+
+var CONTROLLER_TYPE_CONTROLLER = 1;
+var CONTROLLER_TYPE_RENDERER   = 2;
+
+function AminoPVRController( type, handlerInst )
+{
+    this._type              = type;
+    this._controllerHandler = handlerInst;
+    this._controllerId      = -1;
+
+    this._POLL_SHORT_INTERVAL = 100;
+    this._POLL_LONG_INTERVAL  = 5000;
+
+    this.__module = function()
+    {
+        return "aminopvr." + this.constructor.name;
+    };
+
+    this.init = function()
+    {
+        if ( this._controllerId == -1 )
+        {
+            logger.warning( this.__module(), "init: Initialize controller polling" );
+
+            try
+            {
+                var self    = this;
+                var request = new JsonAjaxRequest();
+                request.setCallback( function( status, context, data )
+                {
+                    if ( status && data["id"] != -1 )
+                    {
+                        self._controllerId = data["id"];
+                        window.setTimeout( function()
+                        {
+                            self._poll();
+                        }, 100 );
+                    }
+                } );
+                request.send( "GET", "/aminopvr/api/controller/init?type=" + this._type, true );
+            }
+            catch ( e )
+            {
+                logger.critical( this.__module(), "init: exception: " + e );
+            }
+        }
+    };
+
+    this.getListenerList = function( context, callback, async )
+    {
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        logger.info( this.__module(), "getListenerList: Downloading listener list" );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, listeners ) { self._listenerListCallback( status, context, listeners ) } );
+        request.send( "GET", "/aminopvr/api/controller/getListenerList", async );
+    };
+    this._listenerListCallback = function( status, context, listeners )
+    {
+        if ( status )
+        {
+            try
+            {
+                logger.info( this.__module(), "_listenerListCallback: Downloaded listener list; count = " + listeners.length );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], listeners );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_listenerListCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_listenerListCallback: Downloading listener list failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+
+    this._poll = function()
+    {
+        if ( this._controllerId != -1 && this._controllerHandler != null )
+        {
+            try
+            {
+                var self    = this;
+                var request = new JsonAjaxRequest();
+                request.setCallback( function( status, context, data )
+                {
+                    if ( status )
+                    {
+                        try
+                        {
+                            self._controllerHandler._callback( data );
+                            window.setTimeout( function()
+                            {
+                                self._poll();
+                            }, self._POLL_SHORT_INTERVAL );
+                        }
+                        catch ( e )
+                        {
+                            logger.critical( self.__module(), "_poll.callback: exception: " + e );
+                            window.setTimeout( function()
+                            {
+                                self._controllerId = -1;
+                                self.init();
+                            }, self._POLL_LONG_INTERVAL );
+                        }
+                    }
+                    else
+                    {
+                        logger.critical( self.__module(), "_poll.callback: status: " + status + ", re-init" );
+                        window.setTimeout( function()
+                        {
+                            self._controllerId = -1;
+                            self.init();
+                        }, self._POLL_LONG_INTERVAL );
+                    }
+                } );
+                request.send( "GET", "/aminopvr/api/controller/poll?id=" + this._controllerId, true );
+            }
+            catch ( e )
+            {
+                logger.critical( this.__module(), "_poll: exception: " + e );
+            }
+        }
+    };
+
 }
 
 var logger   = new LoggerClass();
