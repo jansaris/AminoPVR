@@ -116,8 +116,11 @@ class Genre( object ):
         return "Genre( id=%r, genre=%r )" % ( self._id, self._genre )
 
     def __eq__( self, other ):
-        # Not comparng _id as it might not be set at comparison time.
+        # Not comparing _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
+        if other == None:
+            return False
+        assert isinstance( other, Genre ), "Other object not instance of class Genre"
         return ( self._genre == other._genre )
 
     def __ne__( self, other ):
@@ -210,6 +213,9 @@ class Person( object ):
         return "Person( id=%r, person=%r )" % ( self._id, self._person )
 
     def __eq__( self, other ):
+        if other == None:
+            return False
+        assert isinstance( other, Person ), "Other object not instance of class Person"
         return ( self._person == other._person )
 
     def __ne__( self, other ):
@@ -301,6 +307,9 @@ class ProgramGenreAbstract( object ):
         return "ProgramGenreAbstract( programId=%r, genreId=%r, genre=%r )" % ( self._programId, self._genreId, self._genre )
 
     def __eq__( self, other ):
+        if other == None:
+            return False
+        assert isinstance( other, Genre ), "Other object not instance of class ProgramGenreAbstract"
         return ( self._programId == other._programId and
                  self._genreId   == other._genreId )
 
@@ -424,6 +433,9 @@ class ProgramPersonAbstract( object ):
         return "ProgramPersonAbstract( programId=%r, personId=%r, person=%r )" % ( self._programId, self._personId, self._person )
 
     def __eq__( self, other ):
+        if other == None:
+            return False
+        assert isinstance( other, Genre ), "Other object not instance of class ProgramPersonAbstract"
         return ( self._programId == other._programId and
                  self._personId  == other._personId )
 
@@ -585,6 +597,9 @@ class ProgramAbstract( object ):
     def __eq__( self, other ):
         # Not comparing _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
+        if other == None:
+            return False
+        assert isinstance( other, Genre ), "Other object not instance of class ProgramAbstract"
         return ( self._epgId                                            == other._epgId            and
                  self._originalId                                       == other._originalId       and
                  self._startTime                                        == other._startTime        and
