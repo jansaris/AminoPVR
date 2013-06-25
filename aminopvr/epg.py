@@ -470,7 +470,7 @@ class ProgramPersonAbstract( object ):
     @property
     def person( self ):
         assert self._person, "Person not set"
-        self._person
+        return self._person
 
     @classmethod
     def getFromDb( cls, conn, programId, personId ):
