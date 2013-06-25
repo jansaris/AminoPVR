@@ -384,7 +384,7 @@ function PVRClass()
     this.DeleteAsset = function( assetId ) { return "OK"; };
     this.AddSchedule = function( url, titleId, starttime, endtime, aa )
     {
-        var schedule = "{\"url\":\"" + url + "\",\"titleid\":\"" + titleId + "\",\"starttime\":" + starttime + ",\"endtime\":" + endtime + ",\"aa\":\"" + aa + "\"}";
+        //var schedule = "{\"url\":\"" + url + "\",\"titleid\":\"" + titleId + "\",\"starttime\":" + starttime + ",\"endtime\":" + endtime + ",\"aa\":\"" + aa + "\"}";
         var self     = this;
         var request  = new JsonAjaxRequest();
         request.setCallback( function( status, context, data )
@@ -395,7 +395,7 @@ function PVRClass()
             }
         } );
         request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-        request.setPostData( "schedule=" + encodeURIComponent( schedule ) );
+        request.setPostData( "url=" + encodeURIComponent( url ) + "&titleId=" + encodeURIComponent( titleId ) + "&starttime=" + starttime + "&endtime=" + endtime + "&aa=" + encodeURIComponent( aa ) );
         request.send( "POST", "/aminopvr/api/addSchedule", false );
 
         return "OK";
