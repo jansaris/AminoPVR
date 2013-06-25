@@ -44,6 +44,12 @@ class ConfigSectionAbstract( object ):
         for option in unsupportedOptions:
             self._logger.warning( "__init__: option: %s not supported" % ( option ) )
 
+    def createDefaults( self ):
+        assert self._section != None, "_section member not defined!"
+        assert self._options != None, "_options not defined!"
+        for key in self._options:
+            self._addIfNew( key )
+
     def _get( self, option ):
         assert self._section != None, "_section member not defined!"
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
@@ -138,7 +144,13 @@ class Config( object ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )
         self._filename = filename
         self._config   = ConfigParser.ConfigParser()
-        self._config.read( self._configFilename( self._filename ) )
+        if os.path.exists( self._configFilename( self._filename ) ):
+            self._config.read( self._configFilename( self._filename ) )
+        else:
+            for configClass in defaultConfig:
+                config = configClass( self )
+                config.createDefaults()
+            self._config.write( self._configFilename( self._filename ) )
 
     def getSection( self, section ):
         options = None
@@ -168,3 +180,5 @@ class Config( object ):
     @classmethod
     def _configFilename( cls, filename ):
         return os.path.join( DATA_ROOT, filename )
+
+defaultConfig = [ GeneralConfig, DebugConfig ]

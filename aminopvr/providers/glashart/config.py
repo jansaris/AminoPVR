@@ -15,8 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.config import ConfigSectionAbstract
-import aminopvr
+from aminopvr.config import ConfigSectionAbstract, defaultConfig
 
 class GlashartConfig( ConfigSectionAbstract ):
     _section = "Glashart"
@@ -77,3 +76,5 @@ class GlashartConfig( ConfigSectionAbstract ):
     @property
     def grabContentInterval( self ):
         return self._get( "grab_content_interval" )
+
+defaultConfig.append( GlashartConfig )

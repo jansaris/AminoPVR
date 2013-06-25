@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.config import Config, ConfigSectionAbstract
+from aminopvr.config import Config, ConfigSectionAbstract, defaultConfig
 from aminopvr.multicast import MulticastSocket
 from lib import httpplus
 import logging
@@ -63,6 +63,8 @@ class InputStreamAbstract( object ):
         if protocol == InputStreamProtocol.HTTP:
             return HttpInputStream.getUrl( url )
         return None
+
+defaultConfig.append( InputStreamAbstract )
 
 class MulticastInputStream( InputStreamAbstract ):
     _logger = logging.getLogger( "aminopvr.MulticastInputStream" )
