@@ -699,7 +699,7 @@ function AminoPVRClass()
         }
         if ( count != undefined )
         {
-            arguments += "count" + count;
+            arguments += "count=" + count;
         }
         if ( arguments != "" )
         {

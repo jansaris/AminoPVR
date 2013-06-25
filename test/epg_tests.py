@@ -201,14 +201,14 @@ class EpgProgramTests( test.AminoPVRTestDBCase ):
 
     def testNowNextPrograms( self ):
         now      = int( time.mktime( datetime.datetime.now().timetuple() ) )
-        program11 = self._createProgram( EpgProgram, 1, epgId="test_1", startTime=now-600, endTime=now-300 )
-        program12 = self._createProgram( EpgProgram, 2, epgId="test_1", startTime=now-300, endTime=now+300 )
-        program13 = self._createProgram( EpgProgram, 3, epgId="test_1", startTime=now+300, endTime=now+600 )
-        program14 = self._createProgram( EpgProgram, 4, epgId="test_1", startTime=now+600, endTime=now+900 )
-        program21 = self._createProgram( EpgProgram, 5, epgId="test_2", startTime=now-600, endTime=now-300 )
-        program22 = self._createProgram( EpgProgram, 6, epgId="test_2", startTime=now-300, endTime=now+300 )
-        program23 = self._createProgram( EpgProgram, 7, epgId="test_2", startTime=now+300, endTime=now+600 )
-        program24 = self._createProgram( EpgProgram, 8, epgId="test_2", startTime=now+600, endTime=now+900 )
+        program11 = self._createProgram( EpgProgram, 1, epgId="test_1", startTime=now-600, endTime=now-300 ) # before now
+        program12 = self._createProgram( EpgProgram, 2, epgId="test_1", startTime=now-300, endTime=now+300 ) # now
+        program13 = self._createProgram( EpgProgram, 3, epgId="test_1", startTime=now+300, endTime=now+600 ) # next
+        program14 = self._createProgram( EpgProgram, 4, epgId="test_1", startTime=now+600, endTime=now+900 ) # after next
+        program21 = self._createProgram( EpgProgram, 5, epgId="test_2", startTime=now-600, endTime=now-300 ) # before now
+        program22 = self._createProgram( EpgProgram, 6, epgId="test_2", startTime=now-300, endTime=now+300 ) # now
+        program23 = self._createProgram( EpgProgram, 7, epgId="test_2", startTime=now+300, endTime=now+600 ) # next
+        program24 = self._createProgram( EpgProgram, 8, epgId="test_2", startTime=now+600, endTime=now+900 ) # after next
         program11.addToDb( self.db )
         program12.addToDb( self.db )
         program13.addToDb( self.db )
