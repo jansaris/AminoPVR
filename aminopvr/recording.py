@@ -60,15 +60,30 @@ class RecordingAbstract( object ):
 #            self._filename = self._createFilename()
 
     def __hash__( self ):
-        return ( hash( self._scheduleId + self.epgProgramId + self._channelId ) +
-                 hash( self._startTime + self._endTime + self._length ) +
-                 hash( self._channelName + self._title + self._filename + self._streamArguments ) +
-                 hash( self._fileSize + self._type + self._scrambled + self._marker ) +
-                 hash( self._status + self._rerecord ) )
+        return ( hash( hash( self._scheduleId ) +
+                       hash( self._epgProgramId ) +
+                       hash( self._channelId ) +
+                       hash( self._channelName ) +
+                       hash( self._channelUrlType ) +
+                       hash( self._startTime ) +
+                       hash( self._endTime ) +
+                       hash( self._length ) +
+                       hash( self._title ) +
+                       hash( self._filename ) +
+                       hash( self._fileSize ) +
+                       hash( self._streamArguments ) +
+                       hash( self._type ) +
+                       hash( self._scrambled ) +
+                       hash( self._marker ) +
+                       hash( self._status ) +
+                       hash( self._rerecord ) ) )
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
+        if not other:
+            return False
+        assert isinstance( other, RecordingAbstract ), "Other object not instance of class RecordingAbstract: %r" % ( other )
         return ( self._scheduleId       == other._scheduleId        and
                  self._epgProgramId     == other._epgProgramId      and
                  self._channelId        == other._channelId         and

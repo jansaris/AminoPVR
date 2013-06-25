@@ -70,6 +70,9 @@ class Schedule( object ):
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
+        if not other:
+            return False
+        assert isinstance( other, Schedule ), "Other object not instance of class Schedule: %r" % ( other )
         return ( self._type              == other._type              and
                  self._channelId         == other._channelId         and
                  self._startTime         == other._startTime         and

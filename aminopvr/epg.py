@@ -32,7 +32,7 @@ class EpgId( object ):
         self._channels = []
 
     def __hash__( self ):
-        return hash( self._epgId ) + hash( self._strategy )
+        return hash( hash( self._epgId ) + hash( self._strategy ) )
 
     def __repr__( self ):
         return "EpgId( epgId=%r, strategy=%r )" % ( self._epgId, self._strategy )
@@ -118,9 +118,9 @@ class Genre( object ):
     def __eq__( self, other ):
         # Not comparing _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
-        if other == None:
+        if not other:
             return False
-        assert isinstance( other, Genre ), "Other object not instance of class Genre"
+        assert isinstance( other, Genre ), "Other object not instance of class Genre: %r" % ( other )
         return ( self._genre == other._genre )
 
     def __ne__( self, other ):
@@ -213,9 +213,9 @@ class Person( object ):
         return "Person( id=%r, person=%r )" % ( self._id, self._person )
 
     def __eq__( self, other ):
-        if other == None:
+        if not other:
             return False
-        assert isinstance( other, Person ), "Other object not instance of class Person"
+        assert isinstance( other, Person ), "Other object not instance of class Person: %r" % ( other )
         return ( self._person == other._person )
 
     def __ne__( self, other ):
@@ -301,15 +301,15 @@ class ProgramGenreAbstract( object ):
         self._genre     = genre
 
     def __hash__( self ):
-        return hash( self._programId ) + hash( self._genreId )
+        return hash( hash( self._programId ) + hash( self._genreId ) )
 
     def __repr__( self ):
         return "ProgramGenreAbstract( programId=%r, genreId=%r, genre=%r )" % ( self._programId, self._genreId, self._genre )
 
     def __eq__( self, other ):
-        if other == None:
+        if not other:
             return False
-        assert isinstance( other, Genre ), "Other object not instance of class ProgramGenreAbstract"
+        assert isinstance( other, ProgramGenreAbstract ), "Other object not instance of class ProgramGenreAbstract: %r" % ( other )
         return ( self._programId == other._programId and
                  self._genreId   == other._genreId )
 
@@ -343,7 +343,7 @@ class ProgramGenreAbstract( object ):
 
     @property
     def genre( self ):
-        assert self._genre != None, "Genre not set"
+        assert self._genre, "Genre not set"
         return self._genre
 
     @classmethod
@@ -427,15 +427,15 @@ class ProgramPersonAbstract( object ):
         self._person    = person
 
     def __hash__( self ):
-        return hash( self._programId ) + hash( self._personId )
+        return hash( hash( self._programId ) + hash( self._personId ) )
 
     def __repr__( self ):
         return "ProgramPersonAbstract( programId=%r, personId=%r, person=%r )" % ( self._programId, self._personId, self._person )
 
     def __eq__( self, other ):
-        if other == None:
+        if not other:
             return False
-        assert isinstance( other, Genre ), "Other object not instance of class ProgramPersonAbstract"
+        assert isinstance( other, ProgramPersonAbstract ), "Other object not instance of class ProgramPersonAbstract: %r" % ( other )
         return ( self._programId == other._programId and
                  self._personId  == other._personId )
 
@@ -469,7 +469,7 @@ class ProgramPersonAbstract( object ):
 
     @property
     def person( self ):
-        assert self._person != None, "Person not set"
+        assert self._person, "Person not set"
         self._person
 
     @classmethod
@@ -587,9 +587,21 @@ class ProgramAbstract( object ):
         self._detailed       = detailed
 
     def __hash__( self ):
-        return ( hash( self._epgId + self._originalId + self._title + self._subtitle + self._description ) +
-                 hash( self._startTime + self._endTime ) + hash( self._aspectRatio + self._parentalRating ) +
-                 hash( self._genres + self._actors + self._directors + self._presenters + self._ratings ) )
+        return ( hash( hash( self._epgId ) +
+                       hash( self._originalId ) +
+                       hash( self._startTime ) +
+                       hash( self._endTime ) +
+                       hash( self._title ) +
+                       hash( self._detailed ) +
+                       hash( self._subtitle ) +
+                       hash( self._description ) +
+                       hash( self._aspectRatio ) +
+                       hash( self._parentalRating ) +
+                       hash( frozenset( self._genres ) ) +
+                       hash( frozenset( self._actors ) ) +
+                       hash( frozenset( self._directors ) ) +
+                       hash( frozenset( self._presenters ) ) +
+                       hash( frozenset( self._ratings ) ) ) )
 
     def __repr__( self ):
         return "ProgramAbstract( epgId=%r, id=%r, originalId=%r, startTime=%r, endTime=%r, title=%r, subtitle=%r, description=%r, aspectRatio=%r, parentalRating=%r, genres=%r, actors=%r, directors=%r, presenters=%r, ratings=%r )" % ( self._epgId, self._id, self._originalId, self._startTime, self._endTime, self._title, self._subtitle, self._description, self._aspectRatio, self._parentalRating, self._genres, self._actors, self._directors, self._presenters, self._ratings )
@@ -597,9 +609,9 @@ class ProgramAbstract( object ):
     def __eq__( self, other ):
         # Not comparing _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
-        if other == None:
+        if not other:
             return False
-        assert isinstance( other, Genre ), "Other object not instance of class ProgramAbstract"
+        assert isinstance( other, ProgramAbstract ), "Other object not instance of class ProgramAbstract: %r" % ( other )
         return ( self._epgId                                            == other._epgId            and
                  self._originalId                                       == other._originalId       and
                  self._startTime                                        == other._startTime        and

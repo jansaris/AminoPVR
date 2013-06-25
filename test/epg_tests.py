@@ -16,11 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import unittest
-import test_lib as test     # import test_lib before anything else from aminopvr!
 from aminopvr.channel import Channel
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramGenre, Genre, Person, \
     EpgProgramActor, EpgProgramDirector, EpgProgramPresenter
+import datetime
+import test_lib as test # import test_lib before anything else from aminopvr!
+import time
+import unittest
 
 
 class EpgIdTests( test.AminoPVRTestDBCase ):
@@ -197,8 +199,32 @@ class EpgProgramTests( test.AminoPVRTestDBCase ):
         program = EpgProgram.getFromDb( self.db, program.id )
         self.assertNotIn( actors[0], program.actors, "Program person still in program" )
 
-    def _createProgram( self, cls, number, subNumber=0, descNumber=0, startTime=0, endTime=300 ):
-        program = cls( "test",
+    def testNowNextPrograms( self ):
+        now      = int( time.mktime( datetime.datetime.now().timetuple() ) )
+        program11 = self._createProgram( EpgProgram, 1, epgId="test_1", startTime=now-600, endTime=now-300 )
+        program12 = self._createProgram( EpgProgram, 2, epgId="test_1", startTime=now-300, endTime=now+300 )
+        program13 = self._createProgram( EpgProgram, 3, epgId="test_1", startTime=now+300, endTime=now+600 )
+        program14 = self._createProgram( EpgProgram, 4, epgId="test_1", startTime=now+600, endTime=now+900 )
+        program21 = self._createProgram( EpgProgram, 5, epgId="test_2", startTime=now-600, endTime=now-300 )
+        program22 = self._createProgram( EpgProgram, 6, epgId="test_2", startTime=now-300, endTime=now+300 )
+        program23 = self._createProgram( EpgProgram, 7, epgId="test_2", startTime=now+300, endTime=now+600 )
+        program24 = self._createProgram( EpgProgram, 8, epgId="test_2", startTime=now+600, endTime=now+900 )
+        program11.addToDb( self.db )
+        program12.addToDb( self.db )
+        program13.addToDb( self.db )
+        program14.addToDb( self.db )
+        program21.addToDb( self.db )
+        program22.addToDb( self.db )
+        program23.addToDb( self.db )
+        program24.addToDb( self.db )
+
+        nowNextPrograms      = EpgProgram.getNowNextFromDb( self.db )
+        nowNextProgramsSet   = set( [ program12, program13, program22, program23 ] )
+        nowNextProgramsDbSet = set( nowNextPrograms )
+        self.assertSetEqual( nowNextProgramsSet, nowNextProgramsDbSet, "Now/next incorrect" )
+
+    def _createProgram( self, cls, number, epgId="test", subNumber=0, descNumber=0, startTime=0, endTime=300 ):
+        program = cls( epgId,
                        -1,
                        "orgid_%i_%i_%i" % ( number, subNumber, descNumber ),
                        startTime,

@@ -48,6 +48,9 @@ class ChannelUrlAbstract( object ):
                        hash( self._scrambled ) ) )
 
     def __eq__( self, other ):
+        if not other:
+            return False
+        assert isinstance( other, ChannelUrlAbstract ), "Other object not instance of class ChannelUrlAbstract: %r" % ( other )
         return ( self._channelType == other._channelType and
                  self._protocol    == other._protocol    and
                  self._ip          == other._ip          and
@@ -230,6 +233,9 @@ class ChannelAbstract( object ):
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
         # For insert/update descision it is not relevant
+        if not other:
+            return False
+        assert isinstance( other, ChannelAbstract ), "Other object not instance of class ChannelAbstract: %r" % ( other )
         return ( self._epgId                                          == other._epgId                         and
                  self._number                                         == other._number                        and
                  self._name                                           == other._name                          and
