@@ -690,6 +690,12 @@ class Scheduler( threading.Thread ):
                 self._logger.info( "_recorderCallback: recording id=%d" % ( timer["recordingId"] ) )
                 recording = Recording.getFromDb( conn, timer["recordingId"] )
                 if recording:
+                    generalConfig     = GeneralConfig( Config() )
+                    recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) )
+                    recordingFileSize = 0
+                    if os.path.exists( recordingFilename ):
+                        recordingFileSize = os.stat( recordingFilename ).st_size;
+
                     if recorderState == Recorder.STARTED:
                         if recording.status == RecordingState.START_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_STARTED )
@@ -706,14 +712,14 @@ class Scheduler( threading.Thread ):
 
                     elif recorderState == Recorder.FINISHED:
                         if recording.status == RecordingState.STOP_RECORDING:
-                            recording.changeStatus( conn, RecordingState.RECORDING_FINISHED )
+                            recording.changeStatus( conn, RecordingState.RECORDING_FINISHED, recordingFileSize )
                             self._logger.warning( "Recording '%s' finished" % ( recording.title ) )
                         else:
                             self._logger.error( "_recorderCallback: FINISHED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
 
                     elif recorderState == Recorder.NOT_STOPPED:
                         if recording.status == RecordingState.STOP_RECORDING:
-                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
+                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED, recordingFileSize )
                             self._logger.warning( "Recording '%s' not stopped" % ( recording.title ) )
                         else:
                             self._logger.error( "_recorderCallback: NOT_STOPPED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
@@ -721,7 +727,7 @@ class Scheduler( threading.Thread ):
                     elif recorderState == Recorder.ABORTED:
                         if recording.status != RecordingState.RECORDING_FINISHED:
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
-                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
+                            recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED, recordingFileSize )
                             self._logger.warning( "Recording '%s' aborted" % ( recording.title ) )
                         else:
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d already finished" % ( timerId ) )

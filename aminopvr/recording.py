@@ -444,14 +444,17 @@ class Recording( RecordingAbstract ):
 
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
-    def changeStatus( self, conn, status ):
-        if conn and self._id == -1:
+    def changeStatus( self, conn, status, size ):
+        if self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
-        self._status = status
-        if conn:
-            # TODO: set fileSize and length when status == RECORDING_STATUS_RECORDING_FINISHED
-            conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
+        if self._status != status:
+            self._status = status
+            if conn:
+                if status == RecordingState.RECORDING_FINISHED or status == RecordingState.RECORDING_UNFINISHED:
+                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, size, self._id ) )
+                else:
+                    conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
 
     def copyEpgProgram( self ):
         if self._epgProgram:
