@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.tools import printTraceback
 import datetime
 import logging
 import sys
@@ -146,3 +147,4 @@ class Timer( threading.Thread ):
             event["callback"]( eventType, event["callbackArguments"] )
         except:
             self._logger.error( "_callEventCallback: unexpected error: %s" % ( sys.exc_info()[0] ) )
+            printTraceback()

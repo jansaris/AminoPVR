@@ -16,12 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import GLOBAL_TIMEOUT, USER_AGENT
-from aminopvr.timer import Timer
 from urllib2 import Request, urlopen, HTTPError, URLError
 import aminopvr
-import datetime
 import logging
 import threading
+import traceback
 import urllib
 
 class Singleton( type ):
@@ -111,97 +110,6 @@ def getPage( url, filename = None, method="GET", args={} ):
         aminopvr.logger.debug( 'getPage timed out on (>%s s): %s' % ( GLOBAL_TIMEOUT, url ) )
         return ( None, 500, None )
 
-class ResourceMonitor( object ):
-    __metaclass__ = Singleton
-
-    __instance = None
-
-    _logger = logging.getLogger( "aminopvr.ResourceMonitor" )
-
-    def __init__( self ):
-        self._dataIn = {
-                        "multicast":  { "last": 0, "total": 0 },
-                        "unicast":    { "last": 0, "total": 0 },
-                        "epg":        { "last": 0, "total": 0 },
-                        "content":    { "last": 0, "total": 0 },
-                        "fileSystem": { "last": 0, "total": 0 }
-                       }
-        self._dataOut = {
-                         "fileSystem": { "last": 0, "total": 0 }
-                        }
-        self._db = {
-                    "select":     { "last": 0, "total": 0, "lastRows": 0, "totalRows": 0 },
-                    "update":     { "last": 0, "total": 0, "lastRows": 0, "totalRows": 0 },
-                    "insert":     { "last": 0, "total": 0, "lastRows": 0, "totalRows": 0 },
-                    "delete":     { "last": 0, "total": 0, "lastRows": 0, "totalRows": 0 }
-                   }
-
-        now          = datetime.datetime.now()
-        grabInterval = datetime.timedelta( minutes=10 )
-        grabTime     = now + grabInterval
-
-        self._logger.warning( "Starting ResourceMonitor timer @ %s with interval %s" % ( grabTime, grabInterval ) )
-
-        self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
-
-        ResourceMonitor.__instance = self
-
-    def stop( self ):
-        self._logger.warning( "Stopping ResourceMonitor" )
-        self._timer.stop()
-        self._printTotals()
-
-    @classmethod
-    def report( cls, dataType, amount, direction ):
-        # If cls.__instance is not set, it means nobody has initialized use yet
-        # so, so maybe, we're not welcome. Just return
-        if not cls.__instance:
-            return
-        instance = cls.__instance
-        if direction == "db":
-            cls.reportDb( dataType, amount, 0 )
-        elif direction == "in":
-            if instance._dataIn.has_key( dataType ):
-                instance._dataIn[dataType]["total"] += amount
-            else:
-                instance._dataIn[dataType] = { "last": 0, "total": amount }
-        elif direction == "out":
-            if instance._dateOut.has_key( dataType ):
-                instance._dateOut[dataType]["total"] += amount
-            else:
-                instance._dateOut[dataType] = { "last": 0, "total": amount }
-        else:
-            cls._logger.error( "ResourceMonitor.report: unknown direction=%s" % ( direction ) )
-
-    @classmethod
-    def reportDb( cls, dataType, amount, rows ):
-        # If cls.__instance is not set, it means nobody has initialized use yet
-        # so, so maybe, we're not welcome. Just return
-        if not cls.__instance:
-            return
-        instance = cls.__instance
-
-        if rows < 0:
-            rows = 0
-
-        if instance._db.has_key( dataType ):
-            instance._db[dataType]["total"]     += amount
-            instance._db[dataType]["totalRows"] += rows
-        else:
-            instance._db[dataType] = { "last": 0, "total": amount, "lastRows": 0, "totalRows": rows }
-
-    def _timerCallback( self, event, arguments ):
-        if event == Timer.TIME_TRIGGER_EVENT:
-            self._logger.debug( "Time to display resource usage." )
-
-    def _printTotals( self ):
-        self._logger.warning( "Resource Monitor Totals" )
-        self._logger.warning( "Data In:" )
-        for dataType in self._dataIn.keys():
-            self._logger.warning( "- %s: %d kb" % ( dataType, self._dataIn[dataType]["total"] / 1024 ) )
-        self._logger.warning( "Data Out:" )
-        for dataType in self._dataOut.keys():
-            self._logger.warning( "- %s: %d kb" % ( dataType, self._dataOut[dataType]["total"] / 1024 ) )
-        self._logger.warning( "Database:" )
-        for dataType in self._db.keys():
-            self._logger.warning( "- %s: %d (rows affected: %d)" % ( dataType, self._db[dataType]["total"], self._db[dataType]["totalRows"] ) )
+def printTraceback():
+    logger = logging.getLogger( "aminopvr.trace" )
+    logger.debug( traceback.format_exc() )

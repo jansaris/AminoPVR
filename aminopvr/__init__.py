@@ -20,13 +20,14 @@ from aminopvr.config import Config, GeneralConfig, DebugConfig
 from aminopvr.recorder import Recorder
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
-from aminopvr.tools import ResourceMonitor
+from aminopvr.resource_monitor import ResourceMonitor
 from aminopvr.wi import initWebserver, stopWebserver
 import datetime
 import logging
 import os
 import sys
 import time
+import traceback
 
 logger          = logging.getLogger( "aminopvr" )
 

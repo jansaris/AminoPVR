@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import DATA_ROOT
-from aminopvr.tools import ResourceMonitor
+from aminopvr.resource_monitor import ResourceMonitor
 import logging
 import os
 import re
