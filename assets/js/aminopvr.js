@@ -787,7 +787,14 @@ function AminoPVRController( type, handlerInst )
                         window.setTimeout( function()
                         {
                             self._poll();
-                        }, 100 );
+                        }, self._POLL_SHORT_INTERVAL );
+                    }
+                    else
+                    {
+                        window.setTimeout( function()
+                        {
+                            self._init();
+                        }, self._POLL_LONG_INTERVAL );
                     }
                 } );
                 request.send( "GET", "/aminopvr/api/controller/init?type=" + this._type, true );
