@@ -459,7 +459,7 @@ class Recording( RecordingAbstract ):
 
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
-    def changeStatus( self, conn, status, size ):
+    def changeStatus( self, conn, status, size=0 ):
         if self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
