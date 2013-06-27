@@ -944,11 +944,15 @@ class EpgProgram( ProgramAbstract ):
 
     def addToDb( self, conn ):
         if conn:
-            if self._id == -1:
-                program = self.getByOriginalIdFromDb( conn, self._originalId )
-                if program:
-                    self._logger.warning( "addToDb: We didn't know id, but there seems to be a program with the same originalId (id=%d, originalId=%s)" % ( program._id, self._originalId ) )
-                    self._id = program._id
+#             # This shouldn't really happen, because the EpgProvider should have already made sure there are
+#             # no duplicate originalIds. Moreover, originalId is specific to the EpgProvider used (e.g. Glashart)
+#             # and might not be unique (TODO: check db structure!).
+#             # Also, this generates a query for each new EpgProgram, which is expensive.
+#             if self._id == -1:
+#                 program = self.getByOriginalIdFromDb( conn, self._originalId )
+#                 if program:
+#                     self._logger.warning( "addToDb: We didn't know id, but there seems to be a program with the same originalId (id=%d, originalId=%s)" % ( program._id, self._originalId ) )
+#                     self._id = program._id
 
             if self._id != -1:
                 conn.execute( """
@@ -1211,9 +1215,12 @@ class RecordingProgram( ProgramAbstract ):
     def addToDb( self, conn ):
         if conn:
             program = None
+            # TODO: is this really necessery? If _id != -1, then we simply update the database, no matter if it has
+            # changed or not. If properly tested, updating does not change state of object. 
             if self._id != -1:
                 program = self.getFromDb( conn, self._id )
                 if not program:
+                    self._logger.warning( "addToDb: We expected to find a program, but didn't. (id=%d)" % ( self._id ) )
                     self._id = -1
 
             if self._id != -1:
