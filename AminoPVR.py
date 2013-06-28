@@ -105,7 +105,7 @@ def _stopDaemon():
     pid = int( file( aminopvr.const.PIDFILE, 'r' ).read() )
     logger.warning( "Killing pid: %d" % ( pid ) )
     try:
-        os.kill( pid, signal.SIGHTERM ) # @UndefinedVariable - only available in UNIX
+        os.kill( pid, signal.SIGTERM )  # @UndefinedVariable - only available in UNIX
     except OSError, e:
         raise RuntimeError( "Waiting for pid: %d failed: %s [%d]" % ( pid, e.strerror, e.errno ) )
     # Wait for process to finish by polling if it still exists.
