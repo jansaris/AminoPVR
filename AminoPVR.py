@@ -15,6 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import aminopvr
+import errno
 import getopt
 import logging
 import os
@@ -55,7 +57,6 @@ logger.addHandler( fileHandler )
 cherryPyLogger = logging.getLogger( "cherrypy" )
 cherryPyLogger.addHandler( cherryPyFileHandler )
 
-import aminopvr
 
 signal.signal( signal.SIGINT,   aminopvr.signalHandler )
 signal.signal( signal.SIGTERM,  aminopvr.signalHandler )
@@ -104,10 +105,18 @@ def _stopDaemon():
     pid = int( file( aminopvr.const.PIDFILE, 'r' ).read() )
     logger.warning( "Killing pid: %d" % ( pid ) )
     try:
-        os.kill( pid, signal.SIGHUP )
-        os.waitpid( pid, os.WNOHANG )
+        os.kill( pid, signal.SIGHTERM ) # @UndefinedVariable - only available in UNIX
     except OSError, e:
-        raise RuntimeError( "Waiting for pid: %d failed: %s [%d]" % ( e.strerror, e.errno ) )
+        raise RuntimeError( "Waiting for pid: %d failed: %s [%d]" % ( pid, e.strerror, e.errno ) )
+    # Wait for process to finish by polling if it still exists.
+    while 1:
+        try:
+            os.kill( pid, 0 )
+        except OSError, e:
+            return e.errno == errno.EPERM
+        else:
+            break
+        time.sleep( 0.1 )
 
 def main():
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
