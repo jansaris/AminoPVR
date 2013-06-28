@@ -103,8 +103,8 @@ def daemonize():
 def _stopDaemon():
     pid = int( file( aminopvr.const.PIDFILE, 'r' ).read() )
     logger.warning( "Killing pid: %d" % ( pid ) )
-    os.kill( pid, signal.CTRL_C_EVENT )
     try:
+        os.kill( pid, signal.SIGHUP )
         os.waitpid( pid, os.WNOHANG )
     except OSError, e:
         raise RuntimeError( "Waiting for pid: %d failed: %s [%d]" % ( e.strerror, e.errno ) )
