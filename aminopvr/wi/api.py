@@ -193,15 +193,6 @@ class STBAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def poll( self, init=None ):
-        self._logger.debug( "poll( %s )" % ( init ) )
-        if init == None:
-            return self._createResponse( API.STATUS_SUCCESS, { "type": "timeout" } )
-        else:
-            return self._createResponse( API.STATUS_SUCCESS, { "type": "command", "command": "get_channel_list" } )
-
-    @cherrypy.expose
-    @API._grantAccess
     def setChannelList( self, channelList ):
         self._logger.debug( "setChannelList( %s )" % ( channelList ) )
 
@@ -295,7 +286,7 @@ class ControllerAPI( API ):
         self._logger.debug( "init( type=%s )" % ( type ) )
         type       = int( type )
         controller = Controller()
-        id = controller.addListener( cherrypy.request.remote.ip, type )
+        id         = controller.addListener( cherrypy.request.remote.ip, type )
         self._logger.warning( "init: added listener with id=%d for ip=%s and type=%d" % ( id, cherrypy.request.remote.ip, type ) )
         # Send a message to the requester if it is a RENDERER to set the channel list
         if type == Controller.TYPE_RENDERER:
@@ -303,6 +294,8 @@ class ControllerAPI( API ):
                 self._logger.warning( "init: send message to self request channel list" )
             else:
                 self._logger.error( "init: failed to send message to self" )
+            for header in cherrypy.request.headers:
+                self._logger.info( "init: listener header: %s: %s" % ( header, cherrypy.request.headers[header] ) )
         return self._createResponse( API.STATUS_SUCCESS, { "id": id } )
 
     @cherrypy.expose
@@ -312,7 +305,7 @@ class ControllerAPI( API ):
         id         = int( id )
         controller = Controller()
         if controller.isListener( id ):
-            message    = controller.getMessage( id, 25 )
+            message = controller.getMessage( id, 25 )
             if message:
                 self._logger.warning( "poll: message received: from=%d, type=%s" % ( message["from"], message["type"] ) )
                 return self._createResponse( API.STATUS_SUCCESS, message )
