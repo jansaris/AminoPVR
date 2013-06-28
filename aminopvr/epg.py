@@ -16,12 +16,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.db import DBConnection
+from aminopvr.tools import getTimestamp
 import channel
 import copy
-import datetime
 import logging
 import sys
-import time
 
 class EpgId( object ):
     _logger = logging.getLogger( 'aminopvr.EPG.EpgId' )
@@ -857,7 +856,7 @@ class ProgramAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programs = []
         if conn:
-            now      = int( time.mktime( datetime.datetime.now().timetuple() ) )
+            now      = getTimestamp()
             query    = "SELECT t2.* FROM %s t1 LEFT JOIN %s t2 ON ( t1.epg_id=t2.epg_id AND (t2.start_time=t1.end_time OR t2.start_time=t1.start_time) ) WHERE t1.start_time <= ? AND t1.end_time > ? ORDER BY t2.epg_id ASC, t2.start_time ASC, t2.end_time ASC;" % ( cls._tableName, cls._tableName )
             rows     = conn.execute( query, [ now, now ] )
             programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
@@ -932,6 +931,15 @@ class EpgProgram( ProgramAbstract ):
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 program = None
         return program
+
+    @classmethod
+    def getTimestampLastProgram( cls, conn ):
+        timestamp = 0
+        if conn:
+            rows = conn.execute( "SELECT MAX( end_time ) AS end_time FROM epg_programs" )
+            if len( rows ) == 1:
+                timestamp = rows[0]["end_time"]
+        return timestamp
 
     @classmethod
     def deleteByTimeFromDB( cls, conn, startTime ):

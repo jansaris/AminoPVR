@@ -18,8 +18,10 @@
 from aminopvr.const import GLOBAL_TIMEOUT, USER_AGENT
 from urllib2 import Request, urlopen, HTTPError, URLError
 import aminopvr
+import datetime
 import logging
 import threading
+import time
 import traceback
 import urllib
 
@@ -109,6 +111,11 @@ def getPage( url, filename = None, method="GET", args={} ):
     except:
         aminopvr.logger.debug( 'getPage timed out on (>%s s): %s' % ( GLOBAL_TIMEOUT, url ) )
         return ( None, 500, None )
+
+def getTimestamp( t=time.localtime() ):
+    if isinstance( t, datetime.datetime ):
+        t = t.timetuple()
+    return int( time.mktime( t ) )
 
 def printTraceback():
     logger = logging.getLogger( "aminopvr.trace" )

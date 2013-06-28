@@ -19,8 +19,9 @@ from aminopvr.channel import Channel, ChannelUrl
 from aminopvr.db import DBConnection
 from aminopvr.epg import RecordingProgram, Genre, RecordingProgramGenre
 from aminopvr.recording import Recording, RecordingState, OldRecording
+from aminopvr.resource_monitor import ResourceMonitor
 from aminopvr.schedule import Schedule
-from aminopvr.tools import ResourceMonitor
+from aminopvr.tools import getTimestamp
 import MySQLdb
 import aminopvr
 import datetime
@@ -30,7 +31,6 @@ import os
 import re
 import sys
 import threading
-import time
 
 class CustomFormatter( logging.Formatter ):
     width = 16
@@ -325,8 +325,8 @@ class MythTvRecord( object ):
             record = cls( recordData["recordid"],
                           recordData["type"],
                           recordData["chanid"],
-                          time.mktime( (datetime.datetime.combine( recordData["startdate"], datetime.time.min ) + recordData["starttime"]).timetuple() ),
-                          time.mktime( (datetime.datetime.combine( recordData["enddate"], datetime.time.min )   + recordData["endtime"]).timetuple() ),
+                          getTimestamp( datetime.datetime.combine( recordData["startdate"], datetime.time.min ) + recordData["starttime"] ),
+                          getTimestamp( datetime.datetime.combine( recordData["enddate"], datetime.time.min )   + recordData["endtime"] ),
                           recordData["title"],
                           recordData["dupmethod"],
                           recordData["startoffset"] * 60,
@@ -421,13 +421,13 @@ class MythTvRecorded( object ):
         if recordedData:
             recorded = cls( recordedData["recordid"],
                             recordedData["chanid"],
-                            time.mktime( recordedData["starttime"].timetuple() ),
-                            time.mktime( recordedData["endtime"].timetuple() ),
+                            getTimestamp( recordedData["starttime"] ),
+                            getTimestamp( recordedData["endtime"] ),
                             recordedData["title"],
                             recordedData["basename"],
                             recordedData["filesize"],
-                            time.mktime( recordedData["progstart"].timetuple() ),
-                            time.mktime( recordedData["progend"].timetuple() ) )
+                            getTimestamp( recordedData["progstart"] ),
+                            getTimestamp( recordedData["progend"] ) )
         return recorded
 
     def dump( self ):
@@ -511,8 +511,8 @@ class MythTvOldRecorded( object ):
         if recordedData:
             recorded = cls( recordedData["recordid"],
                             recordedData["chanid"],
-                            time.mktime( recordedData["starttime"].timetuple() ),
-                            time.mktime( recordedData["endtime"].timetuple() ),
+                            getTimestamp( recordedData["starttime"] ),
+                            getTimestamp( recordedData["endtime"] ),
                             recordedData["title"],
                             recordedData["subtitle"],
                             recordedData["description"],
@@ -593,8 +593,8 @@ class MythTvRecordedProgram( object ):
         recorded = None
         if recordedData:
             recorded = cls( recordedData["chanid"],
-                            time.mktime( recordedData["starttime"].timetuple() ),
-                            time.mktime( recordedData["endtime"].timetuple() ),
+                            getTimestamp( recordedData["starttime"] ),
+                            getTimestamp( recordedData["endtime"] ),
                             recordedData["title"],
                             recordedData["subtitle"],
                             recordedData["description"],

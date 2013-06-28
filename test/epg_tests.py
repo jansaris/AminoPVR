@@ -19,9 +19,8 @@
 from aminopvr.channel import Channel
 from aminopvr.epg import EpgId, EpgProgram, EpgProgramGenre, Genre, Person, \
     EpgProgramActor, EpgProgramDirector, EpgProgramPresenter
-import datetime
+from aminopvr.tools import getTimestamp
 import test_lib as test # import test_lib before anything else from aminopvr!
-import time
 import unittest
 
 
@@ -200,7 +199,7 @@ class EpgProgramTests( test.AminoPVRTestDBCase ):
         self.assertNotIn( actors[0], program.actors, "Program person still in program" )
 
     def testNowNextPrograms( self ):
-        now      = int( time.mktime( datetime.datetime.now().timetuple() ) )
+        now       = getTimestamp()
         program11 = self._createProgram( EpgProgram, 1, epgId="test_1", startTime=now-600, endTime=now-300 ) # before now
         program12 = self._createProgram( EpgProgram, 2, epgId="test_1", startTime=now-300, endTime=now+300 ) # now
         program13 = self._createProgram( EpgProgram, 3, epgId="test_1", startTime=now+300, endTime=now+600 ) # next

@@ -71,6 +71,8 @@ class ContentProvider( threading.Thread ):
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
+        self.requestContentUpdate()
+
     def requestContentUpdate( self, wait=False ):
         if not self._event.isSet():
             self._event.set()

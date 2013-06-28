@@ -24,7 +24,7 @@ from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector,
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
-from aminopvr.tools import getPage, Singleton
+from aminopvr.tools import getPage, Singleton, getTimestamp
 import datetime
 import gzip
 import json
@@ -131,6 +131,10 @@ class EpgProvider( threading.Thread ):
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
+        if not self._haveEnoughEpgData():
+            self._logger.warning( "Not enough Epg data in database. Request Epg update." )
+            self.requestEpgUpdate()
+
     def requestEpgUpdate( self, wait=False ):
         if not self._event.isSet():
             self._event.set()
@@ -160,6 +164,17 @@ class EpgProvider( threading.Thread ):
                 # Request a reschedule
                 Scheduler().requestReschedule()
             self._event.clear()
+
+    def _haveEnoughEpgData( self ):
+        conn        = DBConnection()
+        lastProgram = EpgProgram.getTimestampLastProgram( conn )
+        timestamp   = getTimestamp()
+        if timestamp < lastProgram:
+            daysLeft = float(lastProgram - timestamp) / (24 * 60 * 60)
+            self._logger.warning( "Currently %.1f days of Epg data in database." % ( daysLeft ) )
+        if timestamp + (24 * 60 * 60) > lastProgram:
+            return False
+        return True
 
     @classmethod
     def _parseTimedetla( cls, timeString ):
@@ -200,8 +215,8 @@ class EpgProvider( threading.Thread ):
         nowDay = datetime.datetime( now[0], now[1], now[2] )
 
         # Remove program older than this day
-        self._logger.warning( "Removing EPG from before %s" % ( time.mktime( nowDay.timetuple() ) ) )
-        EpgProgram.deleteByTimeFromDB( db, int( time.mktime( nowDay.timetuple() ) ) )
+        self._logger.warning( "Removing EPG from before %s" % ( getTimestamp( nowDay ) ) )
+        EpgProgram.deleteByTimeFromDB( db, getTimestamp( nowDay ) )
 
         for epgId in epgIds:
             if not self._running:
