@@ -97,8 +97,17 @@ def daemonize():
 
     if aminopvr.const.CREATEPID:
         pid = str( os.getpid() )
-        logger.warning( u"Writing PID " + pid + " to " + str( aminopvr.const.PIDFILE ) )
+        logger.warning( "Writing PID %s to %s" % ( pid, aminopvr.const.PIDFILE ) )
         file( aminopvr.const.PIDFILE, 'w' ).write( "%s\n" % pid )
+
+def _stopDaemon():
+    pid = int( file( aminopvr.const.PIDFILE, 'r' ).read() )
+    logger.warning( "Killing pid: %d" % ( pid ) )
+    os.kill( pid, signal.CTRL_C_EVENT )
+    try:
+        os.waitpid( pid, os.WNOHANG )
+    except OSError, e:
+        raise RuntimeError( "Waiting for pid: %d failed: %s [%d]" % ( e.strerror, e.errno ) )
 
 def main():
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
@@ -107,17 +116,33 @@ def main():
     threading.currentThread().name = "MAIN"
 
     consoleLogging = True
+    stopDaemon     = False
+    restartDaemon  = False
 
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "qd", ['quiet', 'daemon', 'pidfile='] )  # @UnusedVariable
+        opts, args = getopt.getopt( sys.argv[1:], "qd", ['quiet', 'daemon', 'pidfile=', 'stop', 'restart'] )  # @UnusedVariable
     except getopt.GetoptError:
-        print "Available Options: --quiet, --daemon, --pidfile"
+        print "Available Options: --quiet, --daemon, --pidfile, --stop, --restart"
         sys.exit()
 
     for o, a in opts:
         # For now we'll just silence the logging
         if o in ( '-q', '--quiet' ):
             consoleLogging = False
+
+        if o in ( '--stop' ):
+            if sys.platform == 'win32':
+                print "Stop daemon not supported under Windows"
+                sys.exit()
+            else:
+                stopDaemon = True
+
+        if o in ( '--restart' ):
+            if sys.platform == 'win32':
+                print "Restart daemon not supported under Windows"
+                sys.exit()
+            else:
+                restartDaemon = True
 
         # Run as a daemon
         if o in ( '-d', '--daemon' ):
@@ -127,23 +152,34 @@ def main():
                 consoleLogging = False
                 aminopvr.const.DAEMON = True
 
+    for o, a in opts:
         # Write a pidfile if requested
         if o in ( '--pidfile', ):
             aminopvr.const.PIDFILE = str( a )
 
-            # If the pidfile already exists, sickbeard may still be running, so exit
-            if os.path.exists( aminopvr.const.PIDFILE ):
-                sys.exit( "PID file '" + aminopvr.const.PIDFILE + "' already exists. Exiting." )
-
-            # The pidfile is only useful in daemon mode, make sure we can write the file properly
-            if aminopvr.const.DAEMON:
-                aminopvr.const.CREATEPID = True
-                try:
-                    file( aminopvr.const.PIDFILE, 'w' ).write( "pid\n" )
-                except IOError, e:
-                    raise SystemExit( "Unable to write PID file: %s [%d]" % ( e.strerror, e.errno ) )
+            if stopDaemon or restartDaemon:
+                # If the pidfile does not exist, AminoPVR may not be running, so exit
+                if not os.path.exists( aminopvr.const.PIDFILE ):
+                    sys.exit( "PID file '" + aminopvr.const.PIDFILE + "' does not exist. Exiting." )
             else:
-                logger.log( u"Not running in daemon mode. PID file creation disabled." )
+                # If the pidfile already exists, AminoPVR may still be running, so exit
+                if os.path.exists( aminopvr.const.PIDFILE ):
+                    sys.exit( "PID file '" + aminopvr.const.PIDFILE + "' already exists. Exiting." )
+
+                # The pidfile is only useful in daemon mode, make sure we can write the file properly
+                if aminopvr.const.DAEMON:
+                    aminopvr.const.CREATEPID = True
+                    try:
+                        file( aminopvr.const.PIDFILE, 'w' ).write( "pid\n" )
+                    except IOError, e:
+                        raise SystemExit( "Unable to write PID file: %s [%d]" % ( e.strerror, e.errno ) )
+                else:
+                    logger.log( u"Not running in daemon mode. PID file creation disabled." )
+
+    if stopDaemon or restartDaemon:
+        _stopDaemon()
+        if stopDaemon:
+            sys.exit()
 
     aminopvr.init()
 
