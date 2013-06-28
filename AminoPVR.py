@@ -116,6 +116,7 @@ def _stopDaemon():
             if e.errno != errno.EPERM:
                 break
         time.sleep( 0.1 )
+    logger.warning( "Old daemon with pid: %d exited" % ( pid ) )
 
 def main():
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
