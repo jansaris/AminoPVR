@@ -113,9 +113,8 @@ def _stopDaemon():
         try:
             os.kill( pid, 0 )
         except OSError, e:
-            return e.errno == errno.EPERM
-        else:
-            break
+            if e.errno != errno.EPERM:
+                break
         time.sleep( 0.1 )
 
 def main():
