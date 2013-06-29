@@ -16,11 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.channel import Channel
+from aminopvr.config import GeneralConfig, Config
 from aminopvr.epg import RecordingProgram
 import copy
 import datetime
 import epg
 import logging
+import os
 import sys
 
 class RecordingState( object ):
@@ -214,7 +216,7 @@ class RecordingAbstract( object ):
             where = ""
 
             if offset != None and count != None:
-                limit = " LIMIT %d, %d" % ( int( offset ), int( count ) )
+                limit = " LIMIT %d, %d" % ( offset, count )
 
             if sort != None:
                 sort = "%s ASC" % ( sort )
@@ -467,7 +469,25 @@ class Recording( RecordingAbstract ):
 
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
-    def changeStatus( self, conn, status, size=0 ):
+    def deleteFromDb( self, conn, rerecord=False ):
+        if conn:
+            if not rerecord:
+                self._logger.warning( "Creating copy of recording to prevent re-recording of this program" )
+                oldRecording = OldRecording.copy( self )
+                oldRecording.addToDb( conn )
+            else:
+                # remove RecordingProgram
+                recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
+                recordingProgram.deleteFromDb( conn )
+
+            generalConfig     = GeneralConfig( Config() )
+            recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
+            if os.path.exists( recordingFilename ):
+                os.unlink( recordingFilename )
+
+            conn.execute( "DELETE FROM recordings WHERE id=?", ( self._id, ) )
+
+    def changeStatus( self, conn, status ):
         if self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
@@ -475,7 +495,12 @@ class Recording( RecordingAbstract ):
             self._status = status
             if conn:
                 if status == RecordingState.RECORDING_FINISHED or status == RecordingState.RECORDING_UNFINISHED:
-                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, size, self._id ) )
+                    generalConfig     = GeneralConfig( Config() )
+                    recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
+                    recordingFileSize = 0
+                    if os.path.exists( recordingFilename ):
+                        recordingFileSize = os.stat( recordingFilename ).st_size;
+                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, recordingFileSize, self._id ) )
                 else:
                     conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
 

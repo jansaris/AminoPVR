@@ -866,13 +866,13 @@ class ProgramAbstract( object ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
             conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ) )
-            for genre in self.genres:
+            for genre in self._genres:
                 genre.deleteFromDb( conn )
-            for actor in self.actors:
+            for actor in self._actors:
                 actor.deleteFromDb( conn )
-            for director in self.directors:
+            for director in self._directors:
                 director.deleteFromDb( conn )
-            for presenter in self.presenters:
+            for presenter in self._presenters:
                 presenter.deleteFromDb( conn )
 
     def toDict( self ):
