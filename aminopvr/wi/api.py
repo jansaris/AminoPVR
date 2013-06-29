@@ -358,6 +358,7 @@ class AminoPVRAPI( API ):
         conn = DBConnection()
         return self._createResponse( API.STATUS_SUCCESS, { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
 
+    @cherrypy.expose
     @API._grantAccess
     def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
         self._logger.debug( "getChannelList" )
