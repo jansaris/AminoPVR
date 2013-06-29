@@ -28,6 +28,7 @@ from aminopvr.recording import Recording
 from aminopvr.schedule import Schedule
 from aminopvr.scheduler import Scheduler
 from aminopvr.tools import Singleton
+from cherrypy.lib.static import serve_file
 import aminopvr.providers
 import cherrypy
 import json
@@ -354,14 +355,14 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def getNumChannels( self ):
-        self._logger.debug( "getNumChannels" )
+        self._logger.debug( "getNumChannels()" )
         conn = DBConnection()
         return self._createResponse( API.STATUS_SUCCESS, { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
 
     @cherrypy.expose
     @API._grantAccess
     def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
-        self._logger.debug( "getChannelList" )
+        self._logger.debug( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
         conn          = DBConnection()
         channels      = Channel.getAllFromDb( conn, includeRadio=radio, tv=tv )
         channelsArray = []
@@ -379,7 +380,7 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
-        self._logger.debug( "getEpgForChannel" )
+        self._logger.debug( "getEpgForChannel( channelId=%s, startTime=%s, endTime=%s )" % ( channelId, startTime, endTime ) )
         if startTime:
             startTime = int( startTime )
         if endTime:
@@ -396,7 +397,7 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def getNowNextProgramList( self ):
-        self._logger.debug( "getNowNextProgramList" )
+        self._logger.debug( "getNowNextProgramList()" )
         conn     = DBConnection()
         epgData  = EpgProgram.getNowNextFromDb( conn )
         epgDict  = {}
@@ -409,14 +410,14 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def getStorageInfo( self ):
-        self._logger.debug( "getStorageInfo" )
+        self._logger.debug( "getStorageInfo()" )
         # TODO: get actual storage info
         return self._createResponse( API.STATUS_SUCCESS, { "available_size": 100000, "total_size": 200000 } )
 
     @cherrypy.expose
     @API._grantAccess
     def getNumRecordings( self ):
-        self._logger.debug( "getNumRecordings" )
+        self._logger.debug( "getNumRecordings()" )
         conn = DBConnection()
         return self._createResponse( API.STATUS_SUCCESS, { "num_recordings": Recording.getNumRecordingsFromDb( conn ) } )
 
@@ -424,7 +425,13 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getRecordingList( self, offset=None, count=None, sort=None ):
-        self._logger.debug( "getRecordingList()" )
+        self._logger.debug( "getRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )
+
+        if offset:
+            offset = int( offset )
+        if count:
+            count  = int( count )
+
         conn            = DBConnection()
         recordings      = Recording.getAllFromDb( conn, offset=offset, count=count, sort=sort )
         recordingsArray = []
@@ -433,6 +440,38 @@ class AminoPVRAPI( API ):
             if recordingJson:
                 recordingsArray.append( recordingJson )
         return self._createResponse( API.STATUS_SUCCESS, recordingsArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def deleteRecording( self, id, rerecord=False ):
+        self._logger.debug( "deleteRecording( id=%s, rerecord=%s )" % ( id, rerecord ) )
+        conn        = DBConnection()
+        rerecord    = int( rerecord )
+        recordingId = int( id )
+        recording   = Recording.getFromDb( conn, recordingId )
+        if recording:
+            recording.deleteFromDb( conn, rerecord )
+            return self._createResponse( API.STATUS_SUCCESS )
+        else:
+            self._logger.warning( "deleteRecording: recording with id=%d does not exist" % ( recordingId ) )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getRecordingMeta( self, id ):
+        self._logger.debug( "getRecordingMeta( id=%s )" % ( id ) )
+        return self._createResponse( API.STATUS_SUCCESS, { "marker": 0 } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def setRecordingMeta( self, id, marker ):
+        self._logger.debug( "setRecordingMeta( id=%s, marker=%s )" % ( id, marker ) )
+        conn      = DBConnection()
+        recording = Recording.getFromDb( conn, int( id ) )
+        if recording:
+            recording.marker = int( marker )
+            recording.addToDb( conn )
+            return self._createResponse( API.STATUS_SUCCESS )
+        return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
@@ -452,7 +491,11 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getScheduledRecordingList( self, offset=None, count=None, sort=None ):
-        self._logger.debug( "getScheduledRecordingList()" )
+        self._logger.debug( "getScheduledRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )
+        if offset:
+            offset = int( offset )
+        if count:
+            count  = int( count )
         scheduledRecordings = Scheduler().getScheduledRecordings()
         scheduledRecordingsArray = []
         for scheduledRecording in scheduledRecordings:
@@ -465,7 +508,7 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def addSchedule( self, url, titleId, startTime, endTime, aa ):
-        self._logger.debug( "addSchedule( %s, %s, %d, %d, %s )" % ( url, titleId, startTime, endTime, aa ) )
+        self._logger.debug( "addSchedule( url=%s, titleId=%s, startTime=%d, endTime=%d, aa=%s )" % ( url, titleId, startTime, endTime, aa ) )
         conn      = DBConnection()
 
         # Split title and programId
@@ -531,37 +574,20 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def getRecordingMeta( self, id ):
-        self._logger.debug( "getRecordingMeta( %s )" )
-        return self._createResponse( API.STATUS_SUCCESS, { "marker": 0 } )
+    def deleteSchedule( self, id ):
+        self._logger.debug( "deleteSchedule( id=%s )" % ( id ) )
+        return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
-    def setRecordingMeta( self, id, marker ):
-        self._logger.debug( "setRecordingMeta( %s, %s )" % ( id, marker ) )
-        return self._createResponse( API.STATUS_SUCCESS )
-
-    @cherrypy.expose
-    @API._grantAccess
-    def getActiveRecordings( self ):
-        self._logger.debug( "getActiveRecordings" )
-        activeRecordings = Recorder.getActiveRecordings()
-        return r'''
-<html>
-    <head>
-        <title>%s</title>
-    </head>
-    <body>
-        <br/>
-        Currently, there are %d recordings active
-    </body>
-</html>
-''' % ( 'Active Recordings', len( activeRecordings ) )
+    def changeSchedule( self, id ):
+        self._logger.debug( "changeSchedule( id=%s )" % ( id ) )
+        return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
     def activatePendingChannels( self ):
-        self._logger.debug( "activatePendingChannels" )
+        self._logger.debug( "activatePendingChannels()" )
         conn = DBConnection()
         pendingChannels = PendingChannel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
 
@@ -646,7 +672,7 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def requestEpgUpdate( self ):
-        self._logger.debug( "requestEpgUpdate" )
+        self._logger.debug( "requestEpgUpdate()" )
         if aminopvr.providers.epgProvider:
             epgProvider = aminopvr.providers.epgProvider()
             if epgProvider.requestEpgUpdate():
@@ -662,33 +688,35 @@ class AminoPVRRecordings( API ):
     @API._grantAccess
     def default( self, *args, **kwargs ):
         self._logger.debug( "default( %s, %s )" % ( str( args ), str( kwargs ) ) )
-        self._logger.warning( "url=%s" % ( '/'.join( list( args ) ) ) )
+
+        for header in cherrypy.request.headers:
+            self._logger.info( "default: header: %s: %s" % ( header, cherrypy.request.headers[header] ) )
 
         conn        = DBConnection()
         recordingId = list( args )[0]
         recording   = Recording.getFromDb( conn, recordingId )
         if recording:
-            cherrypy.response.headers[ "Content-Type" ] = "video/mp2t" 
-
             generalConfig = GeneralConfig( Config() )
             filename      = os.path.join( generalConfig.recordingsPath, recording.filename )
-            BUF_SIZE      = 16 * 1024
+#            BUF_SIZE      = 16 * 1024
 
             if os.path.exists( filename ):
-                f = open( filename, 'rb' )
-                self._logger.warning( "default: guessed mime-type=%s" % ( mimetypes.guess_type( filename )[0] ) )
-                def content():
-                    data = f.read( BUF_SIZE )
-                    while len( data ) > 0:
-                        yield data
-                        data = f.read( BUF_SIZE )
-
-                return content()
+#                 f = open( filename, 'rb' )
+#                 cherrypy.response.headers[ "Content-Type" ]   = mimetypes.guess_type( filename )[0]
+#                 cherrypy.response.headers[ "Content-Length" ] = os.path.getsize( filename )
+                return serve_file( os.path.abspath( filename ), content_type=mimetypes.guess_type( filename )[0] )
+#                 def content():
+#                     data = f.read( BUF_SIZE )
+#                     while len( data ) > 0:
+#                         yield data
+#                         data = f.read( BUF_SIZE )
+# 
+#                 return content()
             else:
                 return self._createResponse( API.STATUS_FAIL )
         else:
             return self._createResponse( API.STATUS_FAIL )
-    default._cp_config = { "response.stream": True } 
+#    default._cp_config = { "response.stream": True } 
 
 class AminoPVRWI( object ):
 
