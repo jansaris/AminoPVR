@@ -42,7 +42,7 @@ class WebUI( object ):
 
 class WebInterface( object ):
     aminopvr = AminoPVRWI()
-    webui = WebUI()
+    webui    = WebUI()
 
 def stopWebserver():
     _logger.warning( "Stopping CherryPy Engine" )
@@ -154,6 +154,9 @@ def initWebserver( serverPort=8080 ):
                 'tools.auth_basic.checkpassword': checkpassword
             },
             '/aminopvr/api': {
+                'tools.auth_basic.on':            False
+            },
+            '/aminopvr/recordings': {
                 'tools.auth_basic.on':            False
             },
         } )

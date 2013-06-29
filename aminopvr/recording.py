@@ -232,6 +232,14 @@ class RecordingAbstract( object ):
         return recordings
 
     @classmethod
+    def getNumRecordingsFromDb( cls, conn ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        numRecordings = 0
+        if conn:
+            numRecordings = conn.execute( "SELECT COUNT(*) AS num_recordings FROM %s" % ( cls._tableName ) )[0]["num_recordings"]
+        return numRecordings
+
+    @classmethod
     def getAllByScheduleIdFromDb( cls, conn, scheduleId ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
@@ -443,7 +451,7 @@ class RecordingAbstract( object ):
                  "description":  self.epgProgram.description,
                  "channel_id":   self.channelId,
                  "channel_name": self.channelName,
-                 "url":          "",
+                 "url":          "/aminopvr/recordings/%d" % ( self.id ),
                  "marker":       self.marker }
 
     def _generateFilename( self, conn ):

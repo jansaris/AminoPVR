@@ -32,6 +32,8 @@ import aminopvr.providers
 import cherrypy
 import json
 import logging
+import mimetypes
+import os
 import re
 import socket
 import struct
@@ -356,7 +358,6 @@ class AminoPVRAPI( API ):
         conn = DBConnection()
         return self._createResponse( API.STATUS_SUCCESS, { "num_channels": Channel.getNumChannelsFromDb( conn ) } )
 
-    @cherrypy.expose( alias="getChannels" ) # TODO: remove alias
     @API._grantAccess
     def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
         self._logger.debug( "getChannelList" )
@@ -410,6 +411,13 @@ class AminoPVRAPI( API ):
         self._logger.debug( "getStorageInfo" )
         # TODO: get actual storage info
         return self._createResponse( API.STATUS_SUCCESS, { "available_size": 100000, "total_size": 200000 } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getNumRecordings( self ):
+        self._logger.debug( "getNumRecordings" )
+        conn = DBConnection()
+        return self._createResponse( API.STATUS_SUCCESS, { "num_recordings": Recording.getNumRecordingsFromDb( conn ) } )
 
     @cherrypy.expose
     @API._grantAccess
@@ -633,7 +641,6 @@ class AminoPVRAPI( API ):
             if channelJson:
                 channelsArray.append( channelJson )
         return self._createResponse( API.STATUS_SUCCESS, channelsArray )
-#        return self.getChannels( tv=True, radio=True, unicast=True, includeScrambled=True, includeHd=True )
 
     @cherrypy.expose
     @API._grantAccess
@@ -648,11 +655,46 @@ class AminoPVRAPI( API ):
         else:
             return self._createResponse( API.STATUS_FAIL )
 
+class AminoPVRRecordings( API ):
+    _logger = logging.getLogger( "aminopvr.WI.Recordings" )
+    @cherrypy.expose
+    @API._grantAccess
+    def default( self, *args, **kwargs ):
+        self._logger.debug( "default( %s, %s )" % ( str( args ), str( kwargs ) ) )
+        self._logger.warning( "url=%s" % ( '/'.join( list( args ) ) ) )
+
+        conn        = DBConnection()
+        recordingId = list( args )[0]
+        recording   = Recording.getFromDb( conn, recordingId )
+        if recording:
+            cherrypy.response.headers[ "Content-Type" ] = "video/mp2t" 
+
+            generalConfig = GeneralConfig( Config() )
+            filename      = os.path.join( generalConfig.recordingsPath(), recording.filename )
+            BUF_SIZE      = 16 * 1024
+
+            if os.path.exists( filename ):
+                f = open( filename, 'rb' )
+                self._logger.warning( "default: guessed mime-type=%s" % ( mimetypes.guess_type( filename )[0] ) )
+                def content():
+                    data = f.read( BUF_SIZE )
+                    while len( data ) > 0:
+                        yield data
+                        data = f.read( BUF_SIZE )
+
+                return content()
+            else:
+                return self._createResponse( API.STATUS_FAIL )
+        else:
+            return self._createResponse( API.STATUS_FAIL )
+    default._cp_config = { "response.stream": True } 
+
 class AminoPVRWI( object ):
 
     _logger = logging.getLogger( "aminopvr.WI.AminoPVR" )
 
-    api = AminoPVRAPI()
+    api        = AminoPVRAPI()
+    recordings = AminoPVRRecordings()
 
     @cherrypy.expose
     def index( self ):
