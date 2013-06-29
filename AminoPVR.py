@@ -170,6 +170,11 @@ def main():
                 # If the pidfile does not exist, AminoPVR may not be running, so exit
                 if not os.path.exists( aminopvr.const.PIDFILE ):
                     sys.exit( "PID file '" + aminopvr.const.PIDFILE + "' does not exist. Exiting." )
+
+                if restartDaemon and aminopvr.const.DAEMON:
+                    aminopvr.const.CREATEPID = True
+                else:
+                    logger.log( u"Not running in daemon mode. PID file creation disabled." )
             else:
                 # If the pidfile already exists, AminoPVR may still be running, so exit
                 if os.path.exists( aminopvr.const.PIDFILE ):
