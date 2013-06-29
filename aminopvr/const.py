@@ -17,7 +17,7 @@
 """
 DATA_ROOT = ""
 
-USER_AGENT = 'Opera/9.70 (Linux sh4 ; U;  Amino; en) Presto/2.2.1'
+USER_AGENT = 'Opera/9.80 (Linux sh4 ; U;  Amino; en) Presto/2.5.21 Version/10.30'
 
 # how many seconds to wait before we timeout on a 
 # url fetch, 10 seconds seems reasonable
