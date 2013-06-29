@@ -671,7 +671,7 @@ class AminoPVRRecordings( API ):
             cherrypy.response.headers[ "Content-Type" ] = "video/mp2t" 
 
             generalConfig = GeneralConfig( Config() )
-            filename      = os.path.join( generalConfig.recordingsPath(), recording.filename )
+            filename      = os.path.join( generalConfig.recordingsPath, recording.filename )
             BUF_SIZE      = 16 * 1024
 
             if os.path.exists( filename ):
