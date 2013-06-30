@@ -18,8 +18,11 @@
 from aminopvr.const import GLOBAL_TIMEOUT, USER_AGENT
 from urllib2 import Request, urlopen, HTTPError, URLError
 import aminopvr
+import ctypes
 import datetime
 import logging
+import os
+import platform
 import threading
 import time
 import traceback
@@ -116,6 +119,19 @@ def getTimestamp( t=time.localtime() ):
     if isinstance( t, datetime.datetime ):
         t = t.timetuple()
     return int( time.mktime( t ) )
+
+def getFreeTotalSpaceMb( path ):
+    """ Return folder/drive free space (in bytes)
+    """
+    path = os.path.abspath( path )
+    if platform.system() == 'Windows':
+        freeBytes  = ctypes.c_ulonglong( 0 )
+        totalBytes = ctypes.c_ulonglong( 0 )
+        ctypes.windll.kernel32.GetDiskFreeSpaceExW( ctypes.c_wchar_p( path ), None, ctypes.pointer( totalBytes ), ctypes.pointer( freeBytes ) ) # @UndefinedVariable - only available in Windows
+        return ( freeBytes.value / 1024 / 1024, totalBytes.value / 1024 / 1024 )
+    else:
+        st = os.statvfs( path ) # @UndefinedVariable - only available in UNIX
+        return ( st.f_bavail * st.f_frsize / 1024 / 1024, st.f_blocks * st.f_frsize / 1024 / 1024 )
 
 def printTraceback():
     logger = logging.getLogger( "aminopvr.trace" )

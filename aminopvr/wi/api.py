@@ -20,6 +20,7 @@ from aminopvr import schedule
 from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel, \
     ChannelUrl
 from aminopvr.config import GeneralConfig, Config
+from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
@@ -27,7 +28,7 @@ from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording
 from aminopvr.schedule import Schedule
 from aminopvr.scheduler import Scheduler
-from aminopvr.tools import Singleton
+from aminopvr.tools import Singleton, getFreeTotalSpaceMb
 from cherrypy.lib.static import serve_file
 import aminopvr.providers
 import cherrypy
@@ -411,8 +412,9 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     def getStorageInfo( self ):
         self._logger.debug( "getStorageInfo()" )
-        # TODO: get actual storage info
-        return self._createResponse( API.STATUS_SUCCESS, { "available_size": 100000, "total_size": 200000 } )
+        generalConfig = GeneralConfig( Config() )
+        free, total   = getFreeTotalSpaceMb( generalConfig.recordingsPath )
+        return self._createResponse( API.STATUS_SUCCESS, { "available_size": free, "total_size": total } )
 
     @cherrypy.expose
     @API._grantAccess
@@ -634,11 +636,10 @@ class AminoPVRAPI( API ):
                         if newCurrChannel.urls.has_key( key ):
                             newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
 
-                    # TODO: delete logo and/or thumbnail if changed
-                    #if os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
-                    #    currChannel.removeLogo()
-                    #if os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
-                    #    currChannel.removeThumbnail()
+                    if os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
+                        currChannel.removeLogo( conn )
+                    if os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
+                        currChannel.removeThumbnail( conn )
 
                     # Download the logo and thumbnail for this channel
                     newCurrChannel.downloadLogoAndThumbnail()

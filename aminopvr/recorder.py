@@ -32,10 +32,6 @@ class ActiveRecording( threading.Thread ):
 
     I'm not super pleased with the current implementation of handling added/removed output
     files
-
-    TODO:
-    - The actual stream reading an saving it in output file(s)
-    - Event callback (started, finished, error, etc)
     """
 
     _logger = logging.getLogger( "aminopvr.ActiveRecording" )
@@ -172,12 +168,6 @@ class Recorder( threading.Thread ):
 
     New recordings are added through startRecording
     Recordings can be stopped through stopRecording
-
-    TODO:
-    - startRecording need instance of recording.Recording to change status of recording issued
-      by Recording callbacks
-    - getActiveRecordings should return list of recording.Recording
-    - Event callback from Recording and towards caller 
     """
     __metaclass__ = Singleton
 

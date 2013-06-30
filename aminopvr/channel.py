@@ -589,13 +589,37 @@ class Channel( ChannelAbstract ):
                 self._logger.info( "Channel.downloadLogoAndThumbnail: could not download thumbnail from %s" % ( self._thumbnail ) )
                 self._thumbnail = ""
 
-#    def removeLogo( self ):
-#        # TODO check if logo is used by other channel
-#        # if not, unlink the file
-#
-#    def removeThumbnail( self ):
-#        # TODO check if logo is used by other channel
-#        # if not, unlink the file
+    def removeLogo( self, conn ):
+        if conn:
+            rows = conn.execute( "SELECT COUNT(*) AS count FROM %s WHERE logo=? AND id!=?" % ( self._tableName ), ( self._logo, self._id ) )
+            # If empty list, then nobody uses this logo
+            if rows and len( rows ) == 1:
+                if rows and rows[0]["count"] == 0:
+                    filename = os.path.join( DATA_ROOT, "asserts/images/channels/logos", self._logo )
+                    if os.path.exists( filename ):
+                        os.unlink( filename )
+                    else:
+                        self._logger.warning( "removeLogo: logo file: %s does not exist" % ( filename ) )
+                else:
+                    self._logger.warning( "removeLogo: logo: %s still used %d times by other channels" % ( self._logo, rows[0]["count"] ))
+            else:
+                self._logger.error( "removeLogo: unable to perform logo count for logo=%s and id=%d" % ( self._logo, self._id ) )
+
+    def removeThumbnail( self, conn ):
+        if conn:
+            rows = conn.execute( "SELECT COUNT(*) AS count FROM %s WHERE thumbnail=? AND id!=?" % ( self._tableName ), ( self._thumbnail, self._id ) )
+            # If empty list, then nobody uses this thumbnail
+            if rows and len( rows ) == 1:
+                if rows[0]["count"] == 0:
+                    filename = os.path.join( DATA_ROOT, "asserts/images/channels/thumbnails", self._thumbnail )
+                    if os.path.exists( filename ):
+                        os.unlink( filename )
+                    else:
+                        self._logger.warning( "removeThumbnail: thumbnail file: %s does not exist" % ( filename ) )
+                else:
+                    self._logger.warning( "removeThumbnail: thumbnail: %s still used %d times by other channels" % ( self._thumbnail, rows[0]["count"] ))
+            else:
+                self._logger.error( "removeThumbnail: unable to perform thumbnail count for thumbnail=%s and id=%d" % ( self._thumbnail, self._id ) )
 
 class PendingChannel( ChannelAbstract ):
     _tableName       = "pending_channels"

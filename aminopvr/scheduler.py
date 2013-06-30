@@ -41,9 +41,6 @@ class Scheduler( threading.Thread ):
     and/or finishes in the future. After a reschedule, active timers should be updated rather than
     removed and recreated. If recording of a new 'recording.Recording' should have already been
     started, the timer should immediately fire with a start event.
-
-    TODO:
-    - Actually do something with the result of 'reschedule'
     """
     __metaclass__ = Singleton
 
@@ -313,7 +310,6 @@ class Scheduler( threading.Thread ):
         self._logger.debug( "_handleSchedule: dupMethod=%i, timeslot=%s" % ( schedule.dupMethod, timeslot ) )
 
         # Get the programs that match this schedule
-        # TODO: add 'now' as startTime
         programs = schedule.getPrograms( conn, startTime=time.time() )
 
         filteredPrograms = programs
