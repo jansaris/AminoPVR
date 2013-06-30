@@ -263,7 +263,7 @@ class RecordingAbstract( object ):
         if conn:
             rows = []
             if finishedOnly:
-                rows = conn.execute( "SELECT * FROM %s WHERE status=? title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.RECORDING_FINISHED, title ) )
+                rows = conn.execute( "SELECT * FROM %s WHERE status=? AND title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.RECORDING_FINISHED, title ) )
             else:
                 rows = conn.execute( "SELECT * FROM %s WHERE title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( title, ) )
             for row in rows:

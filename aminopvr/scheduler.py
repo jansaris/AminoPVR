@@ -24,7 +24,7 @@ from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording, OldRecording, RecordingState
 from aminopvr.schedule import Schedule
 from aminopvr.timer import Timer
-from aminopvr.tools import Singleton, parseTimedetlaString
+from aminopvr.tools import Singleton, parseTimedetlaString, printTraceback
 import datetime
 import logging
 import os
@@ -100,6 +100,7 @@ class Scheduler( threading.Thread ):
                     self._reschedule()
                 except:
                     self._logger.error( "run: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                    printTraceback()
             self._event.clear()
 
         self._logger.warning( "Scheduler is about to shutdown, stop and remove timers" )
