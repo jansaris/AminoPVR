@@ -257,9 +257,10 @@ class Scheduler( threading.Thread ):
                         self._logger.warning( "Removing timer with id=%d (recording @ %s from %s with title %s)." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName, timer["recording"].title ) )
                         timer["timer"].cancel()
                         del self._timers[untouchedTimer]
-                    else:
-                        self._logger.warning( "Removing timer with id=%d (active recording @ %s with id %d)." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recordingId"] ) )
-                        self._abortRecording( Timer.TIME_TRIGGER_EVENT, timer["id"] )
+# TODO: check if active programs/recordings will be rescheduled. If not, remove code, else uncomment
+#                     else:
+#                         self._logger.warning( "Removing timer with id=%d (active recording @ %s with id %d)." % ( timer["id"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recordingId"] ) )
+#                         self._abortRecording( Timer.TIME_TRIGGER_EVENT, timer["id"] )
                 else:
                     self._logger.critical( "Untouched timer with id=%d not in timer list (%r)" % ( untouchedTimer, self._timers ) )
             
