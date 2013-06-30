@@ -138,6 +138,8 @@ class RecordingAbstract( object ):
     @epgProgram.setter
     def epgProgram( self, epgProgram ):
         self._epgProgram = epgProgram
+        if epgProgram:
+            self._epgProgramId = epgProgram.id
 
     @property
     def channelId( self ):
@@ -254,12 +256,16 @@ class RecordingAbstract( object ):
         return recordings
 
     @classmethod
-    def getByTitleFromDb( cls, conn, title ):
+    def getByTitleFromDb( cls, conn, title, finishedOnly=False ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
         title      = '%' + title + '%'
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( title, ) )
+            rows = []
+            if finishedOnly:
+                rows = conn.execute( "SELECT * FROM %s WHERE status=? title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.RECORDING_FINISHED, title ) )
+            else:
+                rows = conn.execute( "SELECT * FROM %s WHERE title LIKE ? ORDER BY start_time ASC" % ( cls._tableName ), ( title, ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )

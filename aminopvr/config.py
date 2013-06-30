@@ -94,7 +94,8 @@ class GeneralConfig( ConfigSectionAbstract ):
                  "provider":             "Glashart",
                  "input_stream_support": "multicast,http",
                  "local_access_nets":    "127.0.0.1",
-                 "recordings_path":      "./recordings"
+                 "recordings_path":      "./recordings",
+                 "timeslot_delta":       "5m",
                }
 
     """
@@ -124,6 +125,10 @@ class GeneralConfig( ConfigSectionAbstract ):
     @property
     def recordingsPath( self ):
         return self._get( "recordings_path" )
+
+    @property
+    def timeslotDelta( self ):
+        return self._get( "timeslot_delta" )
 
 class DebugConfig( ConfigSectionAbstract ):
     _section = "Debug"

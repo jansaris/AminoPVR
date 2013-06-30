@@ -86,7 +86,7 @@ class ActiveRecording( threading.Thread ):
         if self.isAlive():
             self._logger.critical( "ActiveRecording.stop: thread not stopping in time; kill it!" )
         return not self.isAlive()
-                    
+
     def addListener( self, id, outputFile, callback ):
         listener               = {}
         listener["id"]         = id
@@ -96,7 +96,7 @@ class ActiveRecording( threading.Thread ):
         with self._listenerLock:
             self._listeners.append( listener )
 
-    def removeListener( self, id ):
+    def removeListener( self, id, abort=False ):
         self._logger.debug( "ActiveRecording.removeListener( id=%d )" % ( id ) )
 
         with self._listenerLock:
@@ -107,7 +107,11 @@ class ActiveRecording( threading.Thread ):
                     if "output" in listener:
                         listener["output"].close()
                     if listener.has_key( "callback" ) and listener["callback"]:
-                        listener["callback"]( listener["id"], ActiveRecording.FINISHED )
+                        if abort:
+                            listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                        else:
+                            listener["callback"]( listener["id"], ActiveRecording.FINISHED )
+
         self._logger.info( "ActiveRecording.removeListener: number of listeners=%d" % ( len( self._listeners ) ) )
         return len( self._listeners )
 
@@ -155,9 +159,10 @@ class _RecorderQueueItem( object ):
     STOP_ALL_RECORDINGS = 2
     START_RECORDING     = 3
     STOP_RECORDING      = 4
-    RECORDING_STARTED   = 5
-    RECORDING_STOPPED   = 6
-    RECORDING_ABORTED   = 7
+    ABORT_RECORDING     = 5
+    RECORDING_STARTED   = 6
+    RECORDING_STOPPED   = 7
+    RECORDING_ABORTED   = 8
     def __init__( self, id, data=None ):
         self.id   = id
         self.data = data
@@ -190,6 +195,7 @@ class Recorder( threading.Thread ):
         self._messageHandler = {}
         self._messageHandler[_RecorderQueueItem.START_RECORDING]   = self._startRecording
         self._messageHandler[_RecorderQueueItem.STOP_RECORDING]    = self._stopRecording
+        self._messageHandler[_RecorderQueueItem.ABORT_RECORDING]   = self._abortRecording
         self._messageHandler[_RecorderQueueItem.RECORDING_STARTED] = self._recordingStarted
         self._messageHandler[_RecorderQueueItem.RECORDING_STOPPED] = self._recordingStopped
         self._messageHandler[_RecorderQueueItem.RECORDING_ABORTED] = self._recordingAborted
@@ -204,6 +210,9 @@ class Recorder( threading.Thread ):
 
     def stopRecording( self, id ):
         self._queue.put( _RecorderQueueItem( _RecorderQueueItem.STOP_RECORDING, (id, ) ) )
+
+    def abortRecording( self, id ):
+        self._queue.put( _RecorderQueueItem( _RecorderQueueItem.ABORT_RECORDING, (id, ) ) )
 
     def stopAllRecordings( self ):
         self._logger.warning( "Stopping all active recordings" )
@@ -258,21 +267,29 @@ class Recorder( threading.Thread ):
 
     def _stopRecording( self, id ):
         self._logger.debug( "_stopRecording( id=%d )" % ( id ) )
+        self._stopAbortRecording( id )
+
+    def _abortRecording( self, id ):
+        self._logger.debug( "_abortRecording( id=%d )" % ( id ) )
+        self._stopAbortRecording( id, True )
+
+    def _stopAbortRecording( self, id, abort=False ):
+        self._logger.debug( "_stopAbortRecording( id=%d, abort=%s )" % ( id, abort ) )
         if not self._recordings.has_key( id ):
-            self._logger.error( "_stopRecording: recording with id %d is not an active recording" % ( id ) )
+            self._logger.error( "_stopAbortRecording: recording with id %d is not an active recording" % ( id ) )
         else:
             recordingId = self._recordings[id]["recordingId"]
 
-            self._logger.debug( "_stopRecording: recordingId=%s" % ( recordingId ) )
+            self._logger.debug( "_stopAbortRecording: recordingId=%s" % ( recordingId ) )
 
             if recordingId != "" and self._activeRecordings.has_key( recordingId ):
-                if self._activeRecordings[recordingId].removeListener( id ) == 0:
-                    self._logger.warning( "_stopRecording: No more listeners; stop ActiveRecorder" )
+                if self._activeRecordings[recordingId].removeListener( id, abort ) == 0:
+                    self._logger.warning( "_stopAbortRecording: No more listeners; abort ActiveRecorder" )
                     if not self._activeRecordings[recordingId].stop():
-                        self._logger.debug( "stopRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
+                        self._logger.debug( "_stopAbortRecording: Recording thread didn't end properly, we're going to delete the object anyway" )
                     del self._activeRecordings[recordingId]
             else:
-                self._logger.error( "_stopRecording: recordingId is not available" )
+                self._logger.error( "_stopAbortRecording: recordingId is not available" )
                 if self._recordings[id]["callback"]:
                     self._recordings[id]["callback"]( id, Recorder.NOT_STOPPED )
                 del self._recordings[id]

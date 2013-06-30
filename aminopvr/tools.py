@@ -23,6 +23,7 @@ import datetime
 import logging
 import os
 import platform
+import re
 import threading
 import time
 import traceback
@@ -119,6 +120,19 @@ def getTimestamp( t=time.localtime() ):
     if isinstance( t, datetime.datetime ):
         t = t.timetuple()
     return int( time.mktime( t ) )
+
+_timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
+
+def parseTimedetlaString( timeString ):
+    parts = _timedeltaRegex.match( timeString )
+    if not parts:
+        return
+    parts      = parts.groupdict()
+    timeParams = {}
+    for ( name, param ) in parts.iteritems():
+        if param:
+            timeParams[name] = int( param )
+    return datetime.timedelta( **timeParams )
 
 def getFreeTotalSpaceMb( path ):
     """ Return folder/drive free space (in bytes)

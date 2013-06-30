@@ -24,7 +24,7 @@ from aminopvr.providers.glashart.epg import EpgProvider
 from aminopvr.providers.glashart.page import PageSymbol
 from aminopvr.providers.glashart.wi import WebInterface
 from aminopvr.timer import Timer
-from aminopvr.tools import getPage, Singleton
+from aminopvr.tools import getPage, Singleton, parseTimedetlaString
 import aminopvr.providers
 import datetime
 import gzip
@@ -46,9 +46,7 @@ def RegisterProvider():
 class ContentProvider( threading.Thread ):
     __metaclass__ = Singleton
 
-    _logger         = logging.getLogger( "aminopvr.providers.glashart.ContentProvider" )
-
-    _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
+    _logger       = logging.getLogger( "aminopvr.providers.glashart.ContentProvider" )
 
     def __init__( self ):
         threading.Thread.__init__( self )
@@ -59,7 +57,7 @@ class ContentProvider( threading.Thread ):
 
         now          = datetime.datetime.now()
         grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( self._glashartConfig.grabContentTime, "%H:%M" ).timetz() )
-        grabInterval = self._parseTimedetla( self._glashartConfig.grabContentInterval )
+        grabInterval = parseTimedetlaString( self._glashartConfig.grabContentInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -100,18 +98,6 @@ class ContentProvider( threading.Thread ):
                 except:
                     self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
             self._event.clear()
-
-    @classmethod
-    def _parseTimedetla( cls, timeString ):
-        parts = cls._timedeltaRegex.match( timeString )
-        if not parts:
-            return
-        parts      = parts.groupdict()
-        timeParams = {}
-        for ( name, param ) in parts.iteritems():
-            if param:
-                timeParams[name] = int( param )
-        return datetime.timedelta( **timeParams )
 
     def _timerCallback( self, event, arguments ):
         if event == Timer.TIME_TRIGGER_EVENT:
@@ -155,7 +141,7 @@ class ContentProvider( threading.Thread ):
                             conn.execute( "UPDATE glashart_pages SET content=? WHERE page=?", ( apiJsContent, "api.js" ) )
                         else:
                             conn.insert( "INSERT INTO glashart_pages (page, content) VALUES (?, ?)", ( "api.js", apiJsContent ) )
-                        # TODO: write symbol table to db
+
                 if symbolNames:
                     conn = DBConnection()
                     if conn:

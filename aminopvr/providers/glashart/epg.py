@@ -24,7 +24,8 @@ from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector,
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
-from aminopvr.tools import getPage, Singleton, getTimestamp
+from aminopvr.tools import getPage, Singleton, getTimestamp, \
+    parseTimedetlaString
 import datetime
 import gzip
 import json
@@ -108,8 +109,6 @@ class EpgProvider( threading.Thread ):
 
     _logger         = logging.getLogger( "aminopvr.providers.glashart.EpgProvider" )
 
-    _timedeltaRegex = re.compile(r'((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
-
     def __init__( self ):
         threading.Thread.__init__( self )
 
@@ -119,7 +118,7 @@ class EpgProvider( threading.Thread ):
 
         now          = datetime.datetime.now()
         grabTime     = datetime.datetime.combine( datetime.datetime.today(), datetime.datetime.strptime( self._glashartConfig.grabEpgTime, "%H:%M" ).timetz() )
-        grabInterval = self._parseTimedetla( self._glashartConfig.grabEpgInterval )
+        grabInterval = parseTimedetlaString( self._glashartConfig.grabEpgInterval )
         while grabTime < now:
             grabTime = grabTime + grabInterval
 
@@ -175,18 +174,6 @@ class EpgProvider( threading.Thread ):
         if timestamp + (24 * 60 * 60) > lastProgram:
             return False
         return True
-
-    @classmethod
-    def _parseTimedetla( cls, timeString ):
-        parts = cls._timedeltaRegex.match( timeString )
-        if not parts:
-            return
-        parts      = parts.groupdict()
-        timeParams = {}
-        for ( name, param ) in parts.iteritems():
-            if param:
-                timeParams[name] = int( param )
-        return datetime.timedelta( **timeParams )
 
     def _timerCallback( self, event, arguments ):
         if event == Timer.TIME_TRIGGER_EVENT:
