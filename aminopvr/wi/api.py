@@ -636,10 +636,10 @@ class AminoPVRAPI( API ):
                         if newCurrChannel.urls.has_key( key ):
                             newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
 
-                    if os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
-                        currChannel.removeLogo( conn )
-                    if os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
-                        currChannel.removeThumbnail( conn )
+                    if newCurrChannel.logo != "" and os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
+                        newCurrChannel.removeLogo( conn )
+                    if newCurrChannel.thumbnail != "" and os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
+                        newCurrChannel.removeThumbnail( conn )
 
                     # Download the logo and thumbnail for this channel
                     newCurrChannel.downloadLogoAndThumbnail()
