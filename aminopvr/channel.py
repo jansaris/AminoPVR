@@ -236,15 +236,15 @@ class ChannelAbstract( object ):
         if not other:
             return False
         assert isinstance( other, ChannelAbstract ), "Other object not instance of class ChannelAbstract: %r" % ( other )
-        return ( self._epgId                                          == other._epgId                         and
-                 self._number                                         == other._number                        and
-                 self._name                                           == other._name                          and
-                 self._nameShort                                      == other._nameShort                     and
-                 os.path.basename( self._logo )                       == os.path.basename( other._logo )      and
-                 os.path.basename( self._thumbnail )                  == os.path.basename( other._thumbnail ) and
-                 self._radio                                          == other._radio                         and
-                 set( self._urls ).intersection( set( other._urls ) ) == set( self._urls )                    and
-                 self._inactive                                       == other._inactive )
+        return ( self._epgId                                                            == other._epgId                         and
+                 self._number                                                           == other._number                        and
+                 self._name                                                             == other._name                          and
+                 self._nameShort                                                        == other._nameShort                     and
+                 os.path.basename( self._logo )                                         == os.path.basename( other._logo )      and
+                 os.path.basename( self._thumbnail )                                    == os.path.basename( other._thumbnail ) and
+                 self._radio                                                            == other._radio                         and
+                 set( self._urls.values() ).intersection( set( other._urls.values() ) ) == set( self._urls.values() )           and
+                 self._inactive                                                         == other._inactive )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
