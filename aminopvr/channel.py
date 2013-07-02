@@ -227,7 +227,7 @@ class ChannelAbstract( object ):
                        hash( os.path.basename( self._logo ) ) +
                        hash( os.path.basename( self._thumbnail ) ) +
                        hash( self._radio ) +
-                       hash( frozenset( self._urls ) ) +
+                       hash( frozenset( self._urls.values() ) ) +
                        hash( self._inactive ) ) )
 
     def __eq__( self, other ):

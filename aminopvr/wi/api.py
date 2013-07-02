@@ -593,6 +593,8 @@ class AminoPVRAPI( API ):
         conn = DBConnection()
         pendingChannels = PendingChannel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
 
+        pendingChannelNumbers = [ channel.number for channel in pendingChannels ]
+
         for channel in pendingChannels:
             currChannel = Channel.getByNumberFromDb( conn, channel.number )
             if currChannel and currChannel.epgId != channel.epgId:
@@ -618,10 +620,16 @@ class AminoPVRAPI( API ):
             if currChannel:
                 # Convert PendingChannel to Channel but keep channel id
                 newCurrChannel = Channel.copy( channel, currChannel.id )
+
+                # Keep the scrambled setting from ChannelUrl's currently in the Db.
+                # This setting cannot be retrieved from the source 
+                for key in currChannel.urls.keys():
+                    if newCurrChannel.urls.has_key( key ):
+                        newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
+
                 # Has the channel really changed?
                 if newCurrChannel != currChannel:
                     self._logger.info( "activatePendingChannels: existing channel: %i - %s" % ( channel.number, channel.name ) )
-#                        self._logger.info( "%s == %s" % ( newCurrChannel.dump(), currChannel.dump() ) )
 
                     # Hmm, channel number and name are the same, but epgId is different
                     if newCurrChannel.epgId != currChannel.epgId:
@@ -630,16 +638,10 @@ class AminoPVRAPI( API ):
                     # Make sure the changed channel is activated (again)
                     newCurrChannel.inactive = False
 
-                    # Keep the scrambled setting from ChannelUrl's currently in the Db.
-                    # This setting cannot be retrieved from the source 
-                    for key in currChannel.urls.keys():
-                        if newCurrChannel.urls.has_key( key ):
-                            newCurrChannel.urls[key].scrambled = currChannel.urls[key].scrambled
-
-                    if newCurrChannel.logo != "" and os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
-                        newCurrChannel.removeLogo( conn )
-                    if newCurrChannel.thumbnail != "" and os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
-                        newCurrChannel.removeThumbnail( conn )
+                    if currChannel.logo != "" and os.path.basename( newCurrChannel.logo ) != os.path.basename( currChannel.logo ):
+                        currChannel.removeLogo( conn )
+                    if currChannel.thumbnail != "" and os.path.basename( newCurrChannel.thumbnail ) != os.path.basename( currChannel.thumbnail ):
+                        currChannel.removeThumbnail( conn )
 
                     # Download the logo and thumbnail for this channel
                     newCurrChannel.downloadLogoAndThumbnail()
@@ -650,14 +652,15 @@ class AminoPVRAPI( API ):
                 newChannel.downloadLogoAndThumbnail()
                 newChannel.addToDb( conn )
 
-        currentChannels = Channel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
-        removedChannels = set( currentChannels ).difference( set( pendingChannels ) )
+        currentChannels       = Channel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
+        currentChannelNumbers = [ channel.number for channel in currentChannels ]
+        removedChannelNumbers = set( currentChannelNumbers ).difference( set( pendingChannelNumbers ) )
 
-        self._logger.info( "activatePendingChannels: %i, %i, %i" % ( len( set( currentChannels ) ), len( set( pendingChannels ) ), len( removedChannels ) ) )
-        for channel in removedChannels:
-            currChannel = Channel.getByNumberFromDb( conn, channel.number )
+        self._logger.info( "activatePendingChannels: %i, %i, %i" % ( len( set( currentChannelNumbers ) ), len( set( pendingChannelNumbers ) ), len( removedChannelNumbers ) ) )
+        for number in removedChannelNumbers:
+            currChannel = Channel.getByNumberFromDb( conn, number )
             if not currChannel.inactive:
-                self._logger.info( "activatePendingChannels: inactive channel: %i - %s" % ( channel.number, channel.name ) )
+                self._logger.info( "activatePendingChannels: inactive channel: %i - %s" % ( currChannel.number, currChannel.name ) )
                 currChannel.inactive = True
                 currChannel.addToDb( conn )
 
