@@ -20,11 +20,9 @@ from aminopvr import schedule
 from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel, \
     ChannelUrl
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.epg import EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
-from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording
 from aminopvr.schedule import Schedule
 from aminopvr.scheduler import Scheduler
@@ -40,7 +38,6 @@ import re
 import socket
 import struct
 import threading
-import time
 import types
 import urllib
 
@@ -202,10 +199,9 @@ class STBAPI( API ):
 
         try:
             channels = json.loads( channelList )
+            conn     = DBConnection()
 
-            conn = DBConnection()
-
-            newChannels = []
+            newChannelNumbers = []
 
             for channel in channels:
                 channelId  = -1
@@ -213,7 +209,7 @@ class STBAPI( API ):
                 if channelOld:
                     channelId = channelOld.id
                 channelNew = self._getChannelFromJson( channel, channelId )
-                newChannels.append( channelNew )
+                newChannelNumbers.append( channelNew.number )
                 self._logger.info( "setChannelList: processing channel: %s" % ( channelNew.dump() ) )
                 if not channelNew:
                     self._logger.error( "setChannelList: unable to create channel for channel=%s", ( channel ) )
@@ -224,12 +220,15 @@ class STBAPI( API ):
                     self._logger.info( "setChannelList: updating channel: %i - %s" % ( channelNew.number, channelNew.name ) )
                     channelNew.addToDb( conn )
 
-            currentChannels = PendingChannel.getAllFromDb( conn, includeRadio=True, tv=True )
+            currentChannels       = PendingChannel.getAllFromDb( conn, includeRadio=True, tv=True )
+            currentChannelNumbers = [ channel.number for channel in currentChannels ]
+            removedChannelNumbers = set( currentChannelNumbers ).difference( set( newChannelNumbers ) )
 
-            removedChannels = set( currentChannels ).difference( set( newChannels ) )
-            for channel in removedChannels:
-                self._logger.info( "setChannelList: remove channel: %i - %s" % ( channel.number, channel.name ) )
-                channel.deleteFromDb( conn )
+            for number in removedChannelNumbers:
+                channel = PendingChannel.getByNumberFromDb( conn, number )
+                if channel:
+                    self._logger.info( "setChannelList: remove channel: %i - %s" % ( channel.number, channel.name ) )
+                    channel.deleteFromDb( conn )
 
             return self._createResponse( API.STATUS_SUCCESS, { "numChannels": len( channels ) } )
         except:

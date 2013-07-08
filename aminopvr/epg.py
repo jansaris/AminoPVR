@@ -909,7 +909,7 @@ class ProgramAbstract( object ):
         actors     = [ actor.dump()     for actor     in self._actors ];
         directors  = [ director.dump()  for director  in self._directors ];
         presenters = [ presenter.dump() for presenter in self._presenters ];
-        return ( "%s - %i: %s, %i, %i, %s, %s, %s, [%s], [%s], [%s], [%s]" % ( self._tableName, self._id, self._epgId, self._startTime, self._endTime, repr( self._title ), repr( self._subtitle ), repr( self._description ), ", ".join( genres ), ", ".join( actors ), ", ".join( directors ), ", ".join( presenters ) ) )
+        return ( "%s - %i (%s): %s, %i, %i, %s, %s, %s, [%s], [%s], [%s], [%s]" % ( self._tableName, self._id, self._originalId, self._epgId, self._startTime, self._endTime, repr( self._title ), repr( self._subtitle ), repr( self._description ), ", ".join( genres ), ", ".join( actors ), ", ".join( directors ), ", ".join( presenters ) ) )
 
 class EpgProgram( ProgramAbstract ):
     _tableName = "epg_programs"
