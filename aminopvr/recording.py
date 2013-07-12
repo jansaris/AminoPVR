@@ -451,16 +451,25 @@ class RecordingAbstract( object ):
                     self._id = id
 
     def toDict( self ):
-        return { "id":           self.id,
-                 "start_time":   self.startTime,
-                 "end_time":     self.endTime,
-                 "title":        self.epgProgram.title,
-                 "subtitle":     self.epgProgram.subtitle,
-                 "description":  self.epgProgram.description,
-                 "channel_id":   self.channelId,
-                 "channel_name": self.channelName,
-                 "url":          "/aminopvr/recordings/%d" % ( self.id ),
-                 "marker":       self.marker }
+        # TODO: add epgProgram as dict
+        recordingDict = { "id":           self.id,
+                          "schedule_id":  self.scheduleId,
+                          "start_time":   self.startTime,
+                          "end_time":     self.endTime,
+                          "title":        self.title,
+                          "channel_id":   self.channelId,
+                          "channel_name": self.channelName,
+                          "url":          "/aminopvr/recordings/%d" % ( self.id ),
+                          "file_size":    self.fileSize,
+                          "scrambled":    self.scrambled,
+                          "marker":       self.marker,
+                          "status":       self.status }
+        if self.epgProgram:
+            recordingDict["epg_program_id"] = self.epgProgramId
+            recordingDict["epg_program"]    = self.epgProgram.toDict()
+        else:
+            recordingDict["epg_program_id"] = -1
+        return recordingDict
 
     def _generateFilename( self, conn ):
         channel  = Channel.getFromDb( conn, self._channelId )

@@ -490,6 +490,13 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    def getNumScheduledRecordings( self ):
+        self._logger.debug( "getNumScheduledRecordings()" )
+        scheduledRecordings = Scheduler().getScheduledRecordings()
+        return self._createResponse( API.STATUS_SUCCESS, { "num_recordings": len( scheduledRecordings ) } )
+
+    @cherrypy.expose
+    @API._grantAccess
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getScheduledRecordingList( self, offset=None, count=None, sort=None ):
         self._logger.debug( "getScheduledRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )

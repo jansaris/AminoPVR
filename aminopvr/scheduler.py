@@ -25,6 +25,7 @@ from aminopvr.recording import Recording, OldRecording, RecordingState
 from aminopvr.schedule import Schedule
 from aminopvr.timer import Timer
 from aminopvr.tools import Singleton, parseTimedetlaString, printTraceback
+import copy
 import datetime
 import logging
 import os
@@ -76,6 +77,7 @@ class Scheduler( threading.Thread ):
         self.join()
 
     def getScheduledRecordings( self ):
+        # TODO: recording.id replaced by timerId to make them unique; decide what to do for future versions
         recordings = []
         conn       = DBConnection()
         with self._lock:
@@ -84,9 +86,12 @@ class Scheduler( threading.Thread ):
                 if timer.has_key( "recordingId" ):
                     recording = Recording.getFromDb( conn, timer["recordingId"] )
                     if recording:
+                        recording._id = timerId     # TODO: this should be removed, don't set private member
                         recordings.append( recording )
                 elif timer.has_key( "recording" ):
-                    recordings.append( timer["recording"] )
+                    recording     = copy.copy( timer["recording"] )
+                    recording._id = timerId         # TODO: this should be removed, don't set private member
+                    recordings.append( recording )
         return recordings
 
     def run( self ):

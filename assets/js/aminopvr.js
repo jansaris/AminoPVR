@@ -399,13 +399,20 @@ function AminoPVRChannel()
 
 function AminoPVREpgProgram()
 {
-    this._id            = -1;
-    this._epgId         = "";
-    this._title         = "";
-    this._subtitle      = "";
-    this._description   = "";
-    this._startTime     = null;
-    this._endTime       = null;
+    this._id             = -1;
+    this._epgId          = "";
+    this._title          = "";
+    this._subtitle       = "";
+    this._description    = "";
+    this._startTime      = null;
+    this._endTime        = null;
+    this._genres         = new Array();
+    this._actors         = new Array();
+    this._directors      = new Array();
+    this._presenters     = new Array();
+    this._ratings        = new Array();
+    this._aspectRatio    = "";
+    this._parentalRating = "";
 
     this.__module = function()
     {
@@ -414,13 +421,20 @@ function AminoPVREpgProgram()
 
     this.fromJson = function( json )
     {
-        this._id            = ("id"           in json) ? json["id"]           : -1;
-        this._epgId         = ("epg_id"       in json) ? json["epg_id"]       : "";
-        this._title         = ("title"        in json) ? json["title"]        : "<Unkown>";
-        this._subtitle      = ("subtitle"     in json) ? json["subtitle"]     : "";
-        this._description   = ("description"  in json) ? json["description"]  : "";
-        this._startTime     = new Date( ("start_time" in json) ? json["start_time"] * 1000 : 0 );
-        this._endTime       = new Date( ("end_time"   in json) ? json["end_time"] * 1000   : 0 );
+        this._id             = ("id"              in json) ? json["id"]              : -1;
+        this._epgId          = ("epg_id"          in json) ? json["epg_id"]          : "";
+        this._title          = ("title"           in json) ? json["title"]           : "<Unkown>";
+        this._subtitle       = ("subtitle"        in json) ? json["subtitle"]        : "";
+        this._description    = ("description"     in json) ? json["description"]     : "";
+        this._startTime      = new Date( ("start_time" in json) ? json["start_time"] * 1000 : 0 );
+        this._endTime        = new Date( ("end_time"   in json) ? json["end_time"] * 1000   : 0 );
+        this._genres         = ("genres"          in json) ? json["genres"]          : new Array();
+        this._actors         = ("actors"          in json) ? json["actors"]          : new Array();
+        this._directors      = ("directors"       in json) ? json["directors"]       : new Array();
+        this._presenters     = ("presenters"      in json) ? json["presenters"]      : new Array();
+        this._ratings        = ("ratings"         in json) ? json["ratings"]         : new Array();
+        this._aspectRatio    = ("aspect_ratio"    in json) ? json["aspect_ratio"]    : "";
+        this._parentalRating = ("parental_rating" in json) ? json["parental_rating"] : "";
     };
 
     this.getId = function()
@@ -460,20 +474,49 @@ function AminoPVREpgProgram()
     {
         return this._endTime;
     };
+    this.getGenres = function()
+    {
+        return this._genres;
+    };
+    this.getActors = function()
+    {
+        return this._actors;
+    };
+    this.getDirectors = function()
+    {
+        return this._directors;
+    };
+    this.getPresenters = function()
+    {
+        return this._presenters;
+    };
+    this.getRatings = function()
+    {
+        return this._ratings;
+    };
+    this.getAspectRatio = function()
+    {
+        return this._aspectRatio;
+    };
+    this.getParentalRating = function()
+    {
+        return this._parentalRating;
+    };
 }
 
 function AminoPVRRecording()
 {
     this._id            = -1;
+    this._scheduleId    = -1;
     this._title         = "";
-    this._subtitle      = "";
-    this._description   = "";
     this._startTime     = null;
     this._endTime       = null;
     this._url           = "";
     this._marker        = 0;
     this._channelId     = -1;
     this._channelName   = "";
+    this._epgProgramId  = -1;
+    this._epgProgram    = null;
 
     this.__module = function()
     {
@@ -482,21 +525,28 @@ function AminoPVRRecording()
 
     this.fromJson = function( json )
     {
-        this._id            = ("id"           in json) ? json["id"]           : -1;
-        this._title         = ("title"        in json) ? json["title"]        : "<Unkown>";
-        this._subtitle      = ("subtitle"     in json) ? json["subtitle"]     : "";
-        this._description   = ("description"  in json) ? json["description"]  : "";
+        this._id            = ("id"             in json) ? json["id"]             : -1;
+        this._scheduleId    = ("schedule_id"    in json) ? json["schedule_id"]    : -1;
+        this._title         = ("title"          in json) ? json["title"]          : "<Unkown>";
+        this._subtitle      = ("subtitle"       in json) ? json["subtitle"]       : "";
+        this._description   = ("description"    in json) ? json["description"]    : "";
         this._startTime     = new Date( ("start_time" in json) ? json["start_time"] * 1000 : 0 );
         this._endTime       = new Date( ("end_time"   in json) ? json["end_time"] * 1000   : 0 );
-        this._url           = ("url"          in json) ? json["url"]          : "";
-        this._marker        = ("marker"       in json) ? json["marker"]       : 0;
-        this._channelId     = ("channel_id"   in json) ? json["channel_id"]   : -1;
-        this._channelName   = ("channel_name" in json) ? json["channel_name"] : "<Unknown>";
+        this._url           = ("url"            in json) ? json["url"]            : "";
+        this._marker        = ("marker"         in json) ? json["marker"]         : 0;
+        this._channelId     = ("channel_id"     in json) ? json["channel_id"]     : -1;
+        this._channelName   = ("channel_name"   in json) ? json["channel_name"]   : "<Unknown>";
+        this._epgProgramId  = ("epg_program_id" in json) ? json["epg_program_id"] : -1;
+        this._epgProgram    = ("epg_program"    in json) ? new AminPVREpgProgram().fromJson( json["epg_program"] ) : null;
     };
 
     this.getId = function()
     {
         return this._id;
+    };
+    this.getScheduleId = function()
+    {
+        return this._scheduleId;
     };
     this.getTitle = function()
     {
@@ -505,19 +555,23 @@ function AminoPVRRecording()
     this.getFullTitle = function()
     {
         var fullTitle = this._title;
-        if ( this._subtitle != "" )
+        if ( this.epgProgram )
         {
-            fullTitle += ": " + this._subtitle;
+            fullTitle = this.epgProgram.getTitle();
+            if ( this.epgProgram.getSubtitle() != "" )
+            {
+                fullTitle += ": " + this.epgProgram.getSubtitle();
+            }
         }
         return fullTitle;
     };
     this.getSubtitle = function()
     {
-        return this._subtitle;
+        return (this.epgProgram ? this.epgProgram.getSubtitle() : "");
     };
     this.getDescription = function()
     {
-        return this._description;
+        return (this.epgProgram ? this.epgProgram.getDescription() : "");
     };
     this.getStartTime = function()
     {
@@ -542,6 +596,14 @@ function AminoPVRRecording()
     this.getChannelName = function()
     {
         return this._channelName;
+    };
+    this.getEpgProgramId = function()
+    {
+        return this._epgProgramId;
+    };
+    this.getEpgProgram = function()
+    {
+        return this._epgProgram;
     };
 }
 
