@@ -537,7 +537,7 @@ function AminoPVRRecording()
         this._channelId     = ("channel_id"     in json) ? json["channel_id"]     : -1;
         this._channelName   = ("channel_name"   in json) ? json["channel_name"]   : "<Unknown>";
         this._epgProgramId  = ("epg_program_id" in json) ? json["epg_program_id"] : -1;
-        this._epgProgram    = ("epg_program"    in json) ? new AminPVREpgProgram().fromJson( json["epg_program"] ) : null;
+        this._epgProgram    = ("epg_program"    in json) ? new AminoPVREpgProgram().fromJson( json["epg_program"] ) : null;
     };
 
     this.getId = function()
