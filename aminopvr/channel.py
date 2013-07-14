@@ -18,7 +18,7 @@
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
-from aminopvr.tools import getPage
+from aminopvr.tools import getPage, printTraceback
 import copy
 import logging
 import os
@@ -160,6 +160,7 @@ class ChannelUrlAbstract( object ):
                            channelUrlData["scrambled"] )
             except:
                 cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return url
 
     def addToDb( self, conn, channelId ):
@@ -202,7 +203,7 @@ class ChannelAbstract( object ):
     _tableName       = None
     _channelUrlClass = None
 
-    def __init__( self, id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ):
+    def __init__( self, id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ): # @ReservedAssignment
         assert self._tableName != None, "Not the right class: %r" % ( self )
         assert self._channelUrlClass != None, "Not the right class: %r" % ( self )
 
@@ -250,7 +251,7 @@ class ChannelAbstract( object ):
         return not self.__eq__( other )
 
     @classmethod
-    def copy( cls, channel, id=-1 ):
+    def copy( cls, channel, id=-1 ):    # @ReservedAssignment
         if isinstance( channel, ChannelAbstract ):
             channel = copy.copy( channel )
             channel.__class__ = cls
@@ -409,7 +410,7 @@ class ChannelAbstract( object ):
         return epgIds
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ): # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         channel = None
         if conn:
@@ -433,7 +434,7 @@ class ChannelAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         numChannels = 0
         if conn:
-            rows = None
+            row            = None
             whereCondition = []
             if not includeInactive:
                 whereCondition.append( "inactive=0" )
@@ -463,6 +464,7 @@ class ChannelAbstract( object ):
                 channel.getUrlsFromDb( conn )
             except:
                 cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
                 channel = None
         return channel
 
@@ -472,19 +474,19 @@ class ChannelAbstract( object ):
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
-            channel = None
-            if self._id != -1:
-                channel = self.getFromDb( conn, self._id )
-                if not channel:
-                    self._id = -1
+#            channel = None
+# This shouldn't be necessary
+#             if self._id != -1:
+#                 channel = self.getFromDb( conn, self._id )
+#                 if not channel:
+#                     self._id = -1
 
             if self._id != -1:
-                if channel and self != channel:
-                    conn.execute( "UPDATE %s SET number=?, epg_id=?, name=?, name_short=?, logo=?, thumbnail=?, radio=?, inactive=? WHERE id=?" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive, self._id ) )
+                conn.execute( "UPDATE %s SET number=?, epg_id=?, name=?, name_short=?, logo=?, thumbnail=?, radio=?, inactive=? WHERE id=?" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive, self._id ) )
             else:
-                id = conn.insert( "INSERT INTO %s (number, epg_id, name, name_short, logo, thumbnail, radio, inactive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive ) )
-                if id:
-                    self._id = id;
+                channelId = conn.insert( "INSERT INTO %s (number, epg_id, name, name_short, logo, thumbnail, radio, inactive) VALUES (?, ?, ?, ?, ?, ?, ?, ?)" % ( self._tableName ), ( self._number, self._epgId, self._name, self._nameShort, self._logo, self._thumbnail, self._radio, self._inactive ) )
+                if channelId:
+                    self._id = channelId;
 
             if self._id:
                 urls = self._channelUrlClass.getAllFromDb( conn, self._id )

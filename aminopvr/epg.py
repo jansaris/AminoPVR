@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.db import DBConnection
-from aminopvr.tools import getTimestamp
+from aminopvr.tools import getTimestamp, printTraceback
 import channel
 import copy
 import logging
@@ -99,12 +99,31 @@ class EpgId( object ):
     def dump( self ):
         return ( "%s: %s" % ( self._epgId, self._strategy ) )
 
+#Adult
+#Animated
+#Arts/Culture
+#Art/Music
+#Children
+#Comedy
+#Crime/Mystery
+#Documentary
+#Drama
+#Educational
+#Film
+#Music
+#News
+#Religion
+#Science/Nature
+#Sports
+#Talk
+#Unknown
+
 class Genre( object ):
     _logger     = logging.getLogger( 'aminopvr.Genre' )
 
     _genreCache = {}
 
-    def __init__( self, id, genre ):
+    def __init__( self, id, genre ):    # @ReservedAssignment
         self._id     = id
         self._genre  = unicode( genre )
 
@@ -134,7 +153,7 @@ class Genre( object ):
         return self._genre
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ): # @ReservedAssignment
         genre = None
         if id in cls._genreCache:
             genre = cls._genreCache[id]
@@ -177,6 +196,7 @@ class Genre( object ):
                     cls._genreCache[genre._id] = genre
             except:
                 cls._logger.error( "_createGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return genre
 
     def addToDb( self, conn ):
@@ -201,7 +221,7 @@ class Person( object ):
 
     _personCache = {}
 
-    def __init__( self, id, person ):
+    def __init__( self, id, person ):   # @ReservedAssignment
         self._id     = id
         self._person = unicode( person )
 
@@ -229,7 +249,7 @@ class Person( object ):
         return self._person
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ): # @ReservedAssignment
         person = None
         if id in cls._personCache:
             person = cls._personCache[id]
@@ -271,6 +291,7 @@ class Person( object ):
                     cls._personCache[person._id] = person
             except:
                 cls._logger.error( "_createPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return person
 
 
@@ -379,6 +400,7 @@ class ProgramGenreAbstract( object ):
                     programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"] )
             except:
                 cls._logger.error( "_createProgramGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return programGenre
 
     def addToDb( self, conn ):
@@ -505,6 +527,7 @@ class ProgramPersonAbstract( object ):
                     programPerson = cls( programPersonData["program_id"], programPersonData["person_id"] )
             except:
                 cls._logger.error( "_createProgramPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return programPerson
 
     def addToDb( self, conn ):
@@ -567,12 +590,23 @@ class ProgramAbstract( object ):
 
     _tableName      = None
 
-    def __init__( self, epgId, id, originalId, startTime, endTime, title, subtitle="", description="", aspectRatio="", parentalRating="", detailed=False ):
+    def __init__( self,
+                  epgId,
+                  id,               # @ReservedAssignment
+                  originalId,
+                  startTime,
+                  endTime,
+                  title,
+                  subtitle          = "",
+                  description       = "",
+                  aspectRatio       = "",
+                  parentalRating    = "",
+                  detailed          = False ):
         self._epgId          = unicode( epgId )
-        self._id             = id
+        self._id             = int( id )
         self._originalId     = unicode( originalId )
-        self._startTime      = startTime
-        self._endTime        = endTime
+        self._startTime      = int( startTime )
+        self._endTime        = int( endTime )
         self._title          = unicode( title )
         self._subtitle       = unicode( subtitle )
         self._description    = unicode( description )
@@ -583,7 +617,7 @@ class ProgramAbstract( object ):
         self._directors      = []
         self._presenters     = []
         self._ratings        = []
-        self._detailed       = detailed
+        self._detailed       = int( detailed )
 
     def __hash__( self ):
         return ( hash( hash( self._epgId ) +
@@ -644,7 +678,7 @@ class ProgramAbstract( object ):
         return self._id
 
     @id.setter
-    def id( self, id ):
+    def id( self, id ): # @ReservedAssignment
         if self._id == -1:
             self._id = id
         else:
@@ -808,7 +842,7 @@ class ProgramAbstract( object ):
         return program
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ): # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         program = None
         if conn:
@@ -920,7 +954,17 @@ class EpgProgram( ProgramAbstract ):
         program = None
         if programData:
             try:
-                program            = EpgProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
+                program            = EpgProgram( programData["epg_id"],
+                                                 programData["id"],
+                                                 programData["original_id"],
+                                                 programData["start_time"],
+                                                 programData["end_time"],
+                                                 programData["title"],
+                                                 programData["subtitle"],
+                                                 programData["description"],
+                                                 programData["aspect_ratio"],
+                                                 programData["parental_rating"],
+                                                 programData["detailed"] )
                 program.genres     = EpgProgramGenre.getAllFromDb( conn, programData["id"] )
                 program.actors     = EpgProgramActor.getAllFromDb( conn, programData["id"] )
                 program.directors  = EpgProgramDirector.getAllFromDb( conn, programData["id"] )
@@ -929,6 +973,7 @@ class EpgProgram( ProgramAbstract ):
                     program.ratings = programData["ratings"].split( ";" )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
                 program = None
         return program
 
@@ -993,34 +1038,34 @@ class EpgProgram( ProgramAbstract ):
                                      self._detailed,
                                      self._id ) )
             else:
-                id = conn.insert( """
-                                     INSERT INTO
-                                         epg_programs (epg_id,
-                                                       original_id,
-                                                       start_time,
-                                                       end_time,
-                                                       title,
-                                                       subtitle,
-                                                       description,
-                                                       aspect_ratio,
-                                                       parental_rating,
-                                                       ratings,
-                                                       detailed)
-                                     VALUES
-                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                  """, ( self._epgId,
-                                         self._originalId,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._subtitle,
-                                         self._description,
-                                         self._aspectRatio,
-                                         self._parentalRating,
-                                         ";".join( self._ratings ),
-                                         self._detailed ) )
-                if id:
-                    self._id = id
+                programId = conn.insert( """
+                                            INSERT INTO
+                                                epg_programs (epg_id,
+                                                              original_id,
+                                                              start_time,
+                                                              end_time,
+                                                              title,
+                                                              subtitle,
+                                                              description,
+                                                              aspect_ratio,
+                                                              parental_rating,
+                                                              ratings,
+                                                              detailed)
+                                            VALUES
+                                                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         """, ( self._epgId,
+                                                self._originalId,
+                                                self._startTime,
+                                                self._endTime,
+                                                self._title,
+                                                self._subtitle,
+                                                self._description,
+                                                self._aspectRatio,
+                                                self._parentalRating,
+                                                ";".join( self._ratings ),
+                                                self._detailed ) )
+                if programId:
+                    self._id = programId
                 else:
                     self._logger.error( "Inserted row, but no auto-increment id returned!" )
 
@@ -1216,81 +1261,81 @@ class RecordingProgram( ProgramAbstract ):
                     program.ratings = programData["ratings"].split( ";" )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
                 program = None
 
         return program
 
     def addToDb( self, conn ):
         if conn:
-            program = None
-            # TODO: is this really necessery? If _id != -1, then we simply update the database, no matter if it has
-            # changed or not. If properly tested, updating does not change state of object. 
-            if self._id != -1:
-                program = self.getFromDb( conn, self._id )
-                if not program:
-                    self._logger.warning( "addToDb: We expected to find a program, but didn't. (id=%d)" % ( self._id ) )
-                    self._id = -1
+#             program = None
+#             # TODO: is this really necessery? If _id != -1, then we simply update the database, no matter if it has
+#             # changed or not. If properly tested, updating does not change state of object. 
+#             if self._id != -1:
+#                 program = self.getFromDb( conn, self._id )
+#                 if not program:
+#                     self._logger.warning( "addToDb: We expected to find a program, but didn't. (id=%d)" % ( self._id ) )
+#                     self._id = -1
 
             if self._id != -1:
-                if program and self != program:
-                    conn.execute( """
-                                     UPDATE
-                                         recording_programs
-                                     SET
-                                         epg_id=?,
-                                         original_id=?,
-                                         start_time=?,
-                                         end_time=?,
-                                         title=?,
-                                         subtitle=?,
-                                         description=?,
-                                         aspect_ratio=?,
-                                         parental_rating=?,
-                                         ratings=?,
-                                         detailed=?
-                                     WHERE
-                                         id=?
-                                  """, ( self._epgId,
-                                         self._originalId,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._subtitle,
-                                         self._description,
-                                         self._aspectRatio,
-                                         self._parentalRating,
-                                         ";".join( self._ratings ),
-                                         self._detailed,
-                                         self._id ) )
+                conn.execute( """
+                                 UPDATE
+                                     recording_programs
+                                 SET
+                                     epg_id=?,
+                                     original_id=?,
+                                     start_time=?,
+                                     end_time=?,
+                                     title=?,
+                                     subtitle=?,
+                                     description=?,
+                                     aspect_ratio=?,
+                                     parental_rating=?,
+                                     ratings=?,
+                                     detailed=?
+                                 WHERE
+                                     id=?
+                              """, ( self._epgId,
+                                     self._originalId,
+                                     self._startTime,
+                                     self._endTime,
+                                     self._title,
+                                     self._subtitle,
+                                     self._description,
+                                     self._aspectRatio,
+                                     self._parentalRating,
+                                     ";".join( self._ratings ),
+                                     self._detailed,
+                                     self._id ) )
             else:
-                id = conn.insert( """
-                                     INSERT INTO
-                                         recording_programs (epg_id,
-                                                             original_id,
-                                                             start_time,
-                                                             end_time,
-                                                             title,
-                                                             subtitle,
-                                                             description,
-                                                             aspect_ratio,
-                                                             parental_rating,
-                                                             ratings,
-                                                             detailed)
-                                     VALUES
-                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                  """, ( self._epgId,
-                                         self._originalId,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._subtitle,
-                                         self._description,
-                                         self._aspectRatio,
-                                         self._parentalRating,
-                                         ";".join( self._ratings ),
-                                         self._detailed ) )
-                if id:
-                    self._id = id
+                programId = conn.insert( """
+                                            INSERT INTO
+                                                recording_programs (epg_id,
+                                                                    original_id,
+                                                                    start_time,
+                                                                    end_time,
+                                                                    title,
+                                                                    subtitle,
+                                                                    description,
+                                                                    aspect_ratio,
+                                                                    parental_rating,
+                                                                    ratings,
+                                                                    detailed)
+                                            VALUES
+                                                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                         """, ( self._epgId,
+                                                self._originalId,
+                                                self._startTime,
+                                                self._endTime,
+                                                self._title,
+                                                self._subtitle,
+                                                self._description,
+                                                self._aspectRatio,
+                                                self._parentalRating,
+                                                ";".join( self._ratings ),
+                                                self._detailed ) )
+                if programId:
+                    self._id = programId
                 else:
                     self._logger.error( "Inserted row, but no auto-increment id returned!" )
 

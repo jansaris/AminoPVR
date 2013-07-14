@@ -18,6 +18,7 @@
 from aminopvr.channel import Channel
 from aminopvr.config import GeneralConfig, Config
 from aminopvr.epg import RecordingProgram
+from aminopvr.tools import printTraceback
 import copy
 import datetime
 import epg
@@ -37,7 +38,26 @@ class RecordingAbstract( object ):
 
     _tableName       = None
 
-    def __init__( self, id, scheduleId, epgProgramId, channelId, channelName, channelUrlType, startTime, endTime, length, title, filename="", fileSize=0, streamArguments="", marker=0, type="sd", scrambled=0, status=RecordingState.UNKNOWN, rerecord=False, epgProgram=None ):
+    def __init__( self,
+                  id,               # @ReservedAssignment
+                  scheduleId,
+                  epgProgramId,
+                  channelId,
+                  channelName,
+                  channelUrlType,
+                  startTime,
+                  endTime,
+                  length,
+                  title,
+                  filename          = "",
+                  fileSize          = 0,
+                  streamArguments   = "",
+                  marker            = 0,
+                  type              = "sd", # @ReservedAssignment
+                  scrambled         = 0,
+                  status            = RecordingState.UNKNOWN,
+                  rerecord          = False,
+                  epgProgram        = None ):
         self._id              = int( id )
         self._scheduleId      = int( scheduleId )
         self._epgProgramId    = int( epgProgramId )
@@ -296,7 +316,7 @@ class RecordingAbstract( object ):
         return recordings
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ):  # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recording = None
         if conn:
@@ -335,6 +355,7 @@ class RecordingAbstract( object ):
                         recording._epgProgramId = -1
             except:
                 cls._logger.error( "_createRecordingFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
 
         return recording
 
@@ -349,56 +370,56 @@ class RecordingAbstract( object ):
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
-            recording = None
-            if self._id != -1:
-                recording = self.getFromDb( conn, self._id )
-                if not recording:
-                    self._id = -1
+#            recording = None
+# This shouldn't be necessary
+#             if self._id != -1:
+#                 recording = self.getFromDb( conn, self._id )
+#                 if not recording:
+#                     self._id = -1
 
             if self._id != -1:
-                if recording and self != recording:
-                    conn.execute( """
-                                     UPDATE
-                                         %s
-                                     SET
-                                         schedule_id=?,
-                                         epg_program_id=?,
-                                         channel_id=?
-                                         channel_name=?
-                                         channel_url_type=?,
-                                         start_time=?,
-                                         end_time=?,
-                                         length=?,
-                                         title=?,
-                                         filename=?,
-                                         file_size=?,
-                                         stream_arguments=?,
-                                         type=?,
-                                         scrambled=?,
-                                         marker=?,
-                                         status=?,
-                                         rerecord=?
-                                     WHERE
-                                         id=%s
-                                  """ % ( self._tableName ),
-                                  ( self._scheduleId,
-                                    self._epgProgramId,
-                                    self._channelId,
-                                    self._channelName,
-                                    self._channelUrlType,
-                                    self._startTime,
-                                    self._endTime,
-                                    self._length,
-                                    self._title,
-                                    self._filename,
-                                    self._fileSize,
-                                    self._streamArguments,
-                                    self._type,
-                                    self._scrambled,
-                                    self._marker,
-                                    self._status,
-                                    self._rerecord,
-                                    self._id ) )
+                conn.execute( """
+                                 UPDATE
+                                     %s
+                                 SET
+                                     schedule_id=?,
+                                     epg_program_id=?,
+                                     channel_id=?
+                                     channel_name=?
+                                     channel_url_type=?,
+                                     start_time=?,
+                                     end_time=?,
+                                     length=?,
+                                     title=?,
+                                     filename=?,
+                                     file_size=?,
+                                     stream_arguments=?,
+                                     type=?,
+                                     scrambled=?,
+                                     marker=?,
+                                     status=?,
+                                     rerecord=?
+                                 WHERE
+                                     id=%s
+                              """ % ( self._tableName ),
+                              ( self._scheduleId,
+                                self._epgProgramId,
+                                self._channelId,
+                                self._channelName,
+                                self._channelUrlType,
+                                self._startTime,
+                                self._endTime,
+                                self._length,
+                                self._title,
+                                self._filename,
+                                self._fileSize,
+                                self._streamArguments,
+                                self._type,
+                                self._scrambled,
+                                self._marker,
+                                self._status,
+                                self._rerecord,
+                                self._id ) )
             else:
                 if self._filename == "":
                     self._filename = self._generateFilename( conn )
@@ -408,47 +429,47 @@ class RecordingAbstract( object ):
                     self._epgProgram.addToDb( conn )
                     self._epgProgramId = self._epgProgram.id
 
-                id = conn.insert( """
-                                     INSERT INTO
-                                         %s (schedule_id,
-                                             epg_program_id,
-                                             channel_id,
-                                             channel_name,
-                                             channel_url_type,
-                                             start_time,
-                                             end_time,
-                                             length,
-                                             title,
-                                             filename,
-                                             file_size,
-                                             stream_arguments,
-                                             type,
-                                             scrambled,
-                                             marker,
-                                             status,
-                                             rerecord)
-                                     VALUES
-                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                  """ % ( self._tableName ),
-                                  ( self._scheduleId,
-                                    self._epgProgramId,
-                                    self._channelId,
-                                    self._channelName,
-                                    self._channelUrlType,
-                                    self._startTime,
-                                    self._endTime,
-                                    self._length,
-                                    self._title,
-                                    self._filename,
-                                    self._fileSize,
-                                    self._streamArguments,
-                                    self._type,
-                                    self._scrambled,
-                                    self._marker,
-                                    self._status,
-                                    self._rerecord ) )
-                if id:
-                    self._id = id
+                recordingId = conn.insert( """
+                                              INSERT INTO
+                                                  %s (schedule_id,
+                                                      epg_program_id,
+                                                      channel_id,
+                                                      channel_name,
+                                                      channel_url_type,
+                                                      start_time,
+                                                      end_time,
+                                                      length,
+                                                      title,
+                                                      filename,
+                                                      file_size,
+                                                      stream_arguments,
+                                                      type,
+                                                      scrambled,
+                                                      marker,
+                                                      status,
+                                                      rerecord)
+                                              VALUES
+                                                  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                           """ % ( self._tableName ),
+                                           ( self._scheduleId,
+                                             self._epgProgramId,
+                                             self._channelId,
+                                             self._channelName,
+                                             self._channelUrlType,
+                                             self._startTime,
+                                             self._endTime,
+                                             self._length,
+                                             self._title,
+                                             self._filename,
+                                             self._fileSize,
+                                             self._streamArguments,
+                                             self._type,
+                                             self._scrambled,
+                                             self._marker,
+                                             self._status,
+                                             self._rerecord ) )
+                if recordingId:
+                    self._id = recordingId
 
     def toDict( self ):
         # TODO: add epgProgram as dict

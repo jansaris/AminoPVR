@@ -17,6 +17,7 @@
 """
 from aminopvr.channel import Channel
 from aminopvr.epg import EpgProgram
+from aminopvr.tools import printTraceback
 import logging
 import sys
 
@@ -53,7 +54,19 @@ class Schedule( object ):
 
     _logger             = logging.getLogger( 'aminopvr.Schedule' )
 
-    def __init__( self, id, type, channelId, startTime, endTime, title, preferHd, preferUnscrambled, dupMethod, startEarly, endLate, inactive=0 ):
+    def __init__( self,
+                  id,       # @ReservedAssignment
+                  type,     # @ReservedAssignment
+                  channelId,
+                  startTime,
+                  endTime,
+                  title,
+                  preferHd,
+                  preferUnscrambled,
+                  dupMethod,
+                  startEarly,
+                  endLate,
+                  inactive=0 ):
         self._id                 = id
         self._type               = type
         self._channelId          = channelId
@@ -233,6 +246,7 @@ class Schedule( object ):
                                 inactive          = data["inactive"] )
             except:
                 cls._logger.error( "_createScheduleFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
         return schedule
 
     def deleteFromDB( self, conn ):
@@ -241,72 +255,71 @@ class Schedule( object ):
 
     def addToDb( self, conn ):
         if conn:
-            schedule = None
-            if self._id != -1:
-                schedule = Schedule.getFromDb( conn, self._id )
-                if not schedule:
-                    self._id = -1
+#             schedule = None
+#             if self._id != -1:
+#                 schedule = Schedule.getFromDb( conn, self._id )
+#                 if not schedule:
+#                     self._id = -1
 
             if self._id != -1:
-                if schedule and self != schedule:
-                    conn.execute( """
-                                     UPDATE
-                                         schedules
-                                     SET
-                                         type=?,
-                                         channel_id=?,
-                                         start_time=?,
-                                         end_time=?,
-                                         title=?,
-                                         prefer_hd=?,
-                                         prefer_unscrambled=?,
-                                         dup_method=?,
-                                         start_early=?,
-                                         end_late=?,
-                                         inactive=? 
-                                     WHERE
-                                         id=%s
-                                  """, ( self._type,
-                                         self._channel_id,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._preferHd,
-                                         self._preferUnscrambled,
-                                         self._dupMethod,
-                                         self._startEarly,
-                                         self._endLate,
-                                         self._inactive,
-                                         self._id ) )
+                conn.execute( """
+                                 UPDATE
+                                     schedules
+                                 SET
+                                     type=?,
+                                     channel_id=?,
+                                     start_time=?,
+                                     end_time=?,
+                                     title=?,
+                                     prefer_hd=?,
+                                     prefer_unscrambled=?,
+                                     dup_method=?,
+                                     start_early=?,
+                                     end_late=?,
+                                     inactive=? 
+                                 WHERE
+                                     id=%s
+                              """, ( self._type,
+                                     self._channel_id,
+                                     self._startTime,
+                                     self._endTime,
+                                     self._title,
+                                     self._preferHd,
+                                     self._preferUnscrambled,
+                                     self._dupMethod,
+                                     self._startEarly,
+                                     self._endLate,
+                                     self._inactive,
+                                     self._id ) )
             else:
-                id = conn.insert( """
-                                     INSERT INTO
-                                         schedules (type,
-                                                    channel_id,
-                                                    start_time,
-                                                    end_time,
-                                                    title,
-                                                    prefer_hd,
-                                                    prefer_unscrambled,
-                                                    dup_method,
-                                                    start_early,
-                                                    end_late,
-                                                    inactive)
-                                     VALUES
-                                         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                  """, ( self._type,
-                                         self._channelId,
-                                         self._startTime,
-                                         self._endTime,
-                                         self._title,
-                                         self._preferHd,
-                                         self._preferUnscrambled,
-                                         self._dupMethod,
-                                         self._startEarly,
-                                         self._endLate,
-                                         self._inactive ) )
-                if id:
-                    self._id = id
+                scheduleId = conn.insert( """
+                                             INSERT INTO
+                                                 schedules (type,
+                                                            channel_id,
+                                                            start_time,
+                                                            end_time,
+                                                            title,
+                                                            prefer_hd,
+                                                            prefer_unscrambled,
+                                                            dup_method,
+                                                            start_early,
+                                                            end_late,
+                                                            inactive)
+                                             VALUES
+                                                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                          """, ( self._type,
+                                                 self._channelId,
+                                                 self._startTime,
+                                                 self._endTime,
+                                                 self._title,
+                                                 self._preferHd,
+                                                 self._preferUnscrambled,
+                                                 self._dupMethod,
+                                                 self._startEarly,
+                                                 self._endLate,
+                                                 self._inactive ) )
+                if scheduleId:
+                    self._id = scheduleId
 
     def getPrograms( self, conn, startTime=0 ):
         programs = []
