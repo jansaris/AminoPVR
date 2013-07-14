@@ -52,15 +52,15 @@ class Controller( object ):
         self._listenerId = 0
         self._lock       = threading.RLock()
 
-    def addListener( self, ip, type ):
+    def addListener( self, ip, type ):  # @ReservedAssignment
         listenerId = -1
         with self._lock:
-            for id in self._listeners:
-                if ip == self._listeners[id]["ip"] and type == self._listeners[id]["type"]:
-                    listenerId = id
+            for id_ in self._listeners:
+                if ip == self._listeners[id_]["ip"] and type == self._listeners[id_]["type"]:
+                    listenerId = id_
                     break
             if listenerId != -1:
-                self.removeController( id )
+                self.removeController( listenerId )
 
             listener   = { "ip": ip, "type": type, "queue": Queue() }
             listenerId = self._listenerId
@@ -68,12 +68,12 @@ class Controller( object ):
             self._listenerId += 1
         return listenerId
 
-    def removeController( self, id ):
+    def removeController( self, id ):  # @ReservedAssignment
         with self._lock:
             if id in self._listeners:
                 del self._listeners[id]
 
-    def isListener( self, id ):
+    def isListener( self, id ):  # @ReservedAssignment
         with self._lock:
             if id in self._listeners:
                 return True
@@ -82,8 +82,8 @@ class Controller( object ):
     def getListeners( self ):
         listeners = []
         with self._lock:
-            for id in self._listeners:
-                listeners.append( { "id": id, "ip": self._listeners[id]["ip"], "type": self._listeners[id]["type"] } )
+            for id_ in self._listeners:
+                listeners.append( { "id": id_, "ip": self._listeners[id_]["ip"], "type": self._listeners[id_]["type"] } )
         return listeners
 
     def sendMessage( self, fromId, toIp, toType, message ):
@@ -98,7 +98,7 @@ class Controller( object ):
             return True
         return False
 
-    def getMessage( self, id, timeout=25.0 ):
+    def getMessage( self, id, timeout=25.0 ):  # @ReservedAssignment
         listener = None
         with self._lock:
             if id in self._listeners:
@@ -111,11 +111,11 @@ class Controller( object ):
             return message
         return None
 
-    def _getListener( self, ip, type ):
+    def _getListener( self, ip, type ):  # @ReservedAssignment
         with self._lock:
-            for id in self._listeners:
-                if ip == self._listeners[id]["ip"] and type == self._listeners[id]["type"]:
-                    return self._listeners[id]
+            for id_ in self._listeners:
+                if ip == self._listeners[id_]["ip"] and type == self._listeners[id_]["type"]:
+                    return self._listeners[id_]
         return None
 
 class API( object ):
@@ -201,6 +201,8 @@ class STBAPI( API ):
             channels = json.loads( channelList )
             conn     = DBConnection()
 
+            conn.delayCommit( True )
+
             newChannelNumbers = []
 
             for channel in channels:
@@ -285,27 +287,27 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def init( self, type=0 ):
+    def init( self, type=0 ):       # @ReservedAssignment - API needs this symbolname
         self._logger.debug( "init( type=%s )" % ( type ) )
-        type       = int( type )
+        type       = int( type )    # @ReservedAssignment
         controller = Controller()
-        id         = controller.addListener( cherrypy.request.remote.ip, type )
-        self._logger.warning( "init: added listener with id=%d for ip=%s and type=%d" % ( id, cherrypy.request.remote.ip, type ) )
+        id_        = controller.addListener( cherrypy.request.remote.ip, type )
+        self._logger.warning( "init: added listener with id=%d for ip=%s and type=%d" % ( id_, cherrypy.request.remote.ip, type ) )
         # Send a message to the requester if it is a RENDERER to set the channel list
         if type == Controller.TYPE_RENDERER:
-            if controller.sendMessage( id, cherrypy.request.remote.ip, type, { "type": "command", "data": { "command": "setChannelList" } } ):
+            if controller.sendMessage( id_, cherrypy.request.remote.ip, type, { "type": "command", "data": { "command": "setChannelList" } } ):
                 self._logger.warning( "init: send message to self request channel list" )
             else:
                 self._logger.error( "init: failed to send message to self" )
             for header in cherrypy.request.headers:
                 self._logger.info( "init: listener header: %s: %s" % ( header, cherrypy.request.headers[header] ) )
-        return self._createResponse( API.STATUS_SUCCESS, { "id": id } )
+        return self._createResponse( API.STATUS_SUCCESS, { "id": id_ } )
 
     @cherrypy.expose
     @API._grantAccess
-    def poll( self, id=-1 ):
+    def poll( self, id=-1 ):    # @ReservedAssignment - API needs this symbolname
         self._logger.debug( "poll( id=%s )" % ( id ) )
-        id         = int( id )
+        id         = int( id )  # @ReservedAssignment - API needs this symbolname
         controller = Controller()
         if controller.isListener( id ):
             message = controller.getMessage( id, 25 )
@@ -444,7 +446,7 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def deleteRecording( self, id, rerecord=False ):
+    def deleteRecording( self, id, rerecord=False ):  # @ReservedAssignment
         self._logger.debug( "deleteRecording( id=%s, rerecord=%s )" % ( id, rerecord ) )
         conn        = DBConnection()
         rerecord    = int( rerecord )
@@ -458,13 +460,13 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def getRecordingMeta( self, id ):
+    def getRecordingMeta( self, id ):  # @ReservedAssignment
         self._logger.debug( "getRecordingMeta( id=%s )" % ( id ) )
         return self._createResponse( API.STATUS_SUCCESS, { "marker": 0 } )
 
     @cherrypy.expose
     @API._grantAccess
-    def setRecordingMeta( self, id, marker ):
+    def setRecordingMeta( self, id, marker ):  # @ReservedAssignment
         self._logger.debug( "setRecordingMeta( id=%s, marker=%s )" % ( id, marker ) )
         conn      = DBConnection()
         recording = Recording.getFromDb( conn, int( id ) )
@@ -582,13 +584,13 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def deleteSchedule( self, id ):
+    def deleteSchedule( self, id ):  # @ReservedAssignment
         self._logger.debug( "deleteSchedule( id=%s )" % ( id ) )
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
-    def changeSchedule( self, id ):
+    def changeSchedule( self, id ):  # @ReservedAssignment
         self._logger.debug( "changeSchedule( id=%s )" % ( id ) )
         return self._createResponse( API.STATUS_FAIL )
 
@@ -600,6 +602,8 @@ class AminoPVRAPI( API ):
         pendingChannels = PendingChannel.getAllFromDb( conn, includeInactive=True, includeRadio=True, tv=True )
 
         pendingChannelNumbers = [ channel.number for channel in pendingChannels ]
+
+        conn.delayCommit( True )
 
         for channel in pendingChannels:
             currChannel = Channel.getByNumberFromDb( conn, channel.number )
@@ -669,6 +673,8 @@ class AminoPVRAPI( API ):
                 self._logger.info( "activatePendingChannels: inactive channel: %i - %s" % ( currChannel.number, currChannel.name ) )
                 currChannel.inactive = True
                 currChannel.addToDb( conn )
+
+        conn.delayCommit( False )
 
         channels      = Channel.getAllFromDb( conn, includeRadio=True, tv=True )
         channelsArray = []

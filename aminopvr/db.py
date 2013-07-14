@@ -33,10 +33,11 @@ def _like( mask, value, escape=None ):
     value = unicodedata.normalize( "NFKD", value ).encode( "ASCII", "ignore" )
     return mask[1:-1].lower() in value.lower()
 
-class DBConnection:
+class DBConnection( object ):
     def __init__( self, filename="aminopvr.db" ):
         self._filename           = filename
         self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
+        self._delayCommit        = False
         self._cursor             = self._conn.cursor()
         self._cursor.row_factory = sqlite3.Row
         self._conn.create_function( "LIKE", 2, _like )
@@ -44,7 +45,14 @@ class DBConnection:
 
     def __del__( self ):
         if self._conn:
+            self._conn.commit()
             self._conn.close()
+
+    def delayCommit( self, enable ):
+        if not enable and self._delayCommit:
+            if self._conn:
+                self._conn.commit()
+        self._delayCommit = enable
 
     def execute( self, query, args=None ):
         if query == None:
@@ -60,7 +68,8 @@ class DBConnection:
                     else:
                         _logger.debug( "%s: %s with args %s" % ( self._filename, query, args ) )
                         sqlResult = self._cursor.execute( query, args )
-                    self._conn.commit()
+                    if not self._delayCommit and not query.lower().startswith( "select" ):
+                        self._conn.commit()
                     if query.lower().startswith( "select" ):
                         sqlResult = sqlResult.fetchall()
                         ResourceMonitor.reportDb( "select", 1, len( sqlResult ) )
@@ -110,8 +119,8 @@ def upgradeDatabase( connection, schema ):
     _logger.warning( "Checking database structure..." )
     _processUpgrade( connection, schema )
 
-def prettyName( str ):
-    return ' '.join( [ x.group() for x in re.finditer( "([A-Z])([a-z0-9]+)", str ) ] )
+def prettyName( str_ ):
+    return ' '.join( [ x.group() for x in re.finditer( "([A-Z])([a-z0-9]+)", str_ ) ] )
 
 def _processUpgrade( connection, upgradeClass ):
     instance = upgradeClass( connection )
@@ -141,7 +150,7 @@ class SchemaUpgrade( object ):
     def hasColumn( self, tableName, column ):
         return column in self.connection.tableInfo( tableName )
 
-    def addColumn( self, table, column, type="NUMERIC", default=0 ):
+    def addColumn( self, table, column, type="NUMERIC", default=0 ):  # @ReservedAssignment
         self.connection.execute( "ALTER TABLE %s ADD %s %s" % ( table, column, type ) )
         self.connection.execute( "UPDATE %s SET %s = ?" % ( table, column ), ( default, ) )
 

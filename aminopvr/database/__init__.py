@@ -259,8 +259,11 @@ class InitialSchema( db.SchemaUpgrade ):
                                                                          );""",
                    """INSERT INTO db_version (db_version) VALUES (0);"""
         ]
+
+        self.connection.delayCommit( True )
         for query in queries:
             self.connection.execute( query )
+        self.connection.delayCommit( False )
 
         self.incDbVersion()
 

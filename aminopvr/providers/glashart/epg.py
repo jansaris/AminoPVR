@@ -79,9 +79,11 @@ import unicodedata
 # 0x4 0x9 winter sports
 
 _CATTRANS = { "talk"                 : "Talk",
+              "amusement"            : "Talk",
               "animatie"             : "Animated",
               "comedy"               : "Comedy",
               "documentary"          : "Documentary",
+              "docu"                 : "Documentary",
               "educatief"            : "Educational",
               "erotiek"              : "Adult",
               "film"                 : "Film",
@@ -93,6 +95,7 @@ _CATTRANS = { "talk"                 : "Talk",
               "muziek"               : "Music",
               "natuur"               : "Science/Nature",
               "actualiteit"          : "News",
+              "other"                : "Unknown",
               "unknown"              : "Unknown",
               "religieus"            : "Religion",
               "serie"                : "Drama",
@@ -265,6 +268,8 @@ class EpgProvider( threading.Thread ):
                 numProgramsDetailFailed = 0
                 numProgramsNew          = 0
                 numProgramsUpdated      = 0
+
+                conn.delayCommit( True )
 
                 for program in epgData:
                     if not self._running:
@@ -456,7 +461,7 @@ class EpgProvider( threading.Thread ):
 
         return program
 
-    def _getGenreFromJson( self, id, json ):
+    def _getGenreFromJson( self, id, json ):  # @ReservedAssignment
         programGenre = None
         if json:
             genre = _lineFilter( json )
@@ -471,26 +476,26 @@ class EpgProvider( threading.Thread ):
 
         return programGenre
 
-    def _getAllGenresFromJson( self, id, json ):
+    def _getAllGenresFromJson( self, id_, json ):
         programGenres = []
         if json.has_key( "genres" ):
             for genre in json["genres"]:
-                programGenre = self._getGenreFromJson( id, genre )
+                programGenre = self._getGenreFromJson( id_, genre )
                 if programGenre:
                     programGenres.append( programGenre )
         return programGenres
 
-    def _getPersonFromJson( self, id, json, key, keyClass ):
+    def _getPersonFromJson( self, id_, json, key, keyClass ):
         programPerson = None
         if json:
-            programPerson = keyClass( id, -1, Person( -1, _lineFilter( json ) ) )
+            programPerson = keyClass( id_, -1, Person( -1, _lineFilter( json ) ) )
         return programPerson
 
-    def _getAllPersonsFromJson( self, id, json, key, keyClass ):
+    def _getAllPersonsFromJson( self, id_, json, key, keyClass ):
         programPersons = []
         if json.has_key( key ):
             for person in json[key]:
-                programPerson = self._getPersonFromJson( id, person, key, keyClass )
+                programPerson = self._getPersonFromJson( id_, person, key, keyClass )
                 if programPerson:
                     programPersons.append( programPerson )
         return programPersons
