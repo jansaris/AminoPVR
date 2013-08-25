@@ -887,21 +887,21 @@ def main():
                                 recording = OldRecording.getByEpgProgramIdFromDb( conn, recordingProgram.id )
 
                         if not recording:
-                            recording = OldRecording( -1,
-                                                      scheduleId,
-                                                      recordingProgram.id,
-                                                      channel.id,
-                                                      channel.name,
-                                                      mythTvChannelUrlTypeMap[recorded.chanId],
-                                                      recorded.startTime,
-                                                      recorded.endTime,
-                                                      recorded.endTime - recorded.startTime,
-                                                      recorded.title,
-                                                      recordKey,
-                                                      0,
-                                                      type=mythTvChannelUrlTypeMap[recorded.chanId],
-                                                      status=RecordingState.RECORDING_FINISHED,
-                                                      epgProgram=recordingProgram )
+                            recording                   = OldRecording()
+                            recording.scheduleId        = scheduleId
+                            recording.epgProgramId      = recordingProgram.id
+                            recording.channelId         = channel.id
+                            recording.channelName       = channel.name
+                            recording.channelUrlType    = mythTvChannelUrlTypeMap[recordedProgram.chanId]
+                            recording.startTime         = recorded.startTime
+                            recording.endTime           = recorded.endTime
+                            recording.length            = recorded.endTime - recorded.startTime
+                            recording.title             = recorded.title
+                            recording.filename          = recordKey
+                            recording.fileSize          = 0
+                            recording.type              = mythTvChannelUrlTypeMap[recordedProgram.chanId]
+                            recording.status            = RecordingState.RECORDING_FINISHED
+                            recording.epgProgram        = recordingProgram
                             logger.warning( "Adding Old Recording: %s" % ( recording.dump() ) )
                             if not dryRun:
                                 recording.addToDb( conn )
@@ -964,21 +964,21 @@ def main():
                             recording = Recording.getByEpgProgramIdFromDb( conn, recordingProgram.id )
  
                         if not recording:
-                            recording = Recording( -1,
-                                                   scheduleId,
-                                                   recordingProgram.id,
-                                                   channel.id,
-                                                   channel.name,
-                                                   mythTvChannelUrlTypeMap[recordedProgram.chanId],
-                                                   recorded.startTime,
-                                                   recorded.endTime,
-                                                   recorded.endTime - recorded.startTime,
-                                                   recorded.title,
-                                                   recorded.baseName,
-                                                   recorded.fileSize,
-                                                   type=mythTvChannelUrlTypeMap[recordedProgram.chanId],
-                                                   status=RecordingState.RECORDING_FINISHED,
-                                                   epgProgram=recordingProgram )
+                            recording                   = Recording()
+                            recording.scheduleId        = scheduleId
+                            recording.epgProgramId      = recordingProgram.id
+                            recording.channelId         = channel.id
+                            recording.channelName       = channel.name
+                            recording.channelUrlType    = mythTvChannelUrlTypeMap[recordedProgram.chanId]
+                            recording.startTime         = recorded.startTime
+                            recording.endTime           = recorded.endTime
+                            recording.length            = recorded.endTime - recorded.startTime
+                            recording.title             = recorded.title
+                            recording.filename          = recorded.baseName
+                            recording.fileSize          = recorded.fileSize
+                            recording.type              = mythTvChannelUrlTypeMap[recordedProgram.chanId]
+                            recording.status            = RecordingState.RECORDING_FINISHED
+                            recording.epgProgram        = recordingProgram
                             logger.warning( "Adding Recording: %s" % ( recording.dump() ) )
                             if not dryRun:
                                 recording.addToDb( conn )

@@ -575,20 +575,21 @@ class Scheduler( threading.Thread ):
         program might be None for manual recordings
         program.id refers to EpgProgram. A RecordingProgram will be created when the recording is started
         """
-        recording = Recording( -1,
-                               schedule.id,
-                               program.id,
-                               channel.id,
-                               channel.name,
-                               url.channelType,
-                               program.startTime - schedule.startEarly,
-                               program.endTime   + schedule.endLate,
-                               ((program.endTime + schedule.endLate) - (program.startTime - schedule.startEarly)),
-                               program.title,
-                               streamArguments  = url.arguments,
-                               type             = url.channelType,
-                               scrambled        = url.scrambled,
-                               epgProgram       = program )
+        recording                   = Recording()
+        recording.scheduleId        = schedule.id
+        recording.epgProgramId      = program.id
+        recording.channelId         = channel.id
+        recording.channelName       = channel.name
+        recording.channelUrlType    = url.channelType
+        recording.startTime         = program.startTime - schedule.startEarly
+        recording.endTime           = program.endTime + schedule.endLate
+        recording.length            = ((program.endTime + schedule.endLate) - (program.startTime - schedule.startEarly))
+        recording.title             = program.title
+        recording.streamArguments   = url.arguments
+        recording.type              = url.channelType
+        recording.scrambled         = url.scrambled
+        recording.epgProgram        = program
+
         return recording
 
     def _startRecording( self, eventType, timerId ):
