@@ -597,7 +597,7 @@ class Channel( ChannelAbstract ):
             # If empty list, then nobody uses this logo
             if rows and len( rows ) == 1:
                 if rows and rows[0]["count"] == 0:
-                    filename = os.path.join( DATA_ROOT, "asserts/images/channels/logos", self._logo )
+                    filename = os.path.join( DATA_ROOT, "assets/images/channels/logos", self._logo )
                     if os.path.exists( filename ):
                         os.unlink( filename )
                     else:
@@ -613,7 +613,7 @@ class Channel( ChannelAbstract ):
             # If empty list, then nobody uses this thumbnail
             if rows and len( rows ) == 1:
                 if rows[0]["count"] == 0:
-                    filename = os.path.join( DATA_ROOT, "asserts/images/channels/thumbnails", self._thumbnail )
+                    filename = os.path.join( DATA_ROOT, "assets/images/channels/thumbnails", self._thumbnail )
                     if os.path.exists( filename ):
                         os.unlink( filename )
                     else:
