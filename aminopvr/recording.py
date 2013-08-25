@@ -371,7 +371,7 @@ class RecordingAbstract( object ):
         recording = None
         if data:
             try:
-                recording                   = cls( id )
+                recording                   = cls( data["id"] )
                 recording.scheduleId        = data["schedule_id"]
                 recording.epgProgramId      = data["epg_program_id"]
                 recording.channelId         = data["channel_id"]
