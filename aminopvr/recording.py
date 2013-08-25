@@ -39,7 +39,7 @@ class RecordingAbstract( object ):
     _tableName       = None
 
     def __init__( self, id=-1 ):    # @ReservedAssignment
-        self._id                = id
+        self._id                = int( id )
         self._scheduleId        = -1
         self._epgProgramId      = -1
         self._channelId         = -1
@@ -124,7 +124,7 @@ class RecordingAbstract( object ):
 
     @scheduleId.setter
     def scheduleId( self, scheduleId ):
-        self._scheduleId = scheduleId
+        self._scheduleId = int( scheduleId )
 
     @property
     def epgProgramId( self ):
@@ -132,7 +132,7 @@ class RecordingAbstract( object ):
 
     @epgProgramId.setter
     def epgProgramId( self, epgProgramId ):
-        self._epgProgramId = epgProgramId
+        self._epgProgramId = int( epgProgramId )
 
     @property
     def epgProgram( self ):
@@ -142,7 +142,12 @@ class RecordingAbstract( object ):
     def epgProgram( self, epgProgram ):
         self._epgProgram = epgProgram
         if epgProgram:
-            self._epgProgramId = epgProgram.id
+            if not isinstance( epgProgram, epg.ProgramAbstract ):
+                assert False, "Recording.epgProgram: epgProgram not a ProgramAbstract instance: %r" % ( epgProgram )
+                self._epgProgram   = None
+                self._epgProgramId = -1
+            else:
+                self._epgProgramId = epgProgram.id
 
     @property
     def channelId( self ):
@@ -150,7 +155,7 @@ class RecordingAbstract( object ):
 
     @channelId.setter
     def channelId( self, channelId ):
-        self._channelId = channelId
+        self._channelId = int( channelId )
 
     @property
     def channelName( self ):
@@ -158,7 +163,7 @@ class RecordingAbstract( object ):
 
     @channelName.setter
     def channelName( self, channelName ):
-        self._channelName = channelName
+        self._channelName = unicode( channelName )
 
     @property
     def channelUrlType( self ):
@@ -166,7 +171,7 @@ class RecordingAbstract( object ):
 
     @channelUrlType.setter
     def channelUrlType( self, channelUrlType ):
-        self._channelUrlType = channelUrlType
+        self._channelUrlType = unicode( channelUrlType )
 
     @property
     def startTime( self ):
@@ -174,7 +179,7 @@ class RecordingAbstract( object ):
 
     @startTime.setter
     def startTime( self, startTime ):
-        self._startTime = startTime
+        self._startTime = int( startTime )
 
     @property
     def endTime( self ):
@@ -182,7 +187,7 @@ class RecordingAbstract( object ):
 
     @endTime.setter
     def endTime( self, endTime ):
-        self._endTime = endTime
+        self._endTime = int( endTime )
 
     @property
     def length( self ):
@@ -190,7 +195,7 @@ class RecordingAbstract( object ):
 
     @length.setter
     def length( self, length ):
-        self._length = length
+        self._length = int( length )
 
     @property
     def title( self ):
@@ -198,7 +203,7 @@ class RecordingAbstract( object ):
 
     @title.setter
     def title( self, title ):
-        self._title = title
+        self._title = unicode( title )
 
     @property
     def filename( self ):
@@ -206,7 +211,7 @@ class RecordingAbstract( object ):
 
     @filename.setter
     def filename( self, filename ):
-        self._filename = filename
+        self._filename = unicode( filename )
 
     @property
     def fileSize( self ):
@@ -214,7 +219,7 @@ class RecordingAbstract( object ):
 
     @fileSize.setter
     def fileSize( self, fileSize ):
-        self._fileSize = fileSize
+        self._fileSize = int( fileSize )
 
     @property
     def streamArguments( self ):
@@ -222,7 +227,7 @@ class RecordingAbstract( object ):
 
     @streamArguments.setter
     def streamArguments( self, streamArguments ):
-        self._streamArguments = streamArguments
+        self._streamArguments = unicode( streamArguments )
 
     @property
     def type( self ):
@@ -230,7 +235,7 @@ class RecordingAbstract( object ):
 
     @type.setter
     def type( self, type ): # @ReservedAssignment
-        self._type = type
+        self._type = unicode( type )
 
     @property
     def scrambled( self ):
@@ -238,7 +243,7 @@ class RecordingAbstract( object ):
 
     @scrambled.setter
     def scrambled( self, scrambled ):
-        self._scrambled = scrambled
+        self._scrambled = int( scrambled )
 
     @property
     def marker( self ):
@@ -246,7 +251,7 @@ class RecordingAbstract( object ):
 
     @marker.setter
     def marker( self, marker ):
-        self._marker = marker
+        self._marker = int( marker )
 
     @property
     def status( self ):
@@ -254,7 +259,7 @@ class RecordingAbstract( object ):
 
     @status.setter
     def status( self, status ):
-        self._status = status
+        self._status = int( status )
 
     @property
     def rerecord( self ):
@@ -262,7 +267,7 @@ class RecordingAbstract( object ):
 
     @rerecord.setter
     def rerecord( self, rerecord ):
-        self._rerecord = rerecord
+        self._rerecord = int( rerecord )
 
     @classmethod
     def getAllFromDb( cls, conn, finishedOnly=True, offset=None, count=None, sort=None ):
@@ -367,23 +372,23 @@ class RecordingAbstract( object ):
         if data:
             try:
                 recording                   = cls( id )
-                recording.scheduleId        = int( data["schedule_id"] )
-                recording.epgProgramId      = int( data["epg_program_id"] )
-                recording.channelId         = int( data["channel_id"] )
-                recording.channelName       = unicode( data["channel_name"] )
-                recording.channelUrlType    = unicode( data["channel_url_type"] )
-                recording.startTime         = int( data["start_time"] )
-                recording.endTime           = int( data["end_time"] )
-                recording.length            = int( data["length"] )
-                recording.title             = unicode( data["title"] )
-                recording.filename          = unicode( data["filename"] )
-                recording.fileSize          = int( data["file_size"] )
-                recording.streamArguments   = unicode( data["stream_arguments"] )
-                recording.type              = unicode( data["type"] )
-                recording.scrambled         = int( data["scrambled"] )
-                recording.marker            = int( data["marker"] )
-                recording.status            = int( data["status"] )
-                recording.rerecord          = int( data["rerecord"] )
+                recording.scheduleId        = data["schedule_id"]
+                recording.epgProgramId      = data["epg_program_id"]
+                recording.channelId         = data["channel_id"]
+                recording.channelName       = data["channel_name"]
+                recording.channelUrlType    = data["channel_url_type"]
+                recording.startTime         = data["start_time"]
+                recording.endTime           = data["end_time"]
+                recording.length            = data["length"]
+                recording.title             = data["title"]
+                recording.filename          = data["filename"]
+                recording.fileSize          = data["file_size"]
+                recording.streamArguments   = data["stream_arguments"]
+                recording.type              = data["type"]
+                recording.scrambled         = data["scrambled"]
+                recording.marker            = data["marker"]
+                recording.status            = data["status"]
+                recording.rerecord          = data["rerecord"]
 
                 if recording.epgProgramId != -1:
                     recording.epgProgram = epg.RecordingProgram.getFromDb( conn, recording.epgProgramId )
