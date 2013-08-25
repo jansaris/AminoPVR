@@ -197,7 +197,7 @@ class Schedule( object ):
         return schedules
 
     @classmethod
-    def getFromDb( cls, conn, id ):
+    def getFromDb( cls, conn, id ):  # @ReservedAssignment
         schedule = None
         if conn:
             row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) )

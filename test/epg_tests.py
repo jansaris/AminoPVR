@@ -223,27 +223,33 @@ class EpgProgramTests( test.AminoPVRTestDBCase ):
         self.assertSetEqual( nowNextProgramsSet, nowNextProgramsDbSet, "Now/next incorrect" )
 
     def _createProgram( self, cls, number, epgId="test", subNumber=0, descNumber=0, startTime=0, endTime=300 ):
-        program = cls( epgId,
-                       -1,
-                       "orgid_%i_%i_%i" % ( number, subNumber, descNumber ),
-                       startTime,
-                       endTime,
-                       "Program %i" % ( number ),
-                       "Sub %i" % ( subNumber ),
-                       "Desc %i" % ( descNumber ),
-                       detailed=True )
+        program             = cls()
+        program.epgId       = epgId
+        program.originalId  = "orgid_%i_%i_%i" % ( number, subNumber, descNumber )
+        program.startTime   = startTime
+        program.endTime     = endTime
+        program.title       = "Program %i" % ( number )
+        program.subtitle    = "Sub %i" % ( subNumber )
+        program.description = "Desc %i" % ( descNumber )
+        program.detailed    = True
         return program
 
     def _createProgramGenre( self, cls, number ):
-        programGenre = cls( -1,
-                            -1,
-                            Genre( -1, "Genre %i" % ( number ) ) )
+        genre               = Genre()
+        genre.genre         = "Genre %i" % ( number )
+
+        programGenre        = cls()
+        programGenre.genre  = genre
+
         return programGenre
 
     def _createProgramPerson( self, cls, number ):
-        programPerson = cls( -1,
-                             -1,
-                             Person( -1, "Person<%s> %i" % ( cls.__name__, number ) ) )
+        person                  = Person()
+        person.person           = "Person<%s> %i" % ( cls.__name__, number )
+
+        programPerson           = cls()
+        programPerson.person    = person
+
         return programPerson
 
 #     def test_getActiveAndInactiveChannels( self ):

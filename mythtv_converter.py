@@ -871,20 +871,23 @@ def main():
                         recording        = None
 
                         if not recordingProgram:
-                            recordingProgram = RecordingProgram( channel.epgId,
-                                                                 -1,
-                                                                 recordKey,
-                                                                 recorded.startTime,
-                                                                 recorded.endTime,
-                                                                 recorded.title,
-                                                                 recorded.subtitle,
-                                                                 recorded.description,
-                                                                 detailed=True )
+                            recordingProgram                = RecordingProgram()
+                            recordingProgram.epgId          = channel.epgId
+                            recordingProgram.originalId     = recordKey
+                            recordingProgram.startTime      = recorded.startTime
+                            recordingProgram.endTime        = recorded.endTime
+                            recordingProgram.title          = recorded.title
+                            recordingProgram.subtitle       = recorded.subtitle
+                            recordingProgram.description    = recorded.description
+                            recordingProgram.detailed       = True
                             if recorded.category in _CATTRANS:
                                 genre = Genre.getByGenreFromDb( conn, _CATTRANS[recorded.category] )
                                 if not genre:
-                                    genre = Genre( -1, _CATTRANS[recorded.category] )
-                                recordingProgram.genres = [ RecordingProgramGenre( -1, genre.id, genre ) ]
+                                    genre       = Genre()
+                                    genre.genre = _CATTRANS[recorded.category]
+                                programGenre        = RecordingProgramGenre()
+                                programGenre.genre  = genre
+                                recordingProgram.genres = [ programGenre ]
                         else:
                             logger.warning( "Recording program with originalId=%s already exists" % ( recordKey ) )
                             recording = Recording.getByEpgProgramIdFromDb( conn, recordingProgram.id )
@@ -950,20 +953,23 @@ def main():
                         recording        = None
 
                         if not recordingProgram:
-                            recordingProgram = RecordingProgram( channel.epgId,
-                                                                 -1,
-                                                                 recordKey,
-                                                                 recordedProgram.startTime,
-                                                                 recordedProgram.endTime,
-                                                                 recordedProgram.title,
-                                                                 recordedProgram.subtitle,
-                                                                 recordedProgram.description,
-                                                                 detailed=True )
+                            recordingProgram                = RecordingProgram()
+                            recordingProgram.epgId          = channel.epgId
+                            recordingProgram.originalId     = recordKey
+                            recordingProgram.startTime      = recordedProgram.startTime
+                            recordingProgram.endTime        = recordedProgram.endTime
+                            recordingProgram.title          = recordedProgram.title
+                            recordingProgram.subtitle       = recordedProgram.subtitle
+                            recordingProgram.description    = recordedProgram.description
+                            recordingProgram.detailed       = True
                             if recordedProgram.category in _CATTRANS:
                                 genre = Genre.getByGenreFromDb( conn, _CATTRANS[recordedProgram.category] )
                                 if not genre:
-                                    genre = Genre( -1, _CATTRANS[recordedProgram.category] )
-                                recordingProgram.genres = [ RecordingProgramGenre( -1, genre.id, genre ) ]
+                                    genre       = Genre()
+                                    genre.genre = _CATTRANS[recordedProgram.category]
+                                programGenre        = RecordingProgramGenre()
+                                programGenre.genre  = genre
+                                recordingProgram.genres = [ programGenre ]
                         else:
                             logger.warning( "Recording program with originalId=%s already exists" % ( recordKey ) )
                             recording = Recording.getByEpgProgramIdFromDb( conn, recordingProgram.id )

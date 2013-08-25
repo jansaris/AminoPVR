@@ -123,9 +123,9 @@ class Genre( object ):
 
     _genreCache = {}
 
-    def __init__( self, id, genre ):    # @ReservedAssignment
-        self._id     = id
-        self._genre  = unicode( genre )
+    def __init__( self, id=-1 ):    # @ReservedAssignment
+        self._id     = int( id )
+        self._genre  = ""
 
     def __hash__( self ):
         return hash( self._genre )
@@ -151,6 +151,10 @@ class Genre( object ):
     @property
     def genre( self ):
         return self._genre
+
+    @genre.setter
+    def genre( self, genre ):
+        self._genre = unicode( genre )
 
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
@@ -190,7 +194,8 @@ class Genre( object ):
         genre = None
         if genreData:
             try:
-                genre = cls( genreData["id"], genreData["genre"] )
+                genre       = cls( genreData["id"] )
+                genre.genre = genreData["genre"]
 
                 if genre._id not in cls._genreCache:
                     cls._genreCache[genre._id] = genre
@@ -221,9 +226,9 @@ class Person( object ):
 
     _personCache = {}
 
-    def __init__( self, id, person ):   # @ReservedAssignment
-        self._id     = id
-        self._person = unicode( person )
+    def __init__( self, id=-1 ):   # @ReservedAssignment
+        self._id     = int( id )
+        self._person = ""
 
     def __hash__( self ):
         return hash( self._person )
@@ -247,6 +252,10 @@ class Person( object ):
     @property
     def person( self ):
         return self._person
+
+    @person.setter
+    def person( self, person ):
+        self._person = unicode( person )
 
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
@@ -285,7 +294,8 @@ class Person( object ):
         person = None
         if personData:
             try:
-                person = cls( personData["id"], personData["person"] )
+                person        = cls( personData["id"] )
+                person.person = personData["person"]
 
                 if person._id not in cls._personCache:
                     cls._personCache[person._id] = person
@@ -315,10 +325,10 @@ class Person( object ):
 class ProgramGenreAbstract( object ):
     _tableName = None
 
-    def __init__( self, programId, genreId, genre = Genre( -1, "" ) ):
-        self._programId = programId
-        self._genreId   = genreId
-        self._genre     = genre
+    def __init__( self, programId=-1, genreId=-1 ):
+        self._programId = int( programId )
+        self._genreId   = int( genreId )
+        self._genre     = Genre()
 
     def __hash__( self ):
         return hash( hash( self._programId ) + hash( self._genreId ) )
@@ -351,7 +361,10 @@ class ProgramGenreAbstract( object ):
 
     @programId.setter
     def programId( self, programId ):
-        self._programId = programId
+        if self._programId == -1:
+            self._programId = int( programId )
+        else:
+            self._logger.critical( "ProgramGenreAbstract.programId: programId is already != -1, so cannot be changed! self._programId=%d, programId=%d" % ( self._programId, int( programId ) ) )
 
     @property
     def genreId( self ):
@@ -359,12 +372,26 @@ class ProgramGenreAbstract( object ):
 
     @genreId.setter
     def genreId( self, genreId ):
-        self._genreId = genreId
+        if self._genreId == -1:
+            self._genreId = int( genreId )
+        else:
+            self._logger.critical( "ProgramGenreAbstract.genreId: genreId is already != -1, so cannot be changed! self._genreId=%d, genreId=%d" % ( self._genreId, int( genreId ) ) )
 
     @property
     def genre( self ):
         assert self._genre, "Genre not set"
         return self._genre
+
+    @genre.setter
+    def genre( self, genre ):
+        self._genre = genre
+        if genre:
+            if not isinstance( genre, Genre ):
+                assert False, "ProgramGenreAbstract.genre: genre not a Genre instance: %r" % ( genre )
+                self._genre   = None
+                self._genreId = -1
+            else:
+                self._genreId = genre.id
 
     @classmethod
     def getFromDb( cls, conn, programId, genreId ):
@@ -392,12 +419,12 @@ class ProgramGenreAbstract( object ):
         programGenre = None
         if programGenreData:
             try:
-                genre = Genre.getFromDb( conn, programGenreData["genre_id"] )
+                programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"] )
+                genre        = Genre.getFromDb( conn, programGenreData["genre_id"] )
                 if genre:
-                    programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"], genre )
+                    programGenre.genre = genre
                 else:
                     cls._logger.warning( "_createProgramGenreFromDbDict: Genre with id %s not in database." % ( programGenreData["genre_id"] ) )
-                    programGenre = cls( programGenreData["program_id"], programGenreData["genre_id"] )
             except:
                 cls._logger.error( "_createProgramGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -442,10 +469,10 @@ class RecordingProgramGenre( ProgramGenreAbstract ):
 class ProgramPersonAbstract( object ):
     _tableName  = None
 
-    def __init__( self, programId, personId, person = Person( -1, "" ) ):
-        self._programId = programId
-        self._personId  = personId
-        self._person    = person
+    def __init__( self, programId=-1, personId=-1 ):
+        self._programId = int( programId )
+        self._personId  = int( personId )
+        self._person    = Person()
 
     def __hash__( self ):
         return hash( hash( self._programId ) + hash( self._personId ) )
@@ -478,7 +505,10 @@ class ProgramPersonAbstract( object ):
 
     @programId.setter
     def programId( self, programId ):
-        self._programId = programId
+        if self._programId == -1:
+            self._programId = int( programId )
+        else:
+            self._logger.critical( "ProgramPersonAbstract.programId: programId is already != -1, so cannot be changed! self._programId=%d, programId=%d" % ( self._programId, int( programId ) ) )
 
     @property
     def personId( self ):
@@ -486,12 +516,26 @@ class ProgramPersonAbstract( object ):
 
     @personId.setter
     def personId( self, personId ):
-        self._personId = personId
+        if self._personId == -1:
+            self._personId = int( personId )
+        else:
+            self._logger.critical( "ProgramPersonAbstract.personId: personId is already != -1, so cannot be changed! self._personId=%d, personId=%d" % ( self._personId, int( personId ) ) )
 
     @property
     def person( self ):
         assert self._person, "Person not set"
         return self._person
+
+    @person.setter
+    def person( self, person ):
+        self._person = person
+        if person:
+            if not isinstance( person, Person ):
+                assert False, "ProgramPersonAbstract.person: person not a Person instance: %r" % ( person )
+                self._person   = None
+                self._personId = -1
+            else:
+                self._personId = person.id
 
     @classmethod
     def getFromDb( cls, conn, programId, personId ):
@@ -519,12 +563,12 @@ class ProgramPersonAbstract( object ):
         programPerson = None
         if programPersonData:
             try:
-                person = Person.getFromDb( conn, programPersonData["person_id"] )
+                programPerson = cls( programPersonData["program_id"], programPersonData["person_id"] )
+                person        = Person.getFromDb( conn, programPersonData["person_id"] )
                 if person:
-                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"], person )
+                    programPerson.person = person
                 else:
                     cls._logger.warning( "_createProgramPersonFromDbDict: Person with id %s not in database." % ( programPersonData["person_id"] ) )
-                    programPerson = cls( programPersonData["program_id"], programPersonData["person_id"] )
             except:
                 cls._logger.error( "_createProgramPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -540,8 +584,8 @@ class ProgramPersonAbstract( object ):
             if self._personId == -1:
                 self._personId = personId
 
-            programDirector = self.getFromDb( conn, self._programId, self._personId )
-            if not programDirector:
+            programPerson = self.getFromDb( conn, self._programId, self._personId )
+            if not programPerson:
                 conn.insert( "INSERT INTO %s (program_id, person_id) VALUES (?, ?)" % ( self._tableName ), ( self._programId, self._personId ) )
 
     @classmethod
@@ -590,34 +634,23 @@ class ProgramAbstract( object ):
 
     _tableName      = None
 
-    def __init__( self,
-                  epgId,
-                  id,               # @ReservedAssignment
-                  originalId,
-                  startTime,
-                  endTime,
-                  title,
-                  subtitle          = "",
-                  description       = "",
-                  aspectRatio       = "",
-                  parentalRating    = "",
-                  detailed          = False ):
-        self._epgId          = unicode( epgId )
+    def __init__( self, id=-1 ):    # @ReservedAssignment
         self._id             = int( id )
-        self._originalId     = unicode( originalId )
-        self._startTime      = int( startTime )
-        self._endTime        = int( endTime )
-        self._title          = unicode( title )
-        self._subtitle       = unicode( subtitle )
-        self._description    = unicode( description )
-        self._aspectRatio    = unicode( aspectRatio )
-        self._parentalRating = unicode( parentalRating )
+        self._epgId          = "epgid1"
+        self._originalId     = ""
+        self._startTime      = 0
+        self._endTime        = 0
+        self._title          = "Program 1"
+        self._subtitle       = ""
+        self._description    = ""
+        self._aspectRatio    = ""
+        self._parentalRating = ""
         self._genres         = []
         self._actors         = []
         self._directors      = []
         self._presenters     = []
         self._ratings        = []
-        self._detailed       = int( detailed )
+        self._detailed       = False
 
     def __hash__( self ):
         return ( hash( hash( self._epgId ) +
@@ -680,17 +713,25 @@ class ProgramAbstract( object ):
     @id.setter
     def id( self, id ): # @ReservedAssignment
         if self._id == -1:
-            self._id = id
+            self._id = int( id )
         else:
-            self._logger.critical( "ProgramAbstract.id: id is already != -1, so cannot be changed! self._id=%d, id=%d" % ( self._id, id ) )
+            self._logger.critical( "ProgramAbstract.id: id is already != -1, so cannot be changed! self._id=%d, id=%d" % ( self._id, int( id ) ) )
 
     @property
     def epgId( self ):
         return self._epgId
 
+    @epgId.setter
+    def epgId( self, epgId ):
+        self._epgId = unicode( epgId )
+
     @property
     def originalId( self ):
         return self._originalId
+
+    @originalId.setter
+    def originalId( self, originalId ):
+        self._originalId = unicode( originalId )
 
     @property
     def startTime( self ):
@@ -698,7 +739,7 @@ class ProgramAbstract( object ):
 
     @startTime.setter
     def startTime( self, startTime ):
-        self._startTime = startTime
+        self._startTime = int( startTime )
 
     @property
     def endTime( self ):
@@ -706,7 +747,7 @@ class ProgramAbstract( object ):
 
     @endTime.setter
     def endTime( self, endTime ):
-        self._endTime = endTime
+        self._endTime = int( endTime )
 
     @property
     def title( self ):
@@ -754,7 +795,7 @@ class ProgramAbstract( object ):
 
     @detailed.setter
     def detailed( self, detailed ):
-        self._detailed = detailed
+        self._detailed = int( detailed )
 
     @property
     def genres( self ):
@@ -954,23 +995,23 @@ class EpgProgram( ProgramAbstract ):
         program = None
         if programData:
             try:
-                program            = EpgProgram( programData["epg_id"],
-                                                 programData["id"],
-                                                 programData["original_id"],
-                                                 programData["start_time"],
-                                                 programData["end_time"],
-                                                 programData["title"],
-                                                 programData["subtitle"],
-                                                 programData["description"],
-                                                 programData["aspect_ratio"],
-                                                 programData["parental_rating"],
-                                                 programData["detailed"] )
-                program.genres     = EpgProgramGenre.getAllFromDb( conn, programData["id"] )
-                program.actors     = EpgProgramActor.getAllFromDb( conn, programData["id"] )
-                program.directors  = EpgProgramDirector.getAllFromDb( conn, programData["id"] )
-                program.presenters = EpgProgramPresenter.getAllFromDb( conn, programData["id"] )
+                program                 = EpgProgram( programData["id"] )
+                program.epgId           = programData["epg_id"]
+                program.originalId      = programData["original_id"]
+                program.startTime       = programData["start_time"]
+                program.endTime         = programData["end_time"]
+                program.title           = programData["title"]
+                program.subtitle        = programData["subtitle"]
+                program.description     = programData["description"]
+                program.aspectRatio     = programData["aspect_ratio"]
+                program.parentalRating  = programData["parental_rating"]
+                program.detailed        = programData["detailed"]
+                program.genres          = EpgProgramGenre.getAllFromDb( conn, programData["id"] )
+                program.actors          = EpgProgramActor.getAllFromDb( conn, programData["id"] )
+                program.directors       = EpgProgramDirector.getAllFromDb( conn, programData["id"] )
+                program.presenters      = EpgProgramPresenter.getAllFromDb( conn, programData["id"] )
                 if programData["ratings"] != "":
-                    program.ratings = programData["ratings"].split( ";" )
+                    program.ratings     = programData["ratings"].split( ";" )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -1252,13 +1293,23 @@ class RecordingProgram( ProgramAbstract ):
         program = None
         if programData:
             try:
-                program            = RecordingProgram( programData["epg_id"], programData["id"], programData["original_id"], programData["start_time"], programData["end_time"], programData["title"], programData["subtitle"], programData["description"], programData["aspect_ratio"], programData["parental_rating"], programData["detailed"] )
-                program.genres     = RecordingProgramGenre.getAllFromDb( conn, programData["id"] )
-                program.actors     = RecordingProgramActor.getAllFromDb( conn, programData["id"] )
-                program.directors  = RecordingProgramDirector.getAllFromDb( conn, programData["id"] )
-                program.presenters = RecordingProgramPresenter.getAllFromDb( conn, programData["id"] )
+                program                 = RecordingProgram( programData["id"] )
+                program.epgId           = programData["epg_id"]
+                program.originalId      = programData["original_id"]
+                program.startTime       = programData["start_time"]
+                program.endTime         = programData["end_time"]
+                program.title           = programData["title"]
+                program.subtitle        = programData["subtitle"]
+                program.description     = programData["description"]
+                program.aspectRatio     = programData["aspect_ratio"]
+                program.parentalRating  = programData["parental_rating"]
+                program.detailed        = programData["detailed"]
+                program.genres          = RecordingProgramGenre.getAllFromDb( conn, programData["id"] )
+                program.actors          = RecordingProgramActor.getAllFromDb( conn, programData["id"] )
+                program.directors       = RecordingProgramDirector.getAllFromDb( conn, programData["id"] )
+                program.presenters      = RecordingProgramPresenter.getAllFromDb( conn, programData["id"] )
                 if programData["ratings"] != "":
-                    program.ratings = programData["ratings"].split( ";" )
+                    program.ratings     = programData["ratings"].split( ";" )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()

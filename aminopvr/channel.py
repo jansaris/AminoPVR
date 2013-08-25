@@ -16,7 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import DATA_ROOT
-from aminopvr.db import DBConnection
 from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
 from aminopvr.tools import getPage, printTraceback
 import copy
@@ -571,7 +570,7 @@ class ChannelAbstract( object ):
         if channelData:
             try:
                 channel             = cls( id )
-                channel.number      = channelData["number"]
+                channel.number      = channelData["id"]         # TODO: be consistent, json should use same naming as toDict uses.
                 channel.epgId       = channelData["epg_id"]
                 channel.name        = channelData["name"]
                 channel.nameShort   = channelData["name_short"]

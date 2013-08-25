@@ -404,7 +404,14 @@ class EpgProvider( threading.Thread ):
         else:
             title  = "Onbekend"
 
-        return EpgProgram( epgId, -1, json["id"], startTime, endTime, title )
+        program             = EpgProgram()
+        program.epgId       = epgId
+        program.originalId  = json["id"]
+        program.startTime   = startTime
+        program.endTime     = endTime
+        program.title       = title
+
+        return program
 
     def _getDetailedProgramFromJson( self, program, json ):
 
@@ -472,7 +479,11 @@ class EpgProvider( threading.Thread ):
             else:
                 genreTrans = "GHM - " + genre
 
-            programGenre = EpgProgramGenre( id, -1, Genre( -1, genreTrans ) )
+            genre               = Genre()
+            genre.genre         = genreTrans
+
+            programGenre        = EpgProgramGenre( id, -1 )
+            programGenre.genre  = genre
 
         return programGenre
 
@@ -488,7 +499,10 @@ class EpgProvider( threading.Thread ):
     def _getPersonFromJson( self, id_, json, key, keyClass ):
         programPerson = None
         if json:
-            programPerson = keyClass( id_, -1, Person( -1, _lineFilter( json ) ) )
+            person                  = Person()
+            person.person           = _lineFilter( json )
+            programPerson           = keyClass( id_ )
+            programPerson.person    = person
         return programPerson
 
     def _getAllPersonsFromJson( self, id_, json, key, keyClass ):

@@ -266,25 +266,26 @@ class STBAPI( API ):
 
     def _getChannelFromJson( self, json, channelId=-1 ):
         channel = PendingChannel.fromDict( json, channelId )
-        urlRe   = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
-        for stream in json["streams"]:
-            urlMatch = urlRe.search( stream["url"] )
-            if urlMatch:
-                urlType   = u"sd"
-                protocol  = urlMatch.group( "protocol" )
-                ip        = urlMatch.group( "ip" )
-                port      = int( urlMatch.group( "port" ) )
-                arguments = u""
-                if urlMatch.group( "arguments" ):
-                    arguments = urlMatch.group( "arguments" )
-                if stream["is_hd"]:
-                    urlType = u"hd"
-                channelUrl              = PendingChannelUrl( urlType )
-                channelUrl.protocol     = protocol
-                channelUrl.ip           = ip
-                channelUrl.port         = port
-                channelUrl.arguments    = arguments
-                channel.addUrl( channelUrl )
+        if channel:
+            urlRe   = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
+            for stream in json["streams"]:
+                urlMatch = urlRe.search( stream["url"] )
+                if urlMatch:
+                    urlType   = u"sd"
+                    protocol  = urlMatch.group( "protocol" )
+                    ip        = urlMatch.group( "ip" )
+                    port      = int( urlMatch.group( "port" ) )
+                    arguments = u""
+                    if urlMatch.group( "arguments" ):
+                        arguments = urlMatch.group( "arguments" )
+                    if stream["is_hd"]:
+                        urlType = u"hd"
+                    channelUrl              = PendingChannelUrl( urlType )
+                    channelUrl.protocol     = protocol
+                    channelUrl.ip           = ip
+                    channelUrl.port         = port
+                    channelUrl.arguments    = arguments
+                    channel.addUrl( channelUrl )
         return channel
 
 class ControllerAPI( API ):
