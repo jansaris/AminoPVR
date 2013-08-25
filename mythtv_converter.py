@@ -624,16 +624,21 @@ def _addChannel( chanId, mythTvChannelsDict, mythTvIptvChannelsDict ):
                 if urlMatch.group( "protocol" ) == "rtp":
                     arguments = ";rtpskip=yes"
 
-                channel = Channel( -1,
-                                   mythTvChannel.chanNum,
-                                   mythTvChannel.xmlTvId,
-                                   mythTvChannel.name,
-                                   mythTvChannel.callsign,
-                                   "",
-                                   "",
-                                   False,
-                                   True )
-                channel.urls[urlType] = ChannelUrl( urlType, protocol, ip, port, arguments, scrambled=0 )
+                channel                 = Channel()
+                channel.number          = mythTvChannel.chanNumb
+                channel.epgId           = mythTvChannel.xmlTvId
+                channel.name            = mythTvChannel.name
+                channel.nameShort       = mythTvChannel.callsign
+                channel.inactive        = True
+
+                channelUrl              = ChannelUrl( urlType )
+                channelUrl.protocol     = protocol
+                channelUrl.ip           = ip
+                channelUrl.port         = port
+                channelUrl.arguments    = arguments
+                channelUrl.scrambled    = False
+
+                channel.urls[urlType]   = channelUrl
     else:
         logger.warning( "channel with chanId=%i not found in mythTvChannelsDict" % ( chanId ) )
 

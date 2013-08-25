@@ -121,24 +121,32 @@ def tearDown_test_config():
         os.remove( os.path.join( TESTDIR, TESTCONFIGNAME ) )
 
 def createChannel( cls, number, radio=False, inactive=False ):
-    channel = cls( -1,
-                   number,
-                   "test_%i" % ( number ),
-                   "Test Channel %i" % ( number ),
-                   "Test Chan %i" % ( number ),
-                   "logo.png",
-                   "thumbnail.png",
-                   radio,
-                   inactive )
+    channel             = cls()
+    channel.number      = number
+    channel.epgId       = "test_%i" % ( number )
+    channel.name        = "Test Channel %i" % ( number )
+    channel.nameShort   = "Test Chan %i" % ( number )
+    channel.logo        = "logo.png"
+    channel.thumbnail   = "thumbnail.png"
+    channel.radio       = radio
+    channel.inactive    = inactive
+
     return channel
 
-def createChannelUrl( cls, type, scrambled=False ):
+def createChannelUrl( cls, type, scrambled=False ):  # @ReservedAssignment
     ip   = "123.456.987.123"
     port = 1234
     if type == "hd":
         ip   = "321.789.654.321"
         port = 4321
-    channelUrl = cls( type, "udp", ip, port, "args", scrambled )
+
+    channelUrl              = cls( type )
+    channelUrl.protocol     = "udp"
+    channelUrl.ip           = ip
+    channelUrl.port         = port
+    channelUrl.arguments    = "args"
+    channelUrl.scrambled    = scrambled
+
     return channelUrl
 
 tearDown_test_db()

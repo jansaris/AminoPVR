@@ -265,7 +265,7 @@ class STBAPI( API ):
 
 
     def _getChannelFromJson( self, json, channelId=-1 ):
-        channel = PendingChannel( channelId, json["id"], json["epg_id"], json["name"], json["name_short"], json["logo"], json["thumbnail"], json["radio"], False )
+        channel = PendingChannel.fromDict( json, channelId )
         urlRe   = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
         for stream in json["streams"]:
             urlMatch = urlRe.search( stream["url"] )
@@ -279,7 +279,12 @@ class STBAPI( API ):
                     arguments = urlMatch.group( "arguments" )
                 if stream["is_hd"]:
                     urlType = u"hd"
-                channel.addUrl( PendingChannelUrl( urlType, protocol, ip, port, arguments ) )
+                channelUrl              = PendingChannelUrl( urlType )
+                channelUrl.protocol     = protocol
+                channelUrl.ip           = ip
+                channelUrl.port         = port
+                channelUrl.arguments    = arguments
+                channel.addUrl( channelUrl )
         return channel
 
 class ControllerAPI( API ):

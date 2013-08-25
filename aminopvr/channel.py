@@ -29,15 +29,20 @@ class ChannelUrlAbstract( object ):
 
     _tableName   = None
 
-    def __init__( self, channelType, protocol, ip, port, arguments, scrambled=0 ):
+    def __init__( self, channelType="sd" ):
         self._channelType = unicode( channelType )
-        self._protocol    = unicode( protocol )
-        self._ip          = unicode( ip )
-        self._port        = int( port )
-        self._arguments   = unicode( arguments )
-        self._scrambled   = int( scrambled )
+        self._protocol    = "igmp"
+        self._ip          = "0.0.0.0"
+        self._port        = 1234
+        self._arguments   = ""
+        self._scrambled   = False
 
-        self._logger.debug( 'ChannelUrl.__init__( channelType=%s, protocol=%s, ip=%s, port=%i, arguments=%s )' % ( channelType, protocol, ip, port, arguments ) )
+        self._logger.debug( "ChannelUrl( channelType=%s )" % ( channelType ) )
+
+#    def __init__( self, channelType, protocol, ip, port, arguments, scrambled=0 ):
+#        self._channelType = unicode( channelType )
+
+#        self._logger.debug( 'ChannelUrl.__init__( channelType=%s, protocol=%s, ip=%s, port=%i, arguments=%s )' % ( channelType, protocol, ip, port, arguments ) )
 
     def __hash__( self ):
         return ( hash( hash( self._channelType ) +
@@ -152,12 +157,12 @@ class ChannelUrlAbstract( object ):
         url = None
         if channelUrlData:
             try:
-                url = cls( channelUrlData["type"],
-                           channelUrlData["protocol"],
-                           channelUrlData["ip"],
-                           channelUrlData["port"],
-                           channelUrlData["arguments"],
-                           channelUrlData["scrambled"] )
+                url             = cls( channelUrlData["type"] )
+                url.protocol    = channelUrlData["protocol"]
+                url.ip          = channelUrlData["ip"]
+                url.port        = channelUrlData["port"]
+                url.arguments   = channelUrlData["arguments"]
+                url.scrambled   = channelUrlData["scrambled"]
             except:
                 cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -203,22 +208,39 @@ class ChannelAbstract( object ):
     _tableName       = None
     _channelUrlClass = None
 
-    def __init__( self, id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ): # @ReservedAssignment
+    def __init__( self, id=-1 ): # @ReservedAssignment
         assert self._tableName != None, "Not the right class: %r" % ( self )
         assert self._channelUrlClass != None, "Not the right class: %r" % ( self )
 
         self._id         = int( id )
-        self._number     = int( number )
-        self._epgId      = unicode( epgId )
-        self._name       = unicode( name )
-        self._nameShort  = unicode( nameShort )
-        self._logo       = unicode( logo )
-        self._thumbnail  = unicode( thumbnail )
-        self._radio      = int( radio )
-        self._inactive   = int( inactive )
-        self._urls       = {} 
+        self._number     = -1
+        self._epgId      = "epgid1"
+        self._name       = "Channel 1"
+        self._nameShort  = "Chan 1"
+        self._logo       = ""
+        self._thumbnail  = ""
+        self._radio      = False
+        self._inactive   = False
+        self._urls       = {}
 
-        self._logger.debug( 'ChannelAbstract.__init__( id=%i, number=%s, epgId=%s, name=%s, nameShort=%s, logo=%s, thumbnail=%s, radio=%i, inactive=%i )' % ( id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ) )
+        self._logger.debug( "ChannelAbstract( id=%i )" % ( int( id ) ) )
+
+#    def __init__( self, id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ): # @ReservedAssignment
+#         assert self._tableName != None, "Not the right class: %r" % ( self )
+#         assert self._channelUrlClass != None, "Not the right class: %r" % ( self )
+# 
+#         self._id         = int( id )
+#         self._number     = int( number )
+#         self._epgId      = unicode( epgId )
+#         self._name       = unicode( name )
+#         self._nameShort  = unicode( nameShort )
+#         self._logo       = unicode( logo )
+#         self._thumbnail  = unicode( thumbnail )
+#         self._radio      = int( radio )
+#         self._inactive   = int( inactive )
+#         self._urls       = {} 
+# 
+#         self._logger.debug( 'ChannelAbstract.__init__( id=%i, number=%s, epgId=%s, name=%s, nameShort=%s, logo=%s, thumbnail=%s, radio=%i, inactive=%i )' % ( id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ) )
 
     def __hash__( self ):
         return ( hash( hash( self._number ) +
@@ -452,15 +474,15 @@ class ChannelAbstract( object ):
         channel = None
         if channelData:
             try:
-                channel = cls( channelData["id"],
-                               channelData["number"],
-                               channelData["epg_id"],
-                               channelData["name"],
-                               channelData["name_short"],
-                               channelData["logo"],
-                               channelData["thumbnail"],
-                               channelData["radio"],
-                               channelData["inactive"] )
+                channel             = cls( channelData["id"] )
+                channel.number      = channelData["number"]
+                channel.epgId       = channelData["epg_id"]
+                channel.name        = channelData["name"]
+                channel.nameShort   = channelData["name_short"]
+                channel.logo        = channelData["logo"]
+                channel.thumbnail   = channelData["thumbnail"]
+                channel.radio       = channelData["radio"]
+                channel.inactive    = channelData["inactive"]
                 channel.getUrlsFromDb( conn )
             except:
                 cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
@@ -542,6 +564,26 @@ class ChannelAbstract( object ):
             return channelUrl.getUrl( protocol )
         else:
             return None
+
+    @classmethod
+    def fromDict( cls, channelData, id=-1 ):  # @ReservedAssignment
+        channel = None
+        if channelData:
+            try:
+                channel             = cls( id )
+                channel.number      = channelData["number"]
+                channel.epgId       = channelData["epg_id"]
+                channel.name        = channelData["name"]
+                channel.nameShort   = channelData["name_short"]
+                channel.logo        = channelData["logo"]
+                channel.thumbnail   = channelData["thumbnail"]
+                channel.radio       = channelData["radio"]
+                channel.inactive    = channelData["inactive"] if "inactive" in channelData else False
+            except:
+                cls._logger.error( "fromDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
+                channel = None
+        return channel
 
     def toDict( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
         channelUrl = self.getChannelUrl( protocol, includeScrambled, includeHd )
@@ -628,33 +670,33 @@ class PendingChannel( ChannelAbstract ):
     _channelUrlClass = PendingChannelUrl
     _logger          = logging.getLogger( 'aminopvr.PendingChannel' )
 
-def main():
-    conn = DBConnection( "aminopvr.db" )
-
-    if conn:
-        rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] )
-        for row in rows:
-            sys.stderr.write( "%s\n" % ( row["name"]) )
-
-    channel = Channel.getFromDb( conn, 1489 )
-#    channel.addUrl( ChannelUrl( "hd", "igmp", "123.321.123.321", 1241, "" ) )
-#    channel.addUrl( ChannelUrl( "sd", "igmp", "321.123.321.123", 1421, "skiprtp=yes" ) )
-    otherChannel = PendingChannel( -1, 1, "ned1", "Nederland 1", "Nederland 1", "ned1.png", "ned1.png", False, False )
-    otherChannel.addUrl( PendingChannelUrl( "sd", "igmp", "233.81.233.161", 10294, "", False ) )
-    otherChannel.addUrl( PendingChannelUrl( "hd", "igmp", "224.1.3.1", 12110, "", False ) )
-    if channel == otherChannel:
-        sys.stderr.write( "Channels are equal\n" )
-    else:
-        sys.stderr.write( "Channels are not equal\n" )
-
-#    channel = Channel.getFromDb( conn, 1 )
-#    if not channel:
-#        channel = Channel( -1, 1, "ned1", "Nederland 2", "Ned 1", "logo.png", "thumbnail.png", 0 )
-#        channel.addUrl( ChannelUrl( "hd", "igmp", "123.321.123.321", 1241, "" ) )
-#        channel.addUrl( ChannelUrl( "sd", "igmp", "321.123.321.123", 1421, "skiprtp=yes" ) )
-#        channel.addToDb( conn )
-#    sys.stderr.write( channel.dump() )
-
-# allow this to be a module
-if __name__ == '__main__':
-    main()
+# def main():
+#     conn = DBConnection( "aminopvr.db" )
+# 
+# #     if conn:
+# #         rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] )
+# #         for row in rows:
+# #             sys.stderr.write( "%s\n" % ( row["name"]) )
+# # 
+# #     channel = Channel.getFromDb( conn, 1489 )
+# # #    channel.addUrl( ChannelUrl( "hd", "igmp", "123.321.123.321", 1241, "" ) )
+# # #    channel.addUrl( ChannelUrl( "sd", "igmp", "321.123.321.123", 1421, "skiprtp=yes" ) )
+# #     otherChannel = PendingChannel( -1, 1, "ned1", "Nederland 1", "Nederland 1", "ned1.png", "ned1.png", False, False )
+# #     otherChannel.addUrl( PendingChannelUrl( "sd", "igmp", "233.81.233.161", 10294, "", False ) )
+# #     otherChannel.addUrl( PendingChannelUrl( "hd", "igmp", "224.1.3.1", 12110, "", False ) )
+# #     if channel == otherChannel:
+# #         sys.stderr.write( "Channels are equal\n" )
+# #     else:
+# #         sys.stderr.write( "Channels are not equal\n" )
+# 
+# #    channel = Channel.getFromDb( conn, 1 )
+# #    if not channel:
+# #        channel = Channel( -1, 1, "ned1", "Nederland 2", "Ned 1", "logo.png", "thumbnail.png", 0 )
+# #        channel.addUrl( ChannelUrl( "hd", "igmp", "123.321.123.321", 1241, "" ) )
+# #        channel.addUrl( ChannelUrl( "sd", "igmp", "321.123.321.123", 1421, "skiprtp=yes" ) )
+# #        channel.addToDb( conn )
+# #    sys.stderr.write( channel.dump() )
+# 
+# # allow this to be a module
+# if __name__ == '__main__':
+#     main()
