@@ -580,17 +580,15 @@ class AminoPVRAPI( API ):
                                 schedule.addToDb( conn )
                                 Scheduler.requestReschedule()
                         else:
-                            schedule = Schedule( -1,
-                                                 Schedule.SCHEDULE_TYPE_ONCE,
-                                                 channelId,
-                                                 startTime,
-                                                 endTime,
-                                                 title,
-                                                 True,      # TODO
-                                                 False,     # TODO
-                                                 Schedule.DUPLICATION_METHOD_TITLE | Schedule.DUPLICATION_METHOD_SUBTITLE,
-                                                 0,
-                                                 0 )
+                            schedule                    = Schedule()
+                            schedule.type               = Schedule.SCHEDULE_TYPE_ONCE
+                            schedule.channelId          = channelId
+                            schedule.startTime          = startTime
+                            schedule.endTime            = endTime
+                            schedule.title              = title
+                            schedule.preferHd           = True
+                            schedule.preferUnscrambled  = False
+                            schedule.dupMethod          = Schedule.DUPLICATION_METHOD_TITLE | Schedule.DUPLICATION_METHOD_SUBTITLE
                             schedule.addToDb( conn )
                             Scheduler.requestReschedule()
 
@@ -632,14 +630,17 @@ class AminoPVRAPI( API ):
             conn         = DBConnection()
             currSchedule = Schedule.getFromDb( conn, int( id ) )
             if currSchedule:
-                currSchedule.fromDict( scheduleDict )
-                if currSchedule.channelId != -1:
-                    channel = Channel.getFromDb( conn, currSchedule.channelId )
+                newSchedule = Schedule.fromDict( scheduleDict, int( id ) )
+                if newSchedule.channelId != -1:
+                    channel = Channel.getFromDb( conn, newSchedule.channelId )
                     if not channel:
-                        self._logger.warning( "changeSchedule: Schedule refers to non-existing channelId=%d" % ( currSchedule.channelId ) )
+                        self._logger.warning( "changeSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
 
-                currSchedule.addToDb( conn )
-                Scheduler.requestReschedule()
+                if currSchedule != newSchedule:
+                    newSchedule.addToDb( conn )
+                    Scheduler.requestReschedule()
+                else:
+                    self._logger.warning( "changeSchedule: no changes in Schedule" )
 
                 return self._createResponse( API.STATUS_SUCCESS )
             else:

@@ -814,18 +814,18 @@ def main():
                         if record.dupMethod & 0x08 == 0x08: # kDupCheckSubThenDesc
                             dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_SUBTITLE | Schedule.DUPLICATION_METHOD_DESCRIPTION
 
-                        schedule = Schedule( -1,
-                                             type,
-                                             channelId,
-                                             record.startTime,
-                                             record.endTime,
-                                             record.title,
-                                             (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] == u"hd"),
-                                             True,
-                                             dupMethod,
-                                             record.startOffset,
-                                             record.endOffset,
-                                             record.inactive )
+                        schedule                    = Schedule()
+                        schedule.type               = type,
+                        schedule.channelId          = channelId
+                        schedule.startTime          = record.startTime
+                        schedule.endTime            = record.endTime
+                        schedule.title              = record.title
+                        schedule.preferHd           = (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] == u"hd")
+                        schedule.preferUnscrambled  = True
+                        schedule.dupMethod          = dupMethod
+                        schedule.startEarly         = record.startOffset
+                        schedule.endLate            = record.endOffset
+                        schedule.inactive           = record.inactive
  
                         logger.warning( "Adding Schedule: %s" % ( schedule.dump() ) )
  

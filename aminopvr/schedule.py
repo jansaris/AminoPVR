@@ -54,31 +54,19 @@ class Schedule( object ):
 
     _logger             = logging.getLogger( 'aminopvr.Schedule' )
 
-    def __init__( self,
-                  id,       # @ReservedAssignment
-                  type,     # @ReservedAssignment
-                  channelId,
-                  startTime,
-                  endTime,
-                  title,
-                  preferHd,
-                  preferUnscrambled,
-                  dupMethod,
-                  startEarly,
-                  endLate,
-                  inactive=0 ):
-        self._id                 = id
-        self._type               = type
-        self._channelId          = channelId
-        self._startTime          = startTime
-        self._endTime            = endTime
-        self._title              = title
-        self._preferHd           = preferHd
-        self._preferUnscrambled  = preferUnscrambled
-        self._dupMethod          = dupMethod
-        self._startEarly         = startEarly
-        self._endLate            = endLate
-        self._inactive           = inactive
+    def __init__( self, id=-1 ):    # @ReservedAssignment
+        self._id                = id
+        self._type              = Schedule.SCHEDULE_TYPE_ONCE
+        self._channelId         = -1
+        self._startTime         = 0
+        self._endTime           = 0
+        self._title             = "Title"
+        self._preferHd          = False
+        self._preferUnscrambled = False
+        self._dupMethod         = Schedule.DUPLICATION_METHOD_TITLE
+        self._startEarly        = 0
+        self._endLate           = 0
+        self._inactive          = False
 
     def __eq__( self, other ):
         # Not comparng _id as it might not be set at comparison time.
@@ -232,18 +220,18 @@ class Schedule( object ):
         schedule = None
         if data:
             try:
-                schedule = cls( id                = data["id"],
-                                type              = data["type"],
-                                channelId         = data["channel_id"],
-                                startTime         = data["start_time"],
-                                endTime           = data["end_time"],
-                                title             = data["title"],
-                                preferHd          = data["prefer_hd"],
-                                preferUnscrambled = data["prefer_unscrambled"],
-                                dupMethod         = data["dup_method"],
-                                startEarly        = data["start_early"],
-                                endLate           = data["end_late"],
-                                inactive          = data["inactive"] )
+                schedule                    = cls( data["id"] )
+                schedule.type               = int( data["type"] )
+                schedule.channelId          = int( data["channel_id"] )
+                schedule.startTime          = int( data["start_time"] )
+                schedule.endTime            = int( data["end_time"] )
+                schedule.title              = unicode( data["title"] )
+                schedule.preferHd           = int( data["prefer_hd"] )
+                schedule.preferUnscrambled  = int( data["prefer_unscrambled"] )
+                schedule.dupMethod          = int( data["dup_method"] )
+                schedule.startEarly         = int( data["start_early"] )
+                schedule.endLate            = int( data["end_late"] )
+                schedule.inactive           = int( data["inactive"] )
             except:
                 cls._logger.error( "_createScheduleFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -337,18 +325,27 @@ class Schedule( object ):
             programs = EpgProgram.getByTitleFromDb( conn, self._title, epgId, startTime, searchWhere )
         return programs
 
-    def fromDict( self, schedule ):
-        self.type              = int( schedule["type"] )
-        self.channelId         = int( schedule["channel_id"] )
-        self.startTime         = int( schedule["start_time"] )
-        self.endTime           = int( schedule["end_time"] )
-        self.title             = unicode( schedule["title"] )
-        self.preferHd          = int( schedule["prefer_hd"] )
-        self.preferUnscrambled = int( schedule["prefer_unscrambled"] )
-        self.dupMethod         = int( schedule["dup_method"] )
-        self.startEarly        = int( schedule["start_early"] )
-        self.endLate           = int( schedule["end_late"] )
-        self.inactive          = int( schedule["inactive"] )
+    @classmethod
+    def fromDict( cls, schedule, id=-1 ):
+        schedule = None
+        if schedule:
+            try:
+                schedule                    = cls( id )
+                schedule.type               = int( schedule["type"] )
+                schedule.channelId          = int( schedule["channel_id"] )
+                schedule.startTime          = int( schedule["start_time"] )
+                schedule.endTime            = int( schedule["end_time"] )
+                schedule.title              = unicode( schedule["title"] )
+                schedule.preferHd           = int( schedule["prefer_hd"] )
+                schedule.preferUnscrambled  = int( schedule["prefer_unscrambled"] )
+                schedule.dupMethod          = int( schedule["dup_method"] )
+                schedule.startEarly         = int( schedule["start_early"] )
+                schedule.endLate            = int( schedule["end_late"] )
+                schedule.inactive           = int( schedule["inactive"] )
+            except:
+                cls._logger.error( "fromDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                printTraceback()
+        return schedule
 
     def toDict( self ):
         return { "id":                  self.id,
