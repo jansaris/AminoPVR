@@ -337,6 +337,19 @@ class Schedule( object ):
             programs = EpgProgram.getByTitleFromDb( conn, self._title, epgId, startTime, searchWhere )
         return programs
 
+    def fromDict( self, schedule ):
+        self.type              = int( schedule["type"] )
+        self.channelId         = int( schedule["channel_id"] )
+        self.startTime         = int( schedule["start_time"] )
+        self.endTime           = int( schedule["end_time"] )
+        self.title             = unicode( schedule["title"] )
+        self.preferHd          = int( schedule["prefer_hd"] )
+        self.preferUnscrambled = int( schedule["prefer_unscrambled"] )
+        self.dupMethod         = int( schedule["dup_method"] )
+        self.startEarly        = int( schedule["start_early"] )
+        self.endLate           = int( schedule["end_late"] )
+        self.inactive          = int( schedule["inactive"] )
+
     def toDict( self ):
         return { "id":                  self.id,
                  "type":                self.type,

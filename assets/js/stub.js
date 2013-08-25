@@ -134,8 +134,8 @@ function AVMediaClass()
     };
     this.Kill = function() { logger.info( this.__module(), "Kill()" ); };
     this.Play = function( url ) { logger.info( this.__module(), "Play( " + url + " )" ); };
-    this.Pause = function() { logger.info( this.__module(), "Play()" ) };
-    this.Continue = function() { logger.info( this.__module(), "Continue()" ) };
+    this.Pause = function() { logger.info( this.__module(), "Play()" ); };
+    this.Continue = function() { logger.info( this.__module(), "Continue()" ); };
     this.GetMSecPosition = function() { return 0; };
     this.SetMSecPosition = function( pos ) { return pos; };
     this.SetSpeed = function( speed ) { logger.info( this.__module(), "SetSpeed( " + speed + " )" ); };
@@ -196,7 +196,7 @@ function RecordingAsset()
                     logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
                 }
             } );
-            request.send( "GET", "/aminopvr/api/getRecordingMeta?id=" + this.assetId, false );
+            request.send( "GET", "/aminopvr/api/getRecordingMarker/" + this.assetId, false );
         }
 
         return "{'marker':" + this.marker + "}";
@@ -217,7 +217,7 @@ function RecordingAsset()
                 logger.info( self.__module(), "WriteMeta.callback: saved meta data" );
             }
         } );
-        request.send( "GET", "/aminopvr/api/setRecordingMeta?id=" + this.assetId + "&marker=" + this.marker, false );
+        request.send( "GET", "/aminopvr/api/setRecordingMarker/" + this.assetId + "/" + this.marker, false );
     };
 }
 

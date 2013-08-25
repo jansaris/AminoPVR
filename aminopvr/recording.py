@@ -132,6 +132,7 @@ class RecordingAbstract( object ):
         if isinstance( recording, RecordingAbstract ):
             recording = copy.copy( recording )
             recording.__class__ = cls
+            recording._id       = -1
             return recording
         return None
 
@@ -400,7 +401,7 @@ class RecordingAbstract( object ):
                                      status=?,
                                      rerecord=?
                                  WHERE
-                                     id=%s
+                                     id=?
                               """ % ( self._tableName ),
                               ( self._scheduleId,
                                 self._epgProgramId,
@@ -481,7 +482,7 @@ class RecordingAbstract( object ):
                           "channel_id":   self.channelId,
                           "channel_name": self.channelName,
                           "url":          "/aminopvr/recordings/%d" % ( self.id ),
-                          "file_size":    self.fileSize,
+                          "file_size":    self.fileSize / 1024 / 1024,
                           "scrambled":    self.scrambled,
                           "marker":       self.marker,
                           "status":       self.status }
@@ -509,7 +510,7 @@ class Recording( RecordingAbstract ):
         if conn:
             if not rerecord:
                 self._logger.warning( "Creating copy of recording to prevent re-recording of this program" )
-                oldRecording = OldRecording.copy( self )
+                oldRecording     = OldRecording.copy( self )
                 oldRecording.addToDb( conn )
             else:
                 # remove RecordingProgram

@@ -457,21 +457,27 @@ class AminoPVRAPI( API ):
             return self._createResponse( API.STATUS_SUCCESS )
         else:
             self._logger.warning( "deleteRecording: recording with id=%d does not exist" % ( recordingId ) )
+        return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
-    def getRecordingMeta( self, id ):  # @ReservedAssignment
-        self._logger.debug( "getRecordingMeta( id=%s )" % ( id ) )
-        return self._createResponse( API.STATUS_SUCCESS, { "marker": 0 } )
-
-    @cherrypy.expose
-    @API._grantAccess
-    def setRecordingMeta( self, id, marker ):  # @ReservedAssignment
-        self._logger.debug( "setRecordingMeta( id=%s, marker=%s )" % ( id, marker ) )
+    def getRecordingMarker( self, id ):  # @ReservedAssignment
+        self._logger.debug( "getRecordingMarker( id=%s )" % ( id ) )
         conn      = DBConnection()
         recording = Recording.getFromDb( conn, int( id ) )
         if recording:
-            recording.marker = int( marker )
+            return self._createResponse( API.STATUS_SUCCESS, { "marker": recording.marker / 1024 / 1024 } )
+        return self._createResponse( API.STATUS_FAIL )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def setRecordingMarker( self, id, marker ):  # @ReservedAssignment
+        self._logger.debug( "setRecordingMarker( id=%s, marker=%s )" % ( id, marker ) )
+        conn      = DBConnection()
+        recording = Recording.getFromDb( conn, int( id ) )
+        if recording:
+            recording.marker = int( marker ) * 1024 * 1024
+            self._logger.warn( "setRecordingMarker: marker=%d" % ( recording.marker ) )
             recording.addToDb( conn )
             return self._createResponse( API.STATUS_SUCCESS )
         return self._createResponse( API.STATUS_FAIL )
@@ -513,6 +519,24 @@ class AminoPVRAPI( API ):
             if scheduledRecordingJson:
                 scheduledRecordingsArray.append( scheduledRecordingJson )
         return self._createResponse( API.STATUS_SUCCESS, scheduledRecordingsArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    # TODO
+    def addScheduleNew( self, schedule ):
+        self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
+#         conn         = DBConnection()
+# 
+#         scheduleDict = json.loads( schedule )
+#         if scheduleDict:
+#             newSchedule = Schedule.fromDict( schedule )
+# 
+#             if newSchedule.channelId != -1:
+#                 channel = Channel.getFromDb( conn, newSchedule.channelId )
+#                 if not channel:
+#                     self._logger.warning( "addSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
+
+        return self._createResponse( API.STATUS_FAIL, "Unknown" )
 
     @cherrypy.expose
     @API._grantAccess
@@ -586,12 +610,43 @@ class AminoPVRAPI( API ):
     @API._grantAccess
     def deleteSchedule( self, id ):  # @ReservedAssignment
         self._logger.debug( "deleteSchedule( id=%s )" % ( id ) )
+
+        conn     = DBConnection()
+        schedule = Schedule.getFromDb( conn, int( id ) )
+        if schedule:
+            schedule.deleteFromDb( conn )
+            Scheduler.requestReschedule()
+            return self._createResponse( API.STATUS_SUCCESS )
+        else:
+            self._logger.error( "deleteSchedule: Unable to find schedule with id=%d" % ( int( id ) ) )
+
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
-    def changeSchedule( self, id ):  # @ReservedAssignment
-        self._logger.debug( "changeSchedule( id=%s )" % ( id ) )
+    def changeSchedule( self, id, schedule ):  # @ReservedAssignment
+        self._logger.debug( "changeSchedule( id=%s, schedule=%s )" % ( id, schedule ) )
+
+        scheduleDict = json.loads( schedule )
+        if scheduleDict:
+            conn         = DBConnection()
+            currSchedule = Schedule.getFromDb( conn, int( id ) )
+            if currSchedule:
+                currSchedule.fromDict( scheduleDict )
+                if currSchedule.channelId != -1:
+                    channel = Channel.getFromDb( conn, currSchedule.channelId )
+                    if not channel:
+                        self._logger.warning( "changeSchedule: Schedule refers to non-existing channelId=%d" % ( currSchedule.channelId ) )
+
+                currSchedule.addToDb( conn )
+                Scheduler.requestReschedule()
+
+                return self._createResponse( API.STATUS_SUCCESS )
+            else:
+                self._logger.error( "changeSchedule: Unable to find schedule with id=%d" % ( int( id ) ) )
+        else:
+            self._logger.error( "changeSchedule: Unable to create dictionary from schedule=%s" % ( schedule ) )
+
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
