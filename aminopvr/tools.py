@@ -116,7 +116,9 @@ def getPage( url, filename = None, method="GET", args={} ):
         aminopvr.logger.debug( 'getPage timed out on (>%s s): %s' % ( GLOBAL_TIMEOUT, url ) )
         return ( None, 500, None )
 
-def getTimestamp( t=time.localtime() ):
+def getTimestamp( t=None ):
+    if not t:
+        t = time.localtime()
     if isinstance( t, datetime.datetime ):
         t = t.timetuple()
     return int( time.mktime( t ) )
