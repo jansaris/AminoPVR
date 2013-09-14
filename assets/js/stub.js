@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var __module = "stub."
-
 function ASTBClass()
 {
     this.powerState = 0;
@@ -146,31 +144,33 @@ function AVMediaClass()
 
 function StorageInfo()
 {
-    this.availableSize = 0;
-    this.totalSize = 0;
+    this.availableSize  = 0;
+    this.totalSize      = 0;
 }
 
 function ScheduleItem()
 {
-    this.startTime = 0;
-    this.endTime = 0;
-    this.url = "";
-    this.title = "";
-    this.streamId = "";
-    this.active = false;
+    this.startTime      = 0;
+    this.endTime        = 0;
+    this.url            = "";
+    this.title          = "";
+    this.streamId       = "";
+    this.active         = false;
     this.viewingControl = 0;
+    this._schedule      = null;
 }
 
 function RecordingAsset()
 {
-    this.assetId = 0;
-    this.title = "";
-    this.startTime = 0;
-    this.duration = 0;
+    this.assetId        = 0;
+    this.title          = "";
+    this.startTime      = 0;
+    this.duration       = 0;
     this.viewingControl = 0;
-    this.url = "";
-    this.position = 0;
-    this.marker = -1;
+    this.url            = "";
+    this.position       = 0;
+    this.marker         = -1;
+    this._recording     = null;
 
     this.__module = function()
     {
@@ -178,26 +178,20 @@ function RecordingAsset()
     };
     this.ReadMeta = function()
     {
-        if ( this.marker == -1 )
+        var self    = this;
+        var context = {};
+        context["asset"] = this;
+
+        this._recording.readMarker( context, function( status, context, data )
         {
-            var context = new Array();
-            context["asset"] = this;
-
-            var self    = this;
-            var request = new JsonAjaxRequest();
-            request.setContext( context );
-            request.setCallback( function( status, context, data )
+            asset = context["asset"];
+            if ( status )
             {
-                asset = context["asset"];
-                if ( status )
-                {
-                    asset.marker = data["marker"];
+                asset.marker = data;
 
-                    logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
-                }
-            } );
-            request.send( "GET", "/aminopvr/api/getRecordingMarker/" + this.assetId, false );
-        }
+                logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
+            }
+        }, false );
 
         return "{'marker':" + this.marker + "}";
     };
@@ -205,35 +199,44 @@ function RecordingAsset()
     {
         logger.info( this.__module(), "WriteMeta( " + meta + " )" );
 
-        var meta = eval( "(" + meta + ")" );
+        var meta    = eval( "(" + meta + ")" );
         this.marker = meta.marker;
 
         var self    = this;
-        var request = new JsonAjaxRequest();
-        request.setCallback( function( status, context, data )
+        var context = {};
+
+        this._recording.writeMarker( this.marker, context, function( status, context, data )
         {
             if ( status )
             {
                 logger.info( self.__module(), "WriteMeta.callback: saved meta data" );
             }
-        } );
-        request.send( "GET", "/aminopvr/api/setRecordingMarker/" + this.assetId + "/" + this.marker, false );
+        }, false );
+    };
+    this.Delete = function()
+    {
+        logger.info( this.__module(), "Delete()" );
+
+        return this._recording.deleteFromDb();
     };
 }
 
 function PVRClass()
 {
-    this.recording_ids = [];
-    this.recordings    = []
+    this.recording_ids                  = [];
+    this.recordings                     = [];
 
-    this.recording_ids[0]    = -1;
-    this.recording_ids.count = 0;
+    this.recording_ids[0]               = -1;
+    this.recording_ids.count            = 0;
 
-    this.schedule_list       = [];
-    this.schedule_list[0]    = "";
-    this.schedule_list.count = 0;
+    this.schedule_list                  = [];
+    this.schedule_list.count            = 0;
 
-    this.storage_info        = null;
+    this.scheduled_recording_list       = [];
+    this.scheduled_recording_list[0]    = "";
+    this.scheduled_recording_list.count = 0;
+
+    this.storage_info                   = null;
 
     this.__module = function()
     {
@@ -296,7 +299,7 @@ function PVRClass()
             var self    = this;
             var context = {};
 
-            aminopvr.getRecordingList( context, function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ) }, false );
+            aminopvr.getRecordingList( context, function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ); }, false );
         }
 
         return this.recording_ids;
@@ -307,7 +310,11 @@ function PVRClass()
         {
             try
             {
-                var i = 1;
+                var i    = 1;
+                var host = location.protocol + "//" + location.host;
+//                var host = "rtsp://" + location.hostname + ":8554/";
+
+                logger.warning( this.__module(), "_recordingListCallback.callback: host=" + host );
 
                 for ( var row in recordings )
                 {
@@ -316,11 +323,12 @@ function PVRClass()
                     asset.assetId        = recording.getId();
                     asset.title          = recording.getFullTitle();
                     asset.startTime      = recording.getStartTime();
-                    asset.duration       = recording.getEndTime();
+                    asset.duration       = recording.getEndTime() - recording.getStartTime();
                     asset.viewingControl = 12;
                     asset.position       = 0;
-                    asset.url            = "src=" + recording.getUrl() + ";servertype=mediabase";
+                    asset.url            = "src=" + host + recording.getUrl() + ";servertype=mediabase";
                     asset.marker         = recording.getMarker();
+                    asset._recording     = recording;
     
                     this.recordings[asset.assetId] = asset;
                     this.recording_ids[i]          = asset.assetId;
@@ -337,68 +345,185 @@ function PVRClass()
             }
         }
     };
-    this.GetScheduleList = function()
+    this.DeleteAsset = function( assetId )
     {
-        if ( this.schedule_list.count == 0 )
+        var deleted = false;
+        if ( this.recording_ids.count > 0 )
         {
-            logger.info( this.__module(), "GetScheduleList: Downloading schedule list" );
-
-            var self    = this;
-            var request = new JsonAjaxRequest();
-            request.setCallback( function( status, context, data )
+            if ( this.recordings[assetId] )
             {
-                if ( status )
+                var asset   = this.recordings[assetId];
+                deleted     = asset.Delete();
+                for ( var i = 0; i < this.recording_ids.length; i++ )
                 {
-                    try
+                    if ( this.recording_ids[i] == assetId )
                     {
-                        var i = 1;
-
-                        for ( var row in data )
-                        {
-                            schedItem                = new ScheduleItem;
-                            schedItem.title          = data[row]["title"];
-                            schedItem.startTime      = data[row]["start_time"];
-                            schedItem.endTime        = data[row]["end_time"];
-                            schedItem.viewingControl = data[row]["viewing_control"];
-                            schedItem.active         = data[row]["active"];
-
-                            self.schedule_list[i] = schedItem;
-                            i++;
-                        }
-
-                        self.schedule_list.count = i - 1;
-
-                        logger.info( self.__module(), "GetScheduleList.callback: Downloaded schedule list; count = " + self.schedule_list.count );
-                    }
-                    catch ( e )
-                    {
-                        logger.error( self.__module(), "GetScheduleList.callback: exception: " + e );
+                        this.recording_ids.splice( i, 1 );
+                        break;
                     }
                 }
-            } );
-            request.send( "GET", "/aminopvr/api/getScheduleList", false );
+                for ( var i = 0; i < this.recordings.length; i++ )
+                {
+                    if ( this.recordings[i].assetId == assetId )
+                    {
+                        this.recordings.splice( i, 1 );
+                        break;
+                    }
+                }
+            }
+        }
+        return deleted ? "OK" : "ERR";
+    };
+    this.GetScheduleList = function()
+    {
+        logger.debug( this.__module(), "GetScheduleList" );
+        if ( this.schedule_list.count == 0 )
+        {
+            var self    = this;
+            var context = {};
+
+            this.scheduled_recording_list       = [];
+            this.scheduled_recording_list[0]    = "";
+            this.scheduled_recording_list.count = 0;
+
+            aminopvr.getScheduleList( context, function( status, context, schedules ) { self._scheduleListCallback( status, context, schedules ); }, false );
+            aminopvr.getScheduledRecordingList( context, function( status, context, recordings ) { self._scheduledRecordingListCallback( status, context, recordings ); }, false );
         }
 
-        return this.schedule_list;
+        return this.scheduled_recording_list;
     };
-    this.DeleteAsset = function( assetId ) { return "OK"; };
-    this.AddSchedule = function( url, titleId, starttime, endtime, aa )
+    this._scheduleListCallback = function( status, context, schedules )
     {
-        //var schedule = "{\"url\":\"" + url + "\",\"titleid\":\"" + titleId + "\",\"starttime\":" + starttime + ",\"endtime\":" + endtime + ",\"aa\":\"" + aa + "\"}";
-        var self     = this;
-        var request  = new JsonAjaxRequest();
-        request.setCallback( function( status, context, data )
+        if ( status )
         {
-            if ( status )
+            try
             {
-                logger.info( self.__module(), "AddSchedule.callback: done: " + data );
-            }
-        } );
-        request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
-        request.setPostData( "url=" + encodeURIComponent( url ) + "&titleId=" + encodeURIComponent( titleId ) + "&starttime=" + starttime + "&endtime=" + endtime + "&aa=" + encodeURIComponent( aa ) );
-        request.send( "POST", "/aminopvr/api/addSchedule", false );
+                this.schedule_list = schedules;
 
-        return "OK";
+                logger.info( this.__module(), "_scheduleListCallback.callback: Downloaded schedule list; count = " + this.schedule_list.count );
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_scheduleListCallback: exception: " + e );
+            }
+        }
+    };
+    this._scheduledRecordingListCallback = function( status, context, recordings )
+    {
+        if ( status )
+        {
+            try
+            {
+                var i = 1;
+
+                for ( var row in recordings )
+                {
+                    recording                   = recordings[row];
+                    schedule                    = null;
+                    for ( var scheduleIt in this.schedule_list )
+                    {
+                        if ( recording.getScheduleId() == this.schedule_list[scheduleIt].getId() )
+                        {
+                            schedule = this.schedule_list[scheduleIt];
+                            break;
+                        }
+                    }
+
+                    if ( schedule )
+                    {
+                        schedItem                   = new ScheduleItem;
+                        schedItem.title             = recording.getFullTitle();
+                        schedItem.startTime         = recording.getStartTime();
+                        schedItem.endTime           = recording.getEndTime();
+                        schedItem.viewingControl    = 12;
+                        schedItem.active            = !(schedule.getInactive());
+                        schedItem._schedule         = recording;
+
+                        this.scheduled_recording_list[i] = schedItem;
+                        i++;
+                    }
+                }
+
+                this.scheduled_recording_list.count = i - 1;
+
+                logger.info( this.__module(), "_scheduledRecordingListCallback.callback: Downloaded scheduled recording list; count = " + this.scheduled_recording_list.count );
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_scheduledRecordingListCallback: exception: " + e );
+            }
+        }
+    };
+    this.AddSchedule = function( url, titleId, startTime, endTime, aa )
+    {
+        var added       = false;
+        var title       = titleId.split( "||[", 2 )[0];
+        var programId   = titleId.split( "||[", 2 )[1];
+
+        var program = aminopvr.getEpgProgramByOriginalId( programId );
+        if ( program )
+        {
+            var urlRe    = /([a-z]{3,5}):\/\/([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):([0-9]{1,5})(;.*)?/;
+            var urlMatch = urlRe.exec( url );
+            if ( urlMatch )
+            {
+                var ip   = urlMatch[2];
+                var port = urlMatch[3];
+
+                var channel = aminopvr.getChannelByIpPort( ip, port );
+                if ( channel )
+                {
+                    // See if we already have a schedule to record this program
+                    var schedule = aminopvr.getScheduleByTitleAndChannelId( title, channel.getId() );
+                    if ( schedule )
+                    {
+                        var timeDiff        = startTime - Math.round( schedule.getStartTime().getTime() / 1000 );
+                        var scheduleType    = schedule.getType();
+                        if ( scheduleType != schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY &&
+                             scheduleType != schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK )
+                        {
+                            // If the time diff is a week, then we seem to want to record once every week 
+                            if ( timeDiff >= (7 * 24 * 60 * 60) )
+                            {
+                                schedule.setType( schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK );
+                            }
+                            // If the time diff is a week, then we seem to want to record once every day 
+                            else if ( timeDiff >= (1 * 24 * 60 * 60) )
+                            {
+                                schedule.setType( schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY );
+                            }
+
+                            schedule.addToDb();
+                        }
+
+                        added = true;
+
+                        this.schedule_list       = [];
+                        this.schedule_list.count = 0;
+                    }
+                    else
+                    {
+                        schedule = new AminoPVRSchedule();
+
+                        schedule.setType                ( schedule.SCHEDULE_TYPE_ONCE );
+                        schedule.setChannelId           ( channelId );
+                        schedule.setStartTime           ( startTime );
+                        schedule.setEndTime             ( endTime );
+                        schedule.setTitle               ( title );
+                        schedule.setPreferHd            ( true );
+                        schedule.setPreferUnscrambled   ( false );
+                        schedule.setDupMethod           ( schedule.DUPLICATION_METHOD_TITLE | schedule.DUPLICATION_METHOD_SUBTITLE );
+
+                        added = schedule.addToDb();
+
+                        this.schedule_list       = [];
+                        this.schedule_list.count = 0;
+                    }
+                }
+            }
+        }
+
+        return added ? "OK" : "ERR";
     };
     this.DeleteSchedule = function() { return "OK"; };
     this.RequestDeviceReformat = function( aa ) { return "OK"; };

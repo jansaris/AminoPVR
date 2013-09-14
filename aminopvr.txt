@@ -5,20 +5,22 @@ scheduler
 - prefer SD/HD
 - prefer unscrambled/scrambled
 - record at same time every day/weekday/weekendday/week
-- record once
+- [todo] record once
 - record early / end late
+- [todo] record manually based on time & channel
 - [future] indicate recording group (e.g. TV Series, Food, Sport)
 - [future] support recording group filter (genre > group mapping)
 recordings
 - delete (prevent re-recording)
 - delete & re-record
+- [todo] re-record, then delete
 - mark scrambled / unscrambled
-- index file generation (for RTSP) for unscrambled content
+- [future] index file generation (for RTSP) for unscrambled content
 - keep channel name
 - keep original channel url arguments
 - record from unicast stream
-- record from multicast stream (py-multicast)
-- tag unfinished recordings after crash (automatic reschedule)
+- record from multicast stream
+- [todo] tag unfinished recordings after crash (automatic reschedule)
 channels
 - sync channel list through JavaScript parser
 - sync channel list through JavaScript code injection
@@ -54,3 +56,14 @@ streams
 
 future
 - extend DB structure: epg_ids.fail_count or epg_ids.last_grab
+
+
+todo
+- refactor genres (fixed list; non-db)
+- genre mapping AminoPVR > XBMC
+- store epgId for 'record once' programs -> prevent mis-matching of program (time) change
+- is Recording.type needed?
+- refactor id_ and type_ to id and type and ignore the warnings
+- keep earlier scraped/parsed provider pages in database
+- test provider during startup
+

@@ -237,7 +237,7 @@ class Schedule( object ):
                 printTraceback()
         return schedule
 
-    def deleteFromDB( self, conn ):
+    def deleteFromDb( self, conn ):
         if conn:
             conn.execute( "DELETE FROM schedules WHERE id = ?", ( self._id, ) )
 

@@ -387,6 +387,18 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    def getChannelByIpPort( self, ip, port ):
+        self._logger.debug( "getChannelByIpPort( ip=%s, port=%s )" % ( ip, port ) )
+        conn      = DBConnection()
+        channelId = ChannelUrl.getChannelByIpPortFromDb( conn, ip, int( port ) )
+        if channelId:
+            channel = Channel.getFromDb( conn, channelId )
+            if channel:
+                return self._createResponse( API.STATUS_SUCCESS, channel.toDict() )
+        return self._createResponse( API.STATUS_FAIL )
+
+    @cherrypy.expose
+    @API._grantAccess
     def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
         self._logger.debug( "getEpgForChannel( channelId=%s, startTime=%s, endTime=%s )" % ( channelId, startTime, endTime ) )
         if startTime:
@@ -401,6 +413,17 @@ class AminoPVRAPI( API ):
         for epg in epgData:
             epgArray.append( epg.toDict() )
         return self._createResponse( API.STATUS_SUCCESS, epgArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getEpgProgramByOriginalId( self, originalId ):
+        self._logger.debug( "getEpgProgramByOriginalId( originalId=%s )" % ( originalId ) )
+        conn        = DBConnection()
+        epgProgram  = EpgProgram.getByOriginalIdFromDb( conn, originalId )
+        if epgProgram:
+            return self._createResponse( API.STATUS_SUCCESS, epgProgram.toDict() )
+        else:
+            return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
@@ -504,6 +527,17 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    def getScheduleByTitleAndChannelId( self, title, channelId ):
+        self._logger.debug( "getScheduleByTitleAndChannelId( title=%s, channelId=%s )" % ( title, channelId ) )
+        conn        = DBConnection()
+        schedule    = Schedule.getByTitleAndChannelIdFromDb( conn, title, int( channelId ) )
+        if schedule:
+            return self._createResponse( API.STATUS_SUCCESS, schedule.toDict() )
+        else:
+            return self._createResponse( API.STATUS_FAIL )
+
+    @cherrypy.expose
+    @API._grantAccess
     def getNumScheduledRecordings( self ):
         self._logger.debug( "getNumScheduledRecordings()" )
         scheduledRecordings = Scheduler().getScheduledRecordings()
@@ -531,16 +565,21 @@ class AminoPVRAPI( API ):
     # TODO
     def addScheduleNew( self, schedule ):
         self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
-#         conn         = DBConnection()
-# 
-#         scheduleDict = json.loads( schedule )
-#         if scheduleDict:
-#             newSchedule = Schedule.fromDict( schedule )
-# 
-#             if newSchedule.channelId != -1:
-#                 channel = Channel.getFromDb( conn, newSchedule.channelId )
-#                 if not channel:
-#                     self._logger.warning( "addSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
+        conn         = DBConnection()
+ 
+        scheduleDict = json.loads( schedule )
+        if scheduleDict:
+            newSchedule = Schedule.fromDict( schedule )
+ 
+            if newSchedule.channelId != -1:
+                channel = Channel.getFromDb( conn, newSchedule.channelId )
+                if not channel:
+                    self._logger.warning( "addSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
+
+            newSchedule.addToDb( conn )
+            Scheduler.requestReschedule()
+
+            return self._createResponse( API.STATUS_SUCCESS )
 
         return self._createResponse( API.STATUS_FAIL, "Unknown" )
 

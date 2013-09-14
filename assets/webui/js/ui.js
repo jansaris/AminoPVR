@@ -127,7 +127,7 @@ function ChannelList_Fetched( status, context, channels )
 
 function FetchNowNextList()
 {
-    var context = new Array()
+    var context = new Array();
 
     aminopvr.getNowNextProgramList( context, NowNextProgramList_Fetched, true );
 }

@@ -400,14 +400,6 @@ class RecordingAbstract( object ):
 
         return recording
 
-    def deleteFromDB( self, conn ):
-        assert self._tableName != None, "Not the right class: %r" % ( self )
-        if conn:
-            conn.execute( "DELETE FROM %s WHERE id = ?" % ( self._tableName ), ( self._id, ) )
-            if self._epgProgramId == -1 and self._epgProgram:
-                self._epgProgram.locked = 0
-                self._epgProgram.addToDb( conn )
-
     def addToDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
@@ -521,6 +513,7 @@ class RecordingAbstract( object ):
                           "channel_id":   self.channelId,
                           "channel_name": self.channelName,
                           "url":          "/aminopvr/recordings/%d" % ( self.id ),
+                          "filename":     self.filename,
                           "file_size":    self.fileSize / 1024 / 1024,
                           "scrambled":    self.scrambled,
                           "marker":       self.marker,
@@ -547,14 +540,16 @@ class Recording( RecordingAbstract ):
 
     def deleteFromDb( self, conn, rerecord=False ):
         if conn:
-            if not rerecord:
-                self._logger.warning( "Creating copy of recording to prevent re-recording of this program" )
-                oldRecording     = OldRecording.copy( self )
-                oldRecording.addToDb( conn )
-            else:
-                # remove RecordingProgram
-                recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
-                recordingProgram.deleteFromDb( conn )
+            # Re-record prevention only makes sense when recording is linked to an actual program
+            if self._epgProgramId != -1:
+                if not rerecord:
+                    self._logger.warning( "Creating copy of recording to prevent re-recording of this program" )
+                    oldRecording     = OldRecording.copy( self )
+                    oldRecording.addToDb( conn )
+                else:
+                    # remove RecordingProgram
+                    recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
+                    recordingProgram.deleteFromDb( conn )
 
             generalConfig     = GeneralConfig( Config() )
             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
@@ -590,6 +585,16 @@ class OldRecording( RecordingAbstract ):
     _tableName = "old_recordings"
 
     _logger    = logging.getLogger( 'aminopvr.OldRecording' )
+
+    def deleteFromDb( self, conn ):
+        assert self._tableName != None, "Not the right class: %r" % ( self )
+        if conn:
+            if self._epgProgramId != -1:
+                # remove RecordingProgram
+                recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
+                recordingProgram.deleteFromDb( conn )
+
+            conn.execute( "DELETE FROM %s WHERE id = ?" % ( self._tableName ), ( self._id, ) )
 
 def main():
     sys.stderr.write( "main()\n" );

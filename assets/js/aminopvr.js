@@ -56,7 +56,7 @@ function JsonAjaxRequest()
 
         this._path    = path;
         this._request = new XMLHttpRequest();
-        this._request.onreadystatechange = function() { self._onReadyStateChange() };
+        this._request.onreadystatechange = function() { self._onReadyStateChange(); };
         this._request.open( method, path, async );
         if ( method == "POST" )
         {
@@ -192,7 +192,7 @@ function LoggerClass()
     this.getRemoteDebugEnabled = function()
     {
         return this._remoteDebug;
-    }
+    };
 
     this.enableRemoteDebug = function( enable )
     {
@@ -276,7 +276,7 @@ function LoggerClass()
             {
                 if ( window.console )
                 {
-                    window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text )
+                    window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text );
                 }
             }
         }
@@ -285,7 +285,7 @@ function LoggerClass()
            if ( window.console )
            {
                window.console.log( "LoggerClass._print: exception: " + e );
-               window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text )
+               window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text );
            }
         }
     };
@@ -468,11 +468,11 @@ function AminoPVREpgProgram()
     };
     this.getStartTime = function()
     {
-        return this._startTime;
+        return Math.round( this._startTime.getTime() / 1000 );
     };
     this.getEndTime = function()
     {
-        return this._endTime;
+        return Math.round( this._endTime.getTime() / 1000 );
     };
     this.getGenres = function()
     {
@@ -512,6 +512,7 @@ function AminoPVRRecording()
     this._startTime     = null;
     this._endTime       = null;
     this._url           = "";
+    this._filename      = "";
     this._marker        = 0;
     this._channelId     = -1;
     this._channelName   = "";
@@ -533,6 +534,7 @@ function AminoPVRRecording()
         this._startTime     = new Date( ("start_time" in json) ? json["start_time"] * 1000 : 0 );
         this._endTime       = new Date( ("end_time"   in json) ? json["end_time"] * 1000   : 0 );
         this._url           = ("url"            in json) ? json["url"]            : "";
+        this._filename      = ("filename"       in json) ? json["filename"]       : "";
         this._marker        = ("marker"         in json) ? json["marker"]         : 0;
         this._channelId     = ("channel_id"     in json) ? json["channel_id"]     : -1;
         this._channelName   = ("channel_name"   in json) ? json["channel_name"]   : "<Unknown>";
@@ -575,15 +577,19 @@ function AminoPVRRecording()
     };
     this.getStartTime = function()
     {
-        return this._startTime;
+        return Math.round( this._startTime.getTime() / 1000 );
     };
     this.getEndTime = function()
     {
-        return this._endTime;
+        return Math.round( this._endTime.getTime() / 1000 );
     };
     this.getUrl = function()
     {
         return this._url;
+    };
+    this.getFilename = function()
+    {
+        return this._filename;
     };
     this.getMarker = function()
     {
@@ -604,6 +610,308 @@ function AminoPVRRecording()
     this.getEpgProgram = function()
     {
         return this._epgProgram;
+    };
+    this.readMarker = function( context, callback, async )
+    {
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, data )
+        {
+            if ( status )
+            {
+                logger.info( self.__module(), "readMarker.callback: read marker data: marker=" + data["marker"] );
+
+                self._marker = data["marker"];
+
+                context["callback"]( true, context["context"], self._marker );
+            }
+            else
+            {
+                context["callback"]( false, context["context"] );
+            }
+        } );
+        request.send( "GET", "/aminopvr/api/getRecordingMarker/" + this._id, async );
+    };
+    this.writeMeta = function( marker, context, callback, async )
+    {
+        logger.info( this.__module(), "writeMeta( " + marker + " )" );
+
+        this._marker = marker;
+
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, data )
+        {
+            if ( status )
+            {
+                logger.info( self.__module(), "writeMeta.callback: saved marker data" );
+
+                context["callback"]( true, context["context"], self._marker );
+            }
+            else
+            {
+                context["callback"]( false, context["context"] );
+            }
+        } );
+        request.send( "GET", "/aminopvr/api/setRecordingMarker/" + this._id + "/" + this._marker, async );
+    };
+    this.deleteFromDb = function()
+    {
+        logger.info( this.__module(), "deleteFromDb()" );
+
+        var requestContext         = {};
+        requestContext["deleted"]  = false;
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, data )
+        {
+            if ( status )
+            {
+                logger.info( self.__module(), "deleteFromDb.callback: deleted recording" );
+
+                context["deleted"] = true;
+            }
+        } );
+        request.send( "GET", "/aminopvr/api/deleteRecording/" + this._id, false );
+
+        return requestContext["deleted"];
+    };
+}
+
+function AminoPVRSchedule()
+{
+    this.SCHEDULE_TYPE_ONCE                 = 1;
+    this.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY   = 2;
+    this.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK  = 3;
+    this.SCHEDULE_TYPE_ONCE_EVERY_DAY       = 4;
+    this.SCHEDULE_TYPE_ONCE_EVERY_WEEK      = 5;
+    this.SCHEDULE_TYPE_ANY_TIME             = 6;
+    this.SCHEDULE_TYPE_MANUAL_EVERY_DAY     = 7;
+    this.SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY = 8;
+    this.SCHEDULE_TYPE_MANUAL_EVERY_WEEKEND = 9;
+    this.SCHEDULE_TYPE_MANUAL_EVERY_WEEK    = 10;
+
+    this.DUPLICATION_METHOD_NONE        = 0;
+    this.DUPLICATION_METHOD_TITLE       = 1;
+    this.DUPLICATION_METHOD_SUBTITLE    = 2;
+    this.DUPLICATION_METHOD_DESCRIPTION = 4;
+
+    this._id                = -1;
+    this._type              = -1;
+    this._channelId         = -1;
+    this._startTime         = null;
+    this._endTime           = null;
+    this._title             = "";
+    this._preferHd          = false;
+    this._preferUnscrambled = false;
+    this._dupMethod         = -1;
+    this._startEarly        = 0;
+    this._endLate           = 0;
+    this._inactive          = false;
+
+    this.__module = function()
+    {
+        return "aminopvr." + this.constructor.name;
+    };
+
+    this.fromJson = function( json )
+    {
+        this._id                = ("id"                     in json) ? json["id"]                   : -1;
+        this._type              = ("type"                   in json) ? json["type"]                 : -1;
+        this._channelId         = ("channel_id"             in json) ? json["channel_id"]           : -1;
+        this._startTime         = new Date( ("start_time"   in json) ? json["start_time"] * 1000    : 0 );
+        this._endTime           = new Date( ("end_time"     in json) ? json["end_time"] * 1000      : 0 );
+        this._title             = ("title"                  in json) ? json["title"]                : "<Unkown>";
+        this._preferHd          = ("prefer_hd"              in json) ? json["prefer_hd"]            : false;
+        this._preferUnscrambled = ("prefer_unscrambled"     in json) ? json["prefer_unscrambled"]   : false;
+        this._dupMethod         = ("dup_method"             in json) ? json["dup_method"]           : -1;
+        this._startEarly        = ("start_early"            in json) ? json["start_early"]          : 0;
+        this._endLate           = ("end_late"               in json) ? json["start_late"]           : 0;
+        this._inactive          = ("inactive"               in json) ? json["inactive"]             : false;
+    };
+    this.toJson = function()
+    {
+        json = {
+            "id":                   this._id,
+            "type":                 this._type,
+            "channel_id":           this._channelId,
+            "start_time":           Math.round( this._startTime.getTime() / 1000 ),
+            "end_time":             Math.round( this._endTime.getTime()   / 1000 ),
+            "title":                this._title,
+            "prefer_hd":            this._preferHd,
+            "prefer_unscrambled":   this._preferUnscrambled,
+            "dup_method":           this._dupMethod,
+            "start_early":          this._startEarly,
+            "end_late":             this._endLate,
+            "inactive":             this._inactive
+        };
+        return json;
+    };
+
+    this.getId = function()
+    {
+        return this._id;
+    };
+    this.getType = function()
+    {
+        return this._type;
+    };
+    this.setType = function( type )
+    {
+        this._type = type;
+    };
+    this.getChannelId = function()
+    {
+        return this._channelId;
+    };
+    this.setChannelId = function( channelId )
+    {
+        this._channelId = channelId;
+    };
+    this.getStartTime = function()
+    {
+        return Math.round( this._startTime.getTime() / 1000 );
+    };
+    this.setStartTime = function( startTime )
+    {
+        this._startTime = new Date( startTime * 1000 );
+    };
+    this.getEndTime = function()
+    {
+        return Math.round( this._endTime.getTime() / 1000 );
+    };
+    this.setEndTime = function( endTime )
+    {
+        this._endTime = new Date( endTime * 1000 );
+    };
+    this.getTitle = function()
+    {
+        return this._title;
+    };
+    this.setTitle = function( title )
+    {
+        this._title = title;
+    };
+    this.getPreferHd = function()
+    {
+        return this._preferHd;
+    };
+    this.setPreferHd = function( preferHd )
+    {
+        this._preferHd = preferHd;
+    };
+    this.getPreferUnscrambled = function()
+    {
+        return this._preferUnscrambled;
+    };
+    this.setPreferUnscrambled = function( preferUnscrambled )
+    {
+        this._preferUnscrambled = preferUnscrambled;
+    };
+    this.getDupMethod = function()
+    {
+        return this._dupMethod;
+    };
+    this.setDupMethod = function( dupMethod )
+    {
+        this._dupMethod = dupMethod;
+    };
+    this.getStartEarly = function()
+    {
+        return this._startEarly;
+    };
+    this.setStartEarly = function( startEarly )
+    {
+        this._startEarly = startEarly;
+    };
+    this.getEndLate = function()
+    {
+        return this._endLate;
+    };
+    this.setEndLate = function( endLate )
+    {
+        this._endLate = endLate;
+    };
+    this.getInactive = function()
+    {
+        return this._inactive;
+    };
+    this.setInactive = function( inactive )
+    {
+        this._inactive = inactive;
+    };
+
+    this.addToDb = function()
+    {
+        logger.info( this.__module(), "deleteFromDb()" );
+
+        var requestContext      = {};
+        requestContext["added"] = false;
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setPostData( "schedule=" + encodeURIComponent( Array2JSON( this.toJson() ) ) );
+        request.setCallback( function( status, context, data )
+        {
+            if ( status )
+            {
+                logger.info( self.__module(), "addToDb.callback: added/changed schedule" );
+
+                context["added"] = true;
+
+                if ( data )
+                {
+                    self._id = data;
+                    logger.warning( self.__module(), "addToDb.callback: added new schedule with id=" + self._id );
+                }
+            }
+        } );
+        if ( this._id == -1 )
+        {
+            request.send( "POST", "/aminopvr/api/addSchedule", false );
+        }
+        else
+        {
+            request.send( "POST", "/aminopvr/api/changeSchedule/" + this._id, false );
+        }
+
+        return requestContext["added"];
+    };
+    this.deleteFromDb = function()
+    {
+        logger.info( this.__module(), "deleteFromDb()" );
+
+        var requestContext         = {};
+        requestContext["deleted"]  = false;
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, data )
+        {
+            if ( status )
+            {
+                logger.info( self.__module(), "deleteFromDb.callback: deleted schedule" );
+
+                context["deleted"] = true;
+            }
+        } );
+        request.send( "GET", "/aminopvr/api/deleteSchedule/" + this._id, false );
+
+        return requestContext["deleted"];
     };
 }
 
@@ -633,7 +941,7 @@ function AminoPVRClass()
             }
         }
         return argString;
-    }
+    };
 
     this.getChannelList = function( context, callback, async )
     {
@@ -647,7 +955,7 @@ function AminoPVRClass()
 
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, channels ) { self._channelListCallback( status, context, channels ) } );
+        request.setCallback( function( status, context, channels ) { self._channelListCallback( status, context, channels ); } );
         request.send( "GET", "/aminopvr/api/getChannelList", async );
     };
 
@@ -661,7 +969,7 @@ function AminoPVRClass()
                 for ( var i in channels )
                 {
                     pvrChannels[i] = new AminoPVRChannel();
-                    pvrChannels[i].fromJson( channels[i] )
+                    pvrChannels[i].fromJson( channels[i] );
                 }
 
                 logger.info( this.__module(), "_channelListCallback: Downloaded channel list; count = " + pvrChannels.length );
@@ -689,6 +997,104 @@ function AminoPVRClass()
             }
         }
     };
+    this.getChannelByIpPort = function( ip, port )
+    {
+        var requestContext = {};
+        requestContext["channel"] = null;
+
+        logger.info( this.__module(), "getChannelByIpPort: Downloading channel by ip=" + ip + " and port=" + port );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, channel ) { self._channelCallback( status, context, channel ); } );
+        request.send( "GET", "/aminopvr/api/getChannelByIpPort/" + ip + "/" + port, false );
+
+        return requestContext["channel"];
+    };
+    this._channelCallback = function( status, context, program )
+    {
+        if ( status )
+        {
+            try
+            {
+                context["channel"] = new AminoPVRChannel();
+                context["channel"].fromJson( channel );
+
+                logger.info( this.__module(), "_channelCallback: Downloaded channel" );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], context["channel"] );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_channelCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_channelCallback: Downloading channel failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+    this.getEpgProgramByOriginalId = function( originalId )
+    {
+        var requestContext = {};
+        requestContext["program"] = null;
+
+        logger.info( this.__module(), "getEpgProgramByOriginalId: Downloading program by originalId=" + originalId );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, program ) { self._epgProgramCallback( status, context, program ); } );
+        request.send( "GET", "/aminopvr/api/getEpgProgramByOriginalId/" + originalId, false );
+
+        return requestContext["program"];
+    };
+    this._epgProgramCallback = function( status, context, program )
+    {
+        if ( status )
+        {
+            try
+            {
+                context["program"] = new AminoPVREpgProgram();
+                context["program"].fromJson( program );
+
+                logger.info( this.__module(), "_epgProgramCallback: Downloaded program" );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], context["program"] );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_epgProgramCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_epgProgramCallback: Downloading program failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
     this.getNowNextProgramList = function( context, callback, async )
     {
         var requestContext         = {};
@@ -700,7 +1106,7 @@ function AminoPVRClass()
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, programs ) { self._nowNextProgramListCallback( status, context, programs ) } );
+        request.setCallback( function( status, context, programs ) { self._nowNextProgramListCallback( status, context, programs ); } );
         request.send( "GET", "/aminopvr/api/getNowNextProgramList", async );
     };
     this._nowNextProgramListCallback = function( status, context, programs )
@@ -716,7 +1122,7 @@ function AminoPVRClass()
                     for ( var i in programs[epgId] )
                     {
                         pvrPrograms[epgId][i] = new AminoPVREpgProgram();
-                        pvrPrograms[epgId][i].fromJson( programs[epgId][i] )
+                        pvrPrograms[epgId][i].fromJson( programs[epgId][i] );
                     }
                 }
 
@@ -771,7 +1177,7 @@ function AminoPVRClass()
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ) } );
+        request.setCallback( function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ); } );
         request.send( "GET", "/aminopvr/api/getRecordingList" + arguments, async );
     };
     this._recordingListCallback = function( status, context, recordings )
@@ -784,10 +1190,10 @@ function AminoPVRClass()
                 for ( var i in recordings )
                 {
                     pvrRecordings[i] = new AminoPVRRecording();
-                    pvrRecordings[i].fromJson( recordings[i] )
+                    pvrRecordings[i].fromJson( recordings[i] );
                 }
 
-                logger.info( this.__module(), "_recordingListCallback: Downloaded recordings list; count = " + pvrRecordings.length );
+                logger.info( this.__module(), "_recordingListCallback: Downloaded recording list; count = " + pvrRecordings.length );
 
                 if ( "callback" in context )
                 {
@@ -806,6 +1212,173 @@ function AminoPVRClass()
         else
         {
             logger.error( this.__module(), "_recordingListCallback: Downloading recording list failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+    this.getScheduleList = function( context, callback, async )
+    {
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        logger.info( this.__module(), "getScheduleList: Downloading schedule list" );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, schedules ) { self._scheduleListCallback( status, context, schedules ); } );
+        request.send( "GET", "/aminopvr/api/getScheduleList", async );
+    };
+    this._scheduleListCallback = function( status, context, schedules )
+    {
+        if ( status )
+        {
+            try
+            {
+                var pvrSchedules = [];
+                for ( var i in schedules )
+                {
+                    pvrSchedules[i] = new AminoPVRSchedule();
+                    pvrSchedules[i].fromJson( schedules[i] );
+                }
+
+                logger.info( this.__module(), "_scheduleListCallback: Downloaded schedule list; count = " + pvrSchedules.length );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], pvrSchedules );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_scheduleListCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_scheduleListCallback: Downloading schedule list failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+    this.getScheduleByTitleAndChannelId = function( title, channelId )
+    {
+        var requestContext = {};
+        requestContext["schedule"] = null;
+
+        logger.info( this.__module(), "getScheduleByTitleAndChannelId: Downloading schedule by title=" + title + " and port=" + channelId );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, schedule ) { self._channelCallback( status, context, schedule ); } );
+        request.send( "GET", "/aminopvr/api/getScheduleByTitleAndChannelId/" + encodeURIComponent( title ) + "/" + channelId, false );
+
+        return requestContext["schedule"];
+    };
+    this._scheduleCallback = function( status, context, program )
+    {
+        if ( status )
+        {
+            try
+            {
+                context["schedule"] = new AminoPVRSchedule();
+                context["schedule"].fromJson( schedule );
+
+                logger.info( this.__module(), "_scheduleCallback: Downloaded schedule" );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], context["channel"] );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_scheduleCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_scheduleCallback: Downloading schedule failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+    this.getScheduledRecordingList = function( context, callback, async, offset, count )
+    {
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        logger.info( this.__module(), "getScheduledRecordingList: Downloading scheduled recording list" );
+
+        var arguments = "";
+        if ( offset != undefined )
+        {
+            arguments += "offset=" + offset + "&";
+        }
+        if ( count != undefined )
+        {
+            arguments += "count=" + count;
+        }
+        if ( arguments != "" )
+        {
+            arguments = "?" + arguments;
+        }
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, recordings ) { self._scheduledRecordingListCallback( status, context, recordings ); } );
+        request.send( "GET", "/aminopvr/api/getScheduledRecordingList" + arguments, async );
+    };
+    this._scheduledRecordingListCallback = function( status, context, recordings )
+    {
+        if ( status )
+        {
+            try
+            {
+                var pvrRecordings = [];
+                for ( var i in recordings )
+                {
+                    pvrRecordings[i] = new AminoPVRRecording();
+                    pvrRecordings[i].fromJson( recordings[i] );
+                }
+
+                logger.info( this.__module(), "_scheduledRecordingListCallback: Downloaded scheduled recording list; count = " + pvrRecordings.length );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], pvrRecordings );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_scheduledRecordingListCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_scheduledRecordingListCallback: Downloading recording list failed" );
             if ( "callback" in context )
             {
                 context["callback"]( false, context["context"] );
@@ -879,7 +1452,7 @@ function AminoPVRController( type, handlerInst )
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, listeners ) { self._listenerListCallback( status, context, listeners ) } );
+        request.setCallback( function( status, context, listeners ) { self._listenerListCallback( status, context, listeners ); } );
         request.send( "GET", "/aminopvr/api/controller/getListenerList", async );
     };
     this._listenerListCallback = function( status, context, listeners )

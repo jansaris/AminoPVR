@@ -85,7 +85,7 @@ class WebInterface( aminopvr.wi.WebInterface ):
     @cherrypy.expose
     def rckey_xhtml( self, *args, **kwargs ):
         self._logger.debug( "rckey_xhtml( %s, %s )" )
-        method = cherrypy.request.method.uppper()
+        method = cherrypy.request.method.upper()
         url    = _getGlashartConfig().iptvBaseUrl + "/rckey.xhtml"
         return self._serveRemoteContent( url, method, kwargs )
 

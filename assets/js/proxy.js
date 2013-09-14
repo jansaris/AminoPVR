@@ -646,6 +646,18 @@ function BrowserProxyClass()
     };
 }
 
+function AVMediaProxy_EventHandler()
+{
+    try
+    {
+        AVMediaProxy.EventHandler( window.AVMedia.Event );
+    }
+    catch ( e )
+    {
+        logger.error( "proxy", "AVMediaProxy_EventHandler: exception: " + e );
+    }
+}
+
 function AVMediaProxyClass()
 {
     this.onEvent = null;
@@ -655,21 +667,7 @@ function AVMediaProxyClass()
     {
         try
         {
-            window.AVMedia.onEvent = function()
-            {
-                try
-                {
-                    this.Event = window.AVMedia.Event;
-                    if ( this.onEvent )
-                    {
-                        this.onEvent();
-                    }
-                }
-                catch ( e )
-                {
-                    logger.error( this.__module(), "onEvent: exception: " + e );
-                }
-            }
+            window.AVMedia.onEvent = "AVMediaProxy_EventHandler()";
         }
         catch ( e )
         {
@@ -681,6 +679,22 @@ function AVMediaProxyClass()
     {
         return "proxy." + this.constructor.name;
     };
+    this.EventHandler = function( event )
+    {
+        try
+        {
+            this.Event = event;
+            logger.warning( this.__module(), "EventHandler: Event=" + this.Event );
+            if ( this.onEvent )
+            {
+                eval( this.onEvent );
+            }
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "EventHandler: exception: " + e );
+        }
+    };
     this.Kill = function()
     {
         try
@@ -689,7 +703,7 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Kill();
             }
-            logger.info( this.__module(), "Kill()" );
+            logger.warning( this.__module(), "Kill()" );
         }
         catch ( e )
         {
@@ -704,7 +718,7 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Play( url );
             }
-            logger.info( this.__module(), "Play( " + url + " )" );
+            logger.warning( this.__module(), "Play( " + url + " )" );
         }
         catch ( e )
         {
@@ -719,7 +733,7 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Pause();
             }
-            logger.info( this.__module(), "Play()" );
+            logger.warning( this.__module(), "Play()" );
         }
         catch ( e )
         {
@@ -734,7 +748,7 @@ function AVMediaProxyClass()
             {
                 window.AVMedia.Continue();
             }
-            logger.info( this.__module(), "Continue()" );
+            logger.warning( this.__module(), "Continue()" );
         }
         catch ( e )
         {
@@ -767,7 +781,7 @@ function AVMediaProxyClass()
             {
                 retval = window.AVMedia.SetMSecPosition( pos );
             }
-            logger.info( this.__module(), "SetMSecPosition( " + pos + " ) = " + retval );
+            logger.warning( this.__module(), "SetMSecPosition( " + pos + " ) = " + retval );
         }
         catch ( e )
         {
