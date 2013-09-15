@@ -18,9 +18,10 @@
 from aminopvr import const
 from aminopvr.config import Config, GeneralConfig, DebugConfig
 from aminopvr.recorder import Recorder
+from aminopvr.resource_monitor import ResourceMonitor
+from aminopvr.rtsp_server import RtspServer
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
-from aminopvr.resource_monitor import ResourceMonitor
 from aminopvr.wi import initWebserver, stopWebserver
 import datetime
 import logging
@@ -36,6 +37,7 @@ recorder        = None
 scheduler       = None
 epgGrabber      = None
 contentProvider = None
+rtspServer      = None
 
 def init():
     debugConfig = DebugConfig( Config() )
@@ -67,6 +69,7 @@ def shutdown():
 
     global epgGrabber, contentProvider, recorder, scheduler, resourceMonitor
 
+    stopRtspServer()
     if epgGrabber:
         epgGrabber.stop()
     if contentProvider:
@@ -85,6 +88,15 @@ def shutdown():
         os.unlink( const.PIDFILE )
     os._exit( 0 )
 
+def startRtspServer():
+    global rtspServer
+
+    rtspServer = RtspServer()
+
+def stopRtspServer():
+    if rtspServer != None:
+        rtspServer.terminate()
+
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
@@ -94,6 +106,7 @@ def aminoPVRProcess():
     resourceMonitor = ResourceMonitor()
     recorder        = Recorder()
     scheduler       = Scheduler()
+    startRtspServer()
 
     if generalConfig.provider == "glashart":
         import providers.glashart as provider
