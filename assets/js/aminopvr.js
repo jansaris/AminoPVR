@@ -298,17 +298,6 @@ function LoggerClass()
             {
                 if ( this._debugLog.length > 0 )
                 {
-                    // debugLogText = "[";
-                    // for ( i = 0; i < this._debugLog.length; i++ )
-                    // {
-                        // if ( i > 0 )
-                        // {
-                            // debugLogText += ",";
-                        // }
-                        // debugLogText += "{\"timestamp\":" + this._debugLog[i].timestamp + ",\"level\":" + this._debugLog[i].level + ",\"log_text\":\"" + encodeURIComponent( this._debugLog[i].log_text ) + "\"}";
-                    // }
-                    // debugLogText += "]";
-
                     debugLogText = Array2JSON( this._debugLog );
 
                     this._debugLog.splice( 0, this._debugLog.length );
@@ -316,13 +305,10 @@ function LoggerClass()
                     var request = new JsonAjaxRequest();
                     request.setCallback( function( status, context, data )
                     {
-                        if ( status )
+                        logger._remoteLogTimeout = window.setTimeout( function()
                         {
-                            logger._remoteLogTimeout = window.setTimeout( function()
-                            {
-                                logger._sendDebugLog();
-                            }, logger._SEND_DEBUG_LOG_INTERVAL );
-                        }
+                            logger._sendDebugLog();
+                        }, logger._SEND_DEBUG_LOG_INTERVAL );
                     } );
                     request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
                     request.setPostData( "logData=" + encodeURIComponent( debugLogText ) );
@@ -344,6 +330,67 @@ function LoggerClass()
                 }
             }
         }
+    };
+}
+
+function AminoPVRGeneralConfig()
+{
+    this._recordingPath         = "";
+    this._inputStreamSupport    = "";
+    this._serverPort            = "";
+    this._rtspServerPort        = "";
+    this._provider              = "";
+    this._apiKey                = "";
+    this._localAccessNets       = "";
+    this._timeslotDelta         = "";
+
+    this.__module = function()
+    {
+        return "aminopvr." + this.constructor.name;
+    };
+
+    this.fromJson = function( json )
+    {
+        this._recordingPath         = ("recording_path"         in json) ? json["recording_path"]       : "";
+        this._inputStreamSupport    = ("input_stream_support"   in json) ? json["input_stream_support"] : "";
+        this._serverPort            = ("server_port"            in json) ? json["server_port"]          : "";
+        this._rtspServerPort        = ("rtsp_server_port"       in json) ? json["rtsp_server_port"]     : "";
+        this._provider              = ("provider"               in json) ? json["provider"]             : "";
+        this._apiKey                = ("api_key"                in json) ? json["api_key"]              : "";
+        this._localAccessNets       = ("local_access_nets"      in json) ? json["local_access_nets"]    : "";
+        this._timeslotDelta         = ("timeslot_delta"         in json) ? json["timeslot_delta"]       : "";
+    };
+    this.getRecordingPath = function()
+    {
+        return this._recordingPath;
+    };
+    this.getInputStreamSupport = function()
+    {
+        return this._inputStreamSupport;
+    };
+    this.getServerPort = function()
+    {
+        return this._serverPort;
+    };
+    this.getRtspServerPort = function()
+    {
+        return this._rtspServerPort;
+    };
+    this.getProvider = function()
+    {
+        return this._provider;
+    };
+    this.getApiKey = function()
+    {
+        return this._apiKey;
+    };
+    this.getLocalAccessNets = function()
+    {
+        return this._localAccessNets;
+    };
+    this.getTimeslotDelta = function()
+    {
+        return this._timeslotDelta;
     };
 }
 
@@ -917,6 +964,8 @@ function AminoPVRSchedule()
 
 function AminoPVRClass()
 {
+    var _generalConfig = null;
+
     this.__module = function()
     {
         return "aminopvr." + this.constructor.name;
@@ -941,6 +990,44 @@ function AminoPVRClass()
             }
         }
         return argString;
+    };
+
+    this.getGeneralConfig = function()
+    {
+        if ( this._generalConfig == null )
+        {
+            var requestContext  = {};
+            var self            = this;
+
+            logger.info( this.__module(), "getGeneralConfig: Retrieve general config" );
+
+            var request = new JsonAjaxRequest();
+            request.setContext( requestContext );
+            request.setCallback( function( status, context, config ) { self._generalConfigCallback( status, context, config ); } );
+            request.send( "GET", "/aminopvr/api/config/getGeneralConfig", false );
+        }
+
+        return this._generalConfig;
+    };
+    this._generalConfigCallback = function( status, context, config )
+    {
+        if ( status )
+        {
+            try
+            {
+                this._generalConfig = new AminoPVRGeneralConfig();
+                this._generalConfig.fromJson( config );
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_generalConfigCallback: exception: " + e );
+                this._generalConfig = null;
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_generalConfigCallback: Retrieving general config failed" );
+        }
     };
 
     this.getChannelList = function( context, callback, async )

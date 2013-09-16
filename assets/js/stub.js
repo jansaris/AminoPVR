@@ -310,9 +310,14 @@ function PVRClass()
         {
             try
             {
-                var i    = 1;
-                var host = location.protocol + "//" + location.host;
-//                var host = "rtsp://" + location.hostname + ":8554/";
+                var i             = 1;
+                var host          = "/";
+//                var host = location.protocol + "//" + location.host;
+                var generalConfig = aminopvr.getGeneralConfig();
+                if ( generalConfig != null )
+                {
+                    host = "rtsp://" + location.hostname + ":" + generalConfig.getRtspServerPort + "/";
+                }
 
                 logger.warning( this.__module(), "_recordingListCallback.callback: host=" + host );
 
@@ -326,7 +331,7 @@ function PVRClass()
                     asset.duration       = recording.getEndTime() - recording.getStartTime();
                     asset.viewingControl = 12;
                     asset.position       = 0;
-                    asset.url            = "src=" + host + recording.getUrl() + ";servertype=mediabase";
+                    asset.url            = "src=" + host + recording.getFilename() + ";servertype=mediabase";
                     asset.marker         = recording.getMarker();
                     asset._recording     = recording;
     

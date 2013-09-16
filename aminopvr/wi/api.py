@@ -348,12 +348,22 @@ class ControllerAPI( API ):
         listeners  = controller.getListeners()
         return self._createResponse( API.STATUS_SUCCESS, listeners )
 
+class ConfigAPI( API ):
+    _logger = logging.getLogger( "aminopvr.WI.ConfigAPI")
+
+    @cherrypy.expose
+    @API._grantAccess
+    def getGeneralConfig( self ):
+        generalConfig = GeneralConfig( Config() )
+        return self._createResponse( API.STATUS_SUCCESS, generalConfig.toDict() )
+
 class AminoPVRAPI( API ):
 
     _logger = logging.getLogger( "aminopvr.WI.AminoPVRAPI" )
 
     stb        = STBAPI()
     controller = ControllerAPI()
+    config     = ConfigAPI()
 
     @cherrypy.expose
     @API._grantAccess

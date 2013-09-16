@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr import const
 from aminopvr.const import DATA_ROOT
 from aminopvr.tools import Singleton
 import ConfigParser
@@ -86,11 +87,18 @@ class ConfigSectionAbstract( object ):
         assert self._options != None and self._options.has_key( option ), "_options not defined or _options[%s] doesn't exist!" % ( option )
         self._config.set( self._section, option, str( value ) )
 
+    def toDict( self ):
+        configDict = {}
+        for option in self._options:
+            configDict[option] = self._get( option )
+        return configDict
+
 class GeneralConfig( ConfigSectionAbstract ):
     _section = "General"
     _options = {
                  "api_key":              "",
                  "server_port":          8080,
+                 "rtsp_server_port":     const.RTSP_SERVER_PORT,    # Currently a fixed port number
                  "provider":             "Glashart",
                  "input_stream_support": "multicast,http",
                  "local_access_nets":    "127.0.0.1",
@@ -109,6 +117,10 @@ class GeneralConfig( ConfigSectionAbstract ):
     @property
     def serverPort( self ):
         return self._getInt( "server_port" )
+
+    @property
+    def rtspServerPort( self ):
+        return const.RTSP_SERVER_PORT       # Currently a fixed port number
 
     @property
     def provider( self ):

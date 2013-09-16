@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from Cheetah.Template import Template
+from aminopvr import const
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.wi.api import AminoPVRWI
@@ -69,6 +70,7 @@ def initWebserver( serverPort=8080 ):
 
     def http_error_404_hander( status, message, traceback, version ):
         """ Custom handler for 404 error, redirect back to main page """
+        _logger.warning( "File not found (404): %s%s" % ( cherrypy.request.base, cherrypy.request.script_name ) )
         return r'''
 <html>
     <head>
@@ -83,7 +85,7 @@ def initWebserver( serverPort=8080 ):
         <br/>
     </body>
 </html>
-''' % '/'
+''' % '/aminopvr'
 
     options = {
         'host':      '0.0.0.0',
@@ -91,7 +93,7 @@ def initWebserver( serverPort=8080 ):
         'username':  'test',
         'password':  'pass',
         'web_root':  '/',
-        'data_root': os.path.dirname( os.path.abspath( __file__ ) ) + "/../../"
+        'data_root': const.DATA_ROOT
     }
 
     options_dict = {
