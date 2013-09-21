@@ -19,7 +19,7 @@ from Cheetah.Template import Template
 from aminopvr import const
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
-from aminopvr.wi.api import AminoPVRWI
+from aminopvr.wi.api import AminoPVRWI, AminoPVRAPI, AminoPVRRecordings
 from cherrypy.lib.static import serve_file, serve_fileobj
 import aminopvr.providers
 import cherrypy
@@ -42,8 +42,11 @@ class WebUI( object ):
 
 
 class WebInterface( object ):
-    aminopvr = AminoPVRWI()
-    webui    = WebUI()
+    api         = AminoPVRAPI()
+    recordings  = AminoPVRRecordings()
+    aminopvr    = AminoPVRWI()
+    webui       = WebUI()
+
 
 def stopWebserver():
     _logger.warning( "Stopping CherryPy Engine" )
@@ -70,7 +73,7 @@ def initWebserver( serverPort=8080 ):
 
     def http_error_404_hander( status, message, traceback, version ):
         """ Custom handler for 404 error, redirect back to main page """
-        _logger.warning( "File not found (404): %s%s" % ( cherrypy.request.base, cherrypy.request.script_name ) )
+        _logger.warning( "File not found (404): %s" % ( cherrypy.url() ) )
         return r'''
 <html>
     <head>
@@ -104,16 +107,14 @@ def initWebserver( serverPort=8080 ):
         'error_page.404':     http_error_404_hander,
     }
 
-    protocol = "http"
-
-    _logger.info( u"Starting AminoPVR on " + protocol + "://" + str(options['host']) + ":" + str(options['port']) + "/" )
+    _logger.info( "Starting AminoPVR on http://%s:%i/" % ( options['host'], options['port'] ) )
     cherrypy.config.update( options_dict )
 
     conf = {
         '/': {
             'tools.staticdir.root': options['data_root'],
             'tools.encode.on': True,
-            'tools.encode.encoding': 'utf-8',
+            'tools.encode.encoding': 'utf-8'
         },
         '/assets/images': {
             'tools.staticdir.on':  True,
@@ -148,6 +149,14 @@ def initWebserver( serverPort=8080 ):
         checkpassword = cherrypy.lib.auth_basic.checkpassword_dict( { options['username']: options['password'] } )
         app.merge( {
             '/': {
+                'tools.auth_basic.on':            True,
+                'tools.auth_basic.realm':         'AminoPVR',
+                'tools.auth_basic.checkpassword': checkpassword
+            },
+            '/api': {
+                'tools.auth_basic.on':            False
+            },
+            '/recordings': {
                 'tools.auth_basic.on':            False
             },
             '/aminopvr': {
@@ -162,6 +171,9 @@ def initWebserver( serverPort=8080 ):
                 'tools.auth_basic.on':            False
             },
         } )
+
+    if aminopvr.providers.setupWebInterface:
+        aminopvr.providers.setupWebInterface( app )
 
     cherrypy.server.start()
     cherrypy.server.wait()

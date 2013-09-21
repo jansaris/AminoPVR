@@ -98,6 +98,13 @@ class Controller( object ):
             return True
         return False
 
+    def sendMessageToId( self, fromId, toId, message ):
+        with self._lock:
+            if toId not in self._listeners:
+                return False
+        listener = self._listeners[toId]
+        return self.sendMessage( fromId, listener["ip"], listener["type"], message )
+
     def getMessage( self, id, timeout=25.0 ):  # @ReservedAssignment
         listener = None
         with self._lock:
@@ -240,25 +247,6 @@ class STBAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    def postLog( self, logData ):
-        self._logger.debug( "postLog( %s )" % ( logData ) )
-        logs = json.loads( logData )
-        for log in logs:
-            logger = logging.getLogger( "aminopvr.STB.%s" % ( log["module"] ) )
-            if log["level"] == 0:
-                logger.debug( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 1:
-                logger.info( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 2:
-                logger.warning( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 3:
-                logger.error( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 4:
-                logger.critical( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-        return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )
-
-    @cherrypy.expose
-    @API._grantAccess
     def setActiveChannel( self, channel ):
         self._logger.debug( "setActiveChannel( %s )" % ( channel ) )
         return self._createResponse( API.STATUS_SUCCESS )
@@ -329,15 +317,15 @@ class ControllerAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     def sendMessage( self, fromId, toId, message ):
-        self._logger.debug( "sendMessage( fromId=%s, toId=%s, message=%s )" %  fromId, toId, message )
-        fromId = int( fromId )
-        toId   = int( toId )
-        controller = Controller()
+        self._logger.debug( "sendMessage( fromId=%s, toId=%s, message=%s )" % ( fromId, toId, message ) )
+        fromId      = int( fromId )
+        toId        = int( toId )
+        controller  = Controller()
         if not controller.isListener( fromId ):
             return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( fromId ) } )
         if not controller.isListener( toId ):
             return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( toId ) } )
-        if controller.sendMessage( fromId, toId, message ):
+        if controller.sendMessageToId( fromId, toId, json.loads( message ) ):
             return self._createResponse( API.STATUS_SUCCESS, None )
         return self._createResponse( API.STATUS_FAIL, { "message": "Couldn't send message from %d to %d" % ( fromId, toId ) } )
 
@@ -482,6 +470,20 @@ class AminoPVRAPI( API ):
             if recordingJson:
                 recordingsArray.append( recordingJson )
         return self._createResponse( API.STATUS_SUCCESS, recordingsArray )
+
+    @cherrypy.expose
+    @API._grantAccess
+    # TODO: this is still very STB oriented --> define proper API here and in JavaScript
+    def getRecordingById( self, id ):  # @ReservedAssignment
+        self._logger.debug( "getRecordingById( id=%s )" % ( id ) )
+
+        recordingId = int( id )
+        conn        = DBConnection()
+        recording   = Recording.getFromDb( conn, recordingId )
+        if recording:
+            return self._createResponse( API.STATUS_SUCCESS, recording.toDict() )
+        else:
+            return self._createResponse( API.STATUS_FAIL );
 
     @cherrypy.expose
     @API._grantAccess
@@ -808,6 +810,25 @@ class AminoPVRAPI( API ):
                 return self._createResponse( API.STATUS_FAIL )
         else:
             return self._createResponse( API.STATUS_FAIL )
+
+    @cherrypy.expose
+    @API._grantAccess
+    def postLog( self, logData ):
+        self._logger.debug( "postLog( %s )" % ( logData ) )
+        logs = json.loads( logData )
+        for log in logs:
+            logger = logging.getLogger( "aminopvr.Log.%s" % ( log["module"] ) )
+            if log["level"] == 0:
+                logger.debug( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 1:
+                logger.info( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 2:
+                logger.warning( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 3:
+                logger.error( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+            elif log["level"] == 4:
+                logger.critical( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+        return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )
 
 class AminoPVRRecordings( API ):
     _logger = logging.getLogger( "aminopvr.WI.Recordings" )

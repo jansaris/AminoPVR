@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var __module = "aminopvr.";
-
 function JsonAjaxRequest()
 {
     this._request  = null;
@@ -312,7 +310,7 @@ function LoggerClass()
                     } );
                     request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
                     request.setPostData( "logData=" + encodeURIComponent( debugLogText ) );
-                    request.send( "POST", "/aminopvr/api/stb/postLog", true );
+                    request.send( "POST", "/aminopvr/api/postLog", true );
                 }
                 else
                 {
@@ -515,11 +513,11 @@ function AminoPVREpgProgram()
     };
     this.getStartTime = function()
     {
-        return Math.round( this._startTime.getTime() / 1000 );
+        return this._startTime;
     };
     this.getEndTime = function()
     {
-        return Math.round( this._endTime.getTime() / 1000 );
+        return this._endTime;
     };
     this.getGenres = function()
     {
@@ -624,11 +622,11 @@ function AminoPVRRecording()
     };
     this.getStartTime = function()
     {
-        return Math.round( this._startTime.getTime() / 1000 );
+        return this._startTime;
     };
     this.getEndTime = function()
     {
-        return Math.round( this._endTime.getTime() / 1000 );
+        return this._endTime;
     };
     this.getUrl = function()
     {
@@ -829,7 +827,7 @@ function AminoPVRSchedule()
     };
     this.getStartTime = function()
     {
-        return Math.round( this._startTime.getTime() / 1000 );
+        return this._startTime;
     };
     this.setStartTime = function( startTime )
     {
@@ -837,7 +835,7 @@ function AminoPVRSchedule()
     };
     this.getEndTime = function()
     {
-        return Math.round( this._endTime.getTime() / 1000 );
+        return this._endTime;
     };
     this.setEndTime = function( endTime )
     {
@@ -1305,6 +1303,78 @@ function AminoPVRClass()
             }
         }
     };
+    this.getRecordingById = function( recordingId )
+    {
+        var recording               = null;
+        var requestContext          = {};
+        requestContext["recording"] = recording;
+
+        logger.info( this.__module(), "getRecordingById: Retrieve recording with id: " + recordingId );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, recording )
+        {
+            if ( status )
+            {
+                try
+                {
+                    context["recording"] = new AminoPVRRecording();
+                    context["recording"].fromJson( recording );
+                }
+                catch ( e )
+                {
+                    logger.error( this.__module(), "getRecordingById.callback: exception: " + e );
+                }
+            }
+            else
+            {
+                logger.error( this.__module(), "getRecordingById.callback: Retrieving recording failed" );
+            }
+        } );
+        request.send( "GET", "/aminopvr/api/getRecordingById/" + recordingId, false );
+
+        return recording;
+    };
+    this._recordingListCallback = function( status, context, recordings )
+    {
+        if ( status )
+        {
+            try
+            {
+                var pvrRecordings = [];
+                for ( var i in recordings )
+                {
+                    pvrRecordings[i] = new AminoPVRRecording();
+                    pvrRecordings[i].fromJson( recordings[i] );
+                }
+
+                logger.info( this.__module(), "_recordingListCallback: Downloaded recording list; count = " + pvrRecordings.length );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], pvrRecordings );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_recordingListCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_recordingListCallback: Downloading recording list failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
     this.getScheduleList = function( context, callback, async )
     {
         var requestContext         = {};
@@ -1527,7 +1597,52 @@ function AminoPVRController( type, handlerInst )
             }
         }
     };
+    this.sendMessage = function( toId, message, context, callback, async )
+    {
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
 
+        logger.info( this.__module(), "sendMessage: send message from" + this._controllerId + " to " + toId );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, data ) { self._sendMessageCallback( status, context, data ); } );
+        request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
+        request.setPostData( "message=" + encodeURIComponent( Array2JSON( message ) ) );
+        request.send( "POST", "/aminopvr/api/controller/sendMessage/" + this._controllerId + "/" + toId, async );
+    };
+    this._sendMessageCallback = function( status, context, data )
+    {
+        if ( status )
+        {
+            try
+            {
+                logger.info( this.__module(), "_sendMessageCallback: Message sent" );
+                if ( ("callback" in context) && (context["callback"]) )
+                {
+                    context["callback"]( true, context["context"] );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_sendMessageCallback: exception: " + e );
+                if ( ("callback" in context) && (context["callback"]) )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_sendMessageCallback: Message not sent" );
+            if ( ("callback" in context) && (context["callback"]) )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
     this.getListenerList = function( context, callback, async )
     {
         var requestContext         = {};
@@ -1550,7 +1665,7 @@ function AminoPVRController( type, handlerInst )
             {
                 logger.info( this.__module(), "_listenerListCallback: Downloaded listener list; count = " + listeners.length );
 
-                if ( "callback" in context )
+                if ( ("callback" in context) && (context["callback"]) )
                 {
                     context["callback"]( true, context["context"], listeners );
                 }
@@ -1558,7 +1673,7 @@ function AminoPVRController( type, handlerInst )
             catch ( e )
             {
                 logger.error( this.__module(), "_listenerListCallback: exception: " + e );
-                if ( "callback" in context )
+                if ( ("callback" in context) && (context["callback"]) )
                 {
                     context["callback"]( false, context["context"] );
                 }
@@ -1567,7 +1682,7 @@ function AminoPVRController( type, handlerInst )
         else
         {
             logger.error( this.__module(), "_listenerListCallback: Downloading listener list failed" );
-            if ( "callback" in context )
+            if ( ("callback" in context) && (context["callback"]) )
             {
                 context["callback"]( false, context["context"] );
             }
@@ -1623,6 +1738,61 @@ function AminoPVRController( type, handlerInst )
         }
     };
 
+}
+
+/**
+ * Converts the given data structure to a JSON string.
+ * Argument: arr - The data structure that must be converted to JSON
+ * Example: var json_string = array2json(['e', {pluribus: 'unum'}]);
+ *          var json = array2json({"success":"Sweet","failure":false,"empty_array":[],"numbers":[1,2,3],"info":{"name":"Binny","site":"http:\/\/www.openjs.com\/"}});
+ * http://www.openjs.com/scripts/data/json_encode.php
+ */
+function Array2JSON( arr )
+{
+    var parts   = [];
+    var is_list = (Object.prototype.toString.apply( arr ) === '[object Array]');
+
+    for ( var key in arr )
+    {
+        var value = arr[key];
+        if ( typeof value == "object" )
+        {
+            //Custom handling for arrays
+            if ( is_list )
+                parts.push( Array2JSON( value ) );  /* :RECURSION: */
+            else
+            {
+//                parts[key] = Array2JSON( value );   /* :RECURSION: */
+                var str = '"' + key + '":';
+                str += Array2JSON( value );         /* :RECURSION: */
+                parts.push( str );
+            }
+        }
+        else
+        {
+            var str = "";
+            if ( !is_list )
+                str = '"' + key + '":';
+
+            //Custom handling for multiple data types
+            if ( typeof value == "number" )
+                str += value;               //Numbers
+            else if ( value === false )
+                str += 'false';             //The booleans
+            else if ( value === true )
+                str += 'true';
+            else
+                str += '"' + value + '"';   //All other things
+            // :TODO: Is there any more datatype we should be in the lookout for? (Functions?)
+
+            parts.push( str );
+        }
+    }
+    var json = parts.join( "," );
+    
+    if ( is_list )
+        return '[' + json + ']';    //Return numerical JSON
+    return '{' + json + '}';        //Return associative JSON
 }
 
 var logger   = new LoggerClass();

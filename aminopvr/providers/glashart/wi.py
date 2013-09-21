@@ -38,7 +38,7 @@ def _getGlashartConfig():
         _glashartConfig = GlashartConfig( Config() )
     return _glashartConfig
 
-class WebInterface( aminopvr.wi.WebInterface ):
+class _WIGlashart( object ):
     _logger = logging.getLogger( "aminopvr.providers.glashart.WI" )
 
     @cherrypy.expose
@@ -161,3 +161,13 @@ class WebInterface( aminopvr.wi.WebInterface ):
             return serve_fileobj( content, content_type=mime.gettype() )
         else:
             raise cherrypy.HTTPError( code )
+
+def SetupWebInterface( app ):
+    app.merge( {
+        '/glashart': {
+              'tools.auth_basic.on': False
+        }
+    } )
+
+class WebInterface( aminopvr.wi.WebInterface ):
+    glashart = _WIGlashart()

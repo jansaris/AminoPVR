@@ -22,7 +22,7 @@ from aminopvr.db import DBConnection
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.providers.glashart.epg import EpgProvider
 from aminopvr.providers.glashart.page import PageSymbol
-from aminopvr.providers.glashart.wi import WebInterface
+from aminopvr.providers.glashart.wi import SetupWebInterface, WebInterface
 from aminopvr.timer import Timer
 from aminopvr.tools import getPage, Singleton, parseTimedetlaString
 import aminopvr.providers
@@ -39,9 +39,10 @@ _logger = logging.getLogger( "aminopvr.providers.glashart" )
 
 def RegisterProvider():
     _logger.info( "RegisterProvider" )
-    aminopvr.providers.webInterface    = WebInterface
-    aminopvr.providers.epgProvider     = EpgProvider
-    aminopvr.providers.contentProvider = ContentProvider
+    aminopvr.providers.setupWebInterface    = SetupWebInterface
+    aminopvr.providers.webInterface         = WebInterface
+    aminopvr.providers.epgProvider          = EpgProvider
+    aminopvr.providers.contentProvider      = ContentProvider
 
 class ContentProvider( threading.Thread ):
     __metaclass__ = Singleton
@@ -369,7 +370,7 @@ class ContentProvider( threading.Thread ):
                         "STYLE":              r"\<link rel='stylesheet' type='text\/css' href='(?P<css_filename>.*)'\>\<\/link\>",
                         "REPLACE_STYLE":      r"<link rel='stylesheet' type='text/css' href='style.css'></link>",
                         "JAVASCRIPT":         r"\<script type='text\/javascript' src='(?P<js_filename>.*)'\>\<\/script\>",
-                        "REPLACE_JAVASCRIPT": r"<script type='text/javascript' src='api.js'/><script type='text/javascript' src='assets/js/aminopvr.js'/><script type='text/javascript' src='assets/js/service.js'/><script type='text/javascript' src='assets/js/stub.js'/><script type='text/javascript' src='assets/js/proxy.js'/><script type='text/javascript' src='code.js'></script>",
+                        "REPLACE_JAVASCRIPT": r"<script type='text/javascript' src='api.js'/><script type='text/javascript' src='/assets/js/aminopvr.js'/><script type='text/javascript' src='/assets/js/service.js'/><script type='text/javascript' src='/assets/js/stub.js'/><script type='text/javascript' src='/assets/js/proxy.js'/><script type='text/javascript' src='code.js'></script>",
                       }
         # "REPLACE_STYLE"                     => "<link rel='stylesheet' type='text/css' href='style.css'></link>",
         # "REPLACE_JAVASCRIPT"                => "<script type='text/javascript' src='js/api.js'/><script type='text/javascript' src='js/service.js'/><script type='text/javascript' src='js/stub.js'/><script type='text/javascript' src='js/proxy.js'/><script type='text/javascript' src='code.js'></script>",
@@ -404,7 +405,9 @@ class ContentProvider( threading.Thread ):
                     "REPLACE_PROXY_OBJECT":           r"\1Proxy.",
                     #                                   if   ( b            =   a         .B           . redirect) {
                     "REDIRECT_FIX":                   r"if\s*\(([a-z]{1})\s*=\s*([a-z]{1}\.[A-Za-z]{1})\.redirect\){",
-                    "REPLACE_REDIRECT_FIX":           r'if(\2.redirect){\1=\2.redirect;DebugLog( "Redirecting to: " + \1 );'
+                    "REPLACE_REDIRECT_FIX":           r'if(\2.redirect){\1=\2.redirect;DebugLog( "Redirecting to: " + \1 );',
+                    "AJAX_FIX":                       r".open\(\"([A-Za-z]{3,4})\",",
+                    "REPLACE_AJAX_FIX":               r'.open("\1","/glashart/"+'
                  }
         #    "REPLACE_INIT_FUNCTION": "\${0};/* id_begin *//* id_end */",
         #    "REPLACE_LAST_JS_LINE": "/* id_begin */try { PowerOn(); } catch( e ) { %s( \"Unable to call PowerOn(): \" + e ); }/* id_end */\${0}",
@@ -455,6 +458,13 @@ class ContentProvider( threading.Thread ):
                                       fileContent )
         if count != 1:
             self._logger.error( "_modifyCodeJs: could not replace REPLACE_REDIRECT_FIX" )
+            return None
+
+        fileContent, count = re.subn( regExp["AJAX_FIX"],
+                                      regExp["REPLACE_AJAX_FIX"],
+                                      fileContent )
+        if count == 0:
+            self._logger.error( "_modifyCodeJs: could not replace REPLACE_AJAX_FIX" )
             return None
 
         return fileContent

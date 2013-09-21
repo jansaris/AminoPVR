@@ -28,9 +28,19 @@ var recording_id                = 0;
 var channel_pip_interval        = null;
 var recording_pip_interval      = null;
 
+function GetRenderer()
+{
+    return current_renderer;
+}
+
 function SetRenderer( id )
 {
     current_renderer = id;
+}
+
+function ReloadRenderer()
+{
+    uiController.reloadDevice();
 }
 
 function FormatTime( time )
@@ -452,7 +462,7 @@ function RecordingsToggleSort()
 
 function FetchRecordingList()
 {
-    var context = new Array()
+    var context = new Array();
 
     $.mobile.showPageLoadingMsg();
 
@@ -570,21 +580,7 @@ function RecordingPlayTV()
 
     if ( recording )
     {
-        console.log( "ip: " + current_ip + ", recording: " + recording_id );
-
-        $.getJSON( 'remote.php',
-        {
-            ip        : current_ip,
-            recording : recording_id
-        },
-        function( data )
-        {
-            console.log( "retval: " + data.retval + ", type: " + data.type );
-        } )
-        .error( function( jqXHR, textStatus, errorThrown )
-        {
-            console.log( "RecordingPlayTV: " + textStatus + ", error: " + errorThrown );
-        } );
+        uiController.playRecording( recording_id );
     }
 }
 
@@ -611,6 +607,27 @@ function UIController()
         {
             logger.critical( this.__module(), "init: exception: " + e );
         }
+    };
+    this.playRecording = function( recordingId )
+    {
+        message = {
+            "type": "command",
+            "data": {
+                "command": "playRecording",
+                "id":      recordingId
+            }
+        };
+        this._controller.sendMessage( GetRenderer(), message, null, null, false );
+    };
+    this.reloadDevice = function()
+    {
+        message = {
+            "type": "command",
+            "data": {
+                "command": "reload"
+            }
+        };
+        this._controller.sendMessage( GetRenderer(), message, null, null, false );
     };
     this.getRendererList = function()
     {
@@ -982,7 +999,8 @@ function( data )
     console.log( "FetchDevices: " + textStatus + ", error: " + errorThrown );
 } );*/
 
-logger.init( true );
+logger.init();
+logger.enableRemoteDebug( true );
 
 uiController = new UIController();
 uiController.init();

@@ -316,7 +316,7 @@ function PVRClass()
                 var generalConfig = aminopvr.getGeneralConfig();
                 if ( generalConfig != null )
                 {
-                    host = "rtsp://" + location.hostname + ":" + generalConfig.getRtspServerPort + "/";
+                    host = "rtsp://" + location.hostname + ":" + generalConfig.getRtspServerPort() + "/";
                 }
 
                 logger.warning( this.__module(), "_recordingListCallback.callback: host=" + host );
@@ -327,8 +327,8 @@ function PVRClass()
                     asset                = new RecordingAsset;
                     asset.assetId        = recording.getId();
                     asset.title          = recording.getFullTitle();
-                    asset.startTime      = recording.getStartTime();
-                    asset.duration       = recording.getEndTime() - recording.getStartTime();
+                    asset.startTime      = Math.round( recording.getStartTime().getTime() / 1000 );
+                    asset.duration       = Math.round( recording.getEndTime().getTime() / 1000 ) - asset.startTime;
                     asset.viewingControl = 12;
                     asset.position       = 0;
                     asset.url            = "src=" + host + recording.getFilename() + ";servertype=mediabase";
@@ -438,8 +438,8 @@ function PVRClass()
                     {
                         schedItem                   = new ScheduleItem;
                         schedItem.title             = recording.getFullTitle();
-                        schedItem.startTime         = recording.getStartTime();
-                        schedItem.endTime           = recording.getEndTime();
+                        schedItem.startTime         = Math.round( recording.getStartTime().getTime() / 1000 );
+                        schedItem.endTime           = Math.round( recording.getEndTime().getTime() / 1000 );
                         schedItem.viewingControl    = 12;
                         schedItem.active            = !(schedule.getInactive());
                         schedItem._schedule         = recording;
