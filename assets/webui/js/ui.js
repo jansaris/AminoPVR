@@ -395,7 +395,7 @@ function ChannelPlayHere()
 //                $( '#channel_pip' )[0].autoplay      = true;
                 $( '#channel_pip' )[0].src           = 'stream.m3u8?channel=' + channel_id;
 
-                channel_pip_interval = setInterval( function() { $( '#channel_video_status' ).html( '<p>ended: ' + $( '#channel_pip' )[0].ended + ', paused: ' + $( '#channel_pip' )[0].paused + ', networkState: ' + $( '#channel_pip' )[0].networkState + ', readyState: ' + $( '#channel_pip' )[0].readyState + '</p>' ) }, 1000 );
+                channel_pip_interval = setInterval( function() { $( '#channel_video_status' ).html( '<p>ended: ' + $( '#channel_pip' )[0].ended + ', paused: ' + $( '#channel_pip' )[0].paused + ', networkState: ' + $( '#channel_pip' )[0].networkState + ', readyState: ' + $( '#channel_pip' )[0].readyState + '</p>' ); }, 1000 );
             }
 
             $.mobile.hidePageLoadingMsg();

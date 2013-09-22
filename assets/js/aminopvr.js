@@ -310,7 +310,7 @@ function LoggerClass()
                     } );
                     request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
                     request.setPostData( "logData=" + encodeURIComponent( debugLogText ) );
-                    request.send( "POST", "/aminopvr/api/postLog", true );
+                    request.send( "POST", "/api/postLog", true );
                 }
                 else
                 {
@@ -680,7 +680,7 @@ function AminoPVRRecording()
                 context["callback"]( false, context["context"] );
             }
         } );
-        request.send( "GET", "/aminopvr/api/getRecordingMarker/" + this._id, async );
+        request.send( "GET", "/api/recordings/getRecordingMarker/" + this._id, async );
     };
     this.writeMeta = function( marker, context, callback, async )
     {
@@ -708,7 +708,7 @@ function AminoPVRRecording()
                 context["callback"]( false, context["context"] );
             }
         } );
-        request.send( "GET", "/aminopvr/api/setRecordingMarker/" + this._id + "/" + this._marker, async );
+        request.send( "GET", "/api/recordings/setRecordingMarker/" + this._id + "/" + this._marker, async );
     };
     this.deleteFromDb = function()
     {
@@ -729,7 +729,7 @@ function AminoPVRRecording()
                 context["deleted"] = true;
             }
         } );
-        request.send( "GET", "/aminopvr/api/deleteRecording/" + this._id, false );
+        request.send( "GET", "/api/recordings/deleteRecording/" + this._id, false );
 
         return requestContext["deleted"];
     };
@@ -926,11 +926,11 @@ function AminoPVRSchedule()
         } );
         if ( this._id == -1 )
         {
-            request.send( "POST", "/aminopvr/api/addSchedule", false );
+            request.send( "POST", "/api/schedules/addSchedule", false );
         }
         else
         {
-            request.send( "POST", "/aminopvr/api/changeSchedule/" + this._id, false );
+            request.send( "POST", "/api/schedules/changeSchedule/" + this._id, false );
         }
 
         return requestContext["added"];
@@ -954,7 +954,7 @@ function AminoPVRSchedule()
                 context["deleted"] = true;
             }
         } );
-        request.send( "GET", "/aminopvr/api/deleteSchedule/" + this._id, false );
+        request.send( "GET", "/api/schedules/deleteSchedule/" + this._id, false );
 
         return requestContext["deleted"];
     };
@@ -1002,7 +1002,7 @@ function AminoPVRClass()
             var request = new JsonAjaxRequest();
             request.setContext( requestContext );
             request.setCallback( function( status, context, config ) { self._generalConfigCallback( status, context, config ); } );
-            request.send( "GET", "/aminopvr/api/config/getGeneralConfig", false );
+            request.send( "GET", "/api/config/getGeneralConfig", false );
         }
 
         return this._generalConfig;
@@ -1041,7 +1041,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, channels ) { self._channelListCallback( status, context, channels ); } );
-        request.send( "GET", "/aminopvr/api/getChannelList", async );
+        request.send( "GET", "/api/channels/getChannelList", async );
     };
 
     this._channelListCallback = function( status, context, channels )
@@ -1093,7 +1093,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, channel ) { self._channelCallback( status, context, channel ); } );
-        request.send( "GET", "/aminopvr/api/getChannelByIpPort/" + ip + "/" + port, false );
+        request.send( "GET", "/api/channels/getChannelByIpPort/" + ip + "/" + port, false );
 
         return requestContext["channel"];
     };
@@ -1142,7 +1142,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, program ) { self._epgProgramCallback( status, context, program ); } );
-        request.send( "GET", "/aminopvr/api/getEpgProgramByOriginalId/" + originalId, false );
+        request.send( "GET", "/api/epg/getEpgProgramByOriginalId/" + originalId, false );
 
         return requestContext["program"];
     };
@@ -1192,7 +1192,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, programs ) { self._nowNextProgramListCallback( status, context, programs ); } );
-        request.send( "GET", "/aminopvr/api/getNowNextProgramList", async );
+        request.send( "GET", "/api/epg/getNowNextProgramList", async );
     };
     this._nowNextProgramListCallback = function( status, context, programs )
     {
@@ -1263,7 +1263,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, recordings ) { self._recordingListCallback( status, context, recordings ); } );
-        request.send( "GET", "/aminopvr/api/getRecordingList" + arguments, async );
+        request.send( "GET", "/api/recordings/getRecordingList" + arguments, async );
     };
     this._recordingListCallback = function( status, context, recordings )
     {
@@ -1333,7 +1333,7 @@ function AminoPVRClass()
                 logger.error( this.__module(), "getRecordingById.callback: Retrieving recording failed" );
             }
         } );
-        request.send( "GET", "/aminopvr/api/getRecordingById/" + recordingId, false );
+        request.send( "GET", "/api/recordings/getRecordingById/" + recordingId, false );
 
         return recording;
     };
@@ -1387,7 +1387,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, schedules ) { self._scheduleListCallback( status, context, schedules ); } );
-        request.send( "GET", "/aminopvr/api/getScheduleList", async );
+        request.send( "GET", "/api/schedules/getScheduleList", async );
     };
     this._scheduleListCallback = function( status, context, schedules )
     {
@@ -1438,7 +1438,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, schedule ) { self._channelCallback( status, context, schedule ); } );
-        request.send( "GET", "/aminopvr/api/getScheduleByTitleAndChannelId/" + encodeURIComponent( title ) + "/" + channelId, false );
+        request.send( "GET", "/api/schedules/getScheduleByTitleAndChannelId/" + encodeURIComponent( title ) + "/" + channelId, false );
 
         return requestContext["schedule"];
     };
@@ -1502,7 +1502,7 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, recordings ) { self._scheduledRecordingListCallback( status, context, recordings ); } );
-        request.send( "GET", "/aminopvr/api/getScheduledRecordingList" + arguments, async );
+        request.send( "GET", "/api/schedules/getScheduledRecordingList" + arguments, async );
     };
     this._scheduledRecordingListCallback = function( status, context, recordings )
     {
@@ -1589,7 +1589,7 @@ function AminoPVRController( type, handlerInst )
                         }, self._POLL_LONG_INTERVAL );
                     }
                 } );
-                request.send( "GET", "/aminopvr/api/controller/init?type=" + this._type, true );
+                request.send( "GET", "/api/controller/init?type=" + this._type, true );
             }
             catch ( e )
             {
@@ -1611,7 +1611,7 @@ function AminoPVRController( type, handlerInst )
         request.setCallback( function( status, context, data ) { self._sendMessageCallback( status, context, data ); } );
         request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
         request.setPostData( "message=" + encodeURIComponent( Array2JSON( message ) ) );
-        request.send( "POST", "/aminopvr/api/controller/sendMessage/" + this._controllerId + "/" + toId, async );
+        request.send( "POST", "/api/controller/sendMessage/" + this._controllerId + "/" + toId, async );
     };
     this._sendMessageCallback = function( status, context, data )
     {
@@ -1655,7 +1655,7 @@ function AminoPVRController( type, handlerInst )
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, listeners ) { self._listenerListCallback( status, context, listeners ); } );
-        request.send( "GET", "/aminopvr/api/controller/getListenerList", async );
+        request.send( "GET", "/api/controller/getListenerList", async );
     };
     this._listenerListCallback = function( status, context, listeners )
     {
@@ -1729,7 +1729,7 @@ function AminoPVRController( type, handlerInst )
                         }, self._POLL_LONG_INTERVAL );
                     }
                 } );
-                request.send( "GET", "/aminopvr/api/controller/poll?id=" + this._controllerId, true );
+                request.send( "GET", "/api/controller/poll?id=" + this._controllerId, true );
             }
             catch ( e )
             {

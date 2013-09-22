@@ -19,7 +19,8 @@ from Cheetah.Template import Template
 from aminopvr import const
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
-from aminopvr.wi.api import AminoPVRWI, AminoPVRAPI, AminoPVRRecordings
+from aminopvr.wi.api import AminoPVRAPI
+from aminopvr.wi.recordings import Recordings
 from cherrypy.lib.static import serve_file, serve_fileobj
 import aminopvr.providers
 import cherrypy
@@ -43,8 +44,7 @@ class WebUI( object ):
 
 class WebInterface( object ):
     api         = AminoPVRAPI()
-    recordings  = AminoPVRRecordings()
-    aminopvr    = AminoPVRWI()
+    recordings  = Recordings()
     webui       = WebUI()
 
 
@@ -142,7 +142,7 @@ def initWebserver( serverPort=8080 ):
     if not webInterface:
         webInterface = WebInterface
 
-    app = cherrypy.tree.mount( webInterface(), options['web_root'], conf )
+    app = cherrypy.tree.mount( webInterface, options['web_root'], conf )
 
     # auth
     if options['username'] != "" and options['password'] != "":
@@ -156,23 +156,16 @@ def initWebserver( serverPort=8080 ):
             '/api': {
                 'tools.auth_basic.on':            False
             },
+            '/assets': {
+                'tools.auth_basic.on':            False
+            },
             '/recordings': {
-                'tools.auth_basic.on':            False
-            },
-            '/aminopvr': {
-                'tools.auth_basic.on':            True,
-                'tools.auth_basic.realm':         'AminoPVR',
-                'tools.auth_basic.checkpassword': checkpassword
-            },
-            '/aminopvr/api': {
-                'tools.auth_basic.on':            False
-            },
-            '/aminopvr/recordings': {
                 'tools.auth_basic.on':            False
             },
         } )
 
     if aminopvr.providers.setupWebInterface:
+        _logger.info( "Setting-up web-interface for provider" )
         aminopvr.providers.setupWebInterface( app )
 
     cherrypy.server.start()

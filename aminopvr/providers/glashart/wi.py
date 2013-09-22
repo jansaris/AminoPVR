@@ -163,11 +163,15 @@ class _WIGlashart( object ):
             raise cherrypy.HTTPError( code )
 
 def SetupWebInterface( app ):
+    logger = logging.getLogger( "aminopvr.providers.glashart.WI" )
+
     app.merge( {
         '/glashart': {
               'tools.auth_basic.on': False
         }
     } )
+
+    logger.warning( "Configure DHCP response option #43 with the following URL: http://<ip>:<port>/glashart" )
 
 class WebInterface( aminopvr.wi.WebInterface ):
     glashart = _WIGlashart()

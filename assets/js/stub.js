@@ -269,7 +269,7 @@ function PVRClass()
                     }
                 }
             } );
-            request.send( "GET", "/aminopvr/api/getStorageInfo", false );
+            request.send( "GET", "/api/getStorageInfo", false );
         }
 
         return this.storage_info;

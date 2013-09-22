@@ -178,6 +178,10 @@ function StbController()
             {
                 location.reload();
             }
+            else if ( data["command"] == "reboot" )
+            {
+                ASTBProxy.Reboot();
+            }
             else if ( data["command"] == "remoteDebug" )
             {
                 if ( !logger.getRemoteDebugEnabled() )
@@ -308,7 +312,7 @@ function StbController()
             } );
             request.setRequestHeader( "Content-type", "application/x-www-form-urlencoded" );
             request.setPostData( "channelList=" + encodeURIComponent( channelList ) );
-            request.send( "POST", "/aminopvr/api/stb/setChannelList", true );
+            request.send( "POST", "/api/stb/setChannelList", true );
         }
         catch ( e )
         {
@@ -330,7 +334,7 @@ function StbController()
                     logger.info( self.__module(), "setActiveChannel.callback: done: " + data );
                 }
             } );
-            request.send( "GET", "/aminopvr/api/stb/setActiveChannel/" + channel, true );
+            request.send( "GET", "/api/stb/setActiveChannel/" + channel, true );
         }
         catch ( e )
         {
