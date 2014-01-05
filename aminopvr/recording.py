@@ -348,7 +348,7 @@ class RecordingAbstract( object ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
         if conn:
-            rows = conn.execute( "SELECT * FROM %s WHERE status > ? AND status < ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.STATUS_UNKNOWN, RecordingState.RECORDING_FINISHED ) )
+            rows = conn.execute( "SELECT * FROM %s WHERE status > ? AND status < ? ORDER BY start_time ASC" % ( cls._tableName ), ( RecordingState.UNKNOWN, RecordingState.RECORDING_FINISHED ) )
             for row in rows:
                 recording = cls._createRecordingFromDbDict( conn, row )
                 recordings.append( recording )
@@ -540,16 +540,22 @@ class Recording( RecordingAbstract ):
 
     def deleteFromDb( self, conn, rerecord=False ):
         if conn:
+            self._logger.warning( "Remove recording id=%d (%s recorded at %s from %s; rerecord=%s)" % ( self._id, self._title, datetime.datetime.fromtimestamp( self._startTime ), self._channelName, rerecord ) )
+
             # Re-record prevention only makes sense when recording is linked to an actual program
             if self._epgProgramId != -1:
                 if not rerecord:
-                    self._logger.warning( "Creating copy of recording to prevent re-recording of this program" )
+                    self._logger.info( "Creating copy of recording to prevent re-recording of this program" )
                     oldRecording     = OldRecording.copy( self )
                     oldRecording.addToDb( conn )
                 else:
                     # remove RecordingProgram
+                    self._logger.info( "Remove recording program to allow re-recording of this program" )
                     recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
-                    recordingProgram.deleteFromDb( conn )
+                    if recordingProgram:
+                        recordingProgram.deleteFromDb( conn )
+                    else:
+                        self._logger.error( "Recording program with epgProgramId=%d does not exist!" % ( self._epgProgramId ) )
 
             generalConfig     = GeneralConfig( Config() )
             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )

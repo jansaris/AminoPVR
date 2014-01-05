@@ -17,7 +17,9 @@
 """
 from aminopvr import const
 from aminopvr.config import Config, GeneralConfig, DebugConfig
+from aminopvr.db import DBConnection
 from aminopvr.recorder import Recorder
+from aminopvr.recording import Recording
 from aminopvr.resource_monitor import ResourceMonitor
 from aminopvr.rtsp_server import RtspServer
 from aminopvr.scheduler import Scheduler
@@ -96,6 +98,11 @@ def startRtspServer():
 def stopRtspServer():
     if rtspServer != None:
         rtspServer.terminate()
+
+def isRecordingActive():
+    conn = DBConnection()
+    unfinishedRecordings = Recording.getAllUnfinishedFromDb( conn )
+    return len( unfinishedRecordings ) > 0
 
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )

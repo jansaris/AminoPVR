@@ -127,9 +127,10 @@ def main():
     consoleLogging = True
     stopDaemon     = False
     restartDaemon  = False
+    forceStop      = False
 
     try:
-        opts, args = getopt.getopt( sys.argv[1:], "qd", ['quiet', 'daemon', 'pidfile=', 'stop', 'restart'] )  # @UnusedVariable
+        opts, args = getopt.getopt( sys.argv[1:], "qd", ['quiet', 'daemon', 'pidfile=', 'stop', 'restart', 'force'] )  # @UnusedVariable
     except getopt.GetoptError:
         print "Available Options: --quiet, --daemon, --pidfile, --stop, --restart"
         sys.exit()
@@ -153,6 +154,9 @@ def main():
             else:
                 restartDaemon = True
 
+        if o in ( '--force' ):
+            forceStop = True
+
         # Run as a daemon
         if o in ( '-d', '--daemon' ):
             if sys.platform == 'win32':
@@ -174,7 +178,7 @@ def main():
                 if restartDaemon and aminopvr.const.DAEMON:
                     aminopvr.const.CREATEPID = True
                 else:
-                    logger.log( u"Not running in daemon mode. PID file creation disabled." )
+                    print "Not running in daemon mode. PID file creation disabled."
             else:
                 # If the pidfile already exists, AminoPVR may still be running, so exit
                 if os.path.exists( aminopvr.const.PIDFILE ):
@@ -188,9 +192,12 @@ def main():
                     except IOError, e:
                         raise SystemExit( "Unable to write PID file: %s [%d]" % ( e.strerror, e.errno ) )
                 else:
-                    logger.log( u"Not running in daemon mode. PID file creation disabled." )
+                    print "Not running in daemon mode. PID file creation disabled."
 
     if stopDaemon or restartDaemon:
+        if not forceStop and aminopvr.isRecordingActive():
+            print "Cannot stop process while recording is active. Use --force to force stop."
+            sys.exit()
         _stopDaemon()
         if stopDaemon:
             sys.exit()
