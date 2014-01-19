@@ -287,7 +287,8 @@ class Scheduler( threading.Thread ):
             - Else, create a new 'recording.Recording' and add it to the list
         """
 
-        matchFunction = None
+        matchFunction  = None
+        manualSchedule = False
 
         scheduleType = "<unknown>"
         if schedule.type == Schedule.SCHEDULE_TYPE_ONCE:
@@ -309,13 +310,17 @@ class Scheduler( threading.Thread ):
             scheduleType  = "SCHEDULE_TYPE_ANY_TIME"
             matchFunction = self._programMatchAnyTime
         elif schedule.type == Schedule.SCHEDULE_TYPE_MANUAL_EVERY_DAY:
-            scheduleType = "SCHEDULE_TYPE_MANUAL_EVERY_DAY"
+            scheduleType   = "SCHEDULE_TYPE_MANUAL_EVERY_DAY"
+            manualSchedule = True
         elif schedule.type == Schedule.SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY:
-            scheduleType = "SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY"
+            scheduleType   = "SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY"
+            manualSchedule = True
         elif schedule.type == Schedule.SCHEDULE_TYPE_MANUAL_EVERY_WEEKEND:
-            scheduleType = "SCHEDULE_TYPE_MANUAL_EVERY_WEEKEND"
+            scheduleType   = "SCHEDULE_TYPE_MANUAL_EVERY_WEEKEND"
+            manualSchedule = True
         elif schedule.type == Schedule.SCHEDULE_TYPE_MANUAL_EVERY_WEEK:
-            scheduleType = "SCHEDULE_TYPE_MANUAL_EVERY_WEEK"
+            scheduleType   = "SCHEDULE_TYPE_MANUAL_EVERY_WEEK"
+            manualSchedule = True
         else:
             self._logger.critical( "_handleSchedule: Unknown schedule.type=%i" % ( schedule.type ) )
             return newRecordings
@@ -326,117 +331,126 @@ class Scheduler( threading.Thread ):
         self._logger.info( "_handleSchedule: Processing schedule %i - '%s' (%s)" % ( schedule.id, schedule.title, scheduleType ) )
         self._logger.debug( "_handleSchedule: dupMethod=%i, timeslot=%s" % ( schedule.dupMethod, timeslot ) )
 
-        # Get the programs that match this schedule
-        programs = schedule.getPrograms( conn, startTime=time.time() )
+        if manualSchedule:
+            # SCHEDULE_TYPE_MANUAL_EVERY_DAY: create timers for next 7 days at timeslot
+            # SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY: create timers for next 5 weekdays at timeslot
+            # SCHEDULE_TYPE_MANUAL_EVERY_WEEKEND: create timers for next 2 weekend days at timeslot
+            # SCHEDULE_TYPE_MANUAL_EVERY_WEEK: create timer for next requested day at timeslot
+            pass
+        else:
+            # Get the programs that match this schedule
+            programs = schedule.getPrograms( conn, startTime=time.time() )
 
-        filteredPrograms = programs
-        lastRecording    = None
-        recordingTitles  = {}
+            self._logger.debug( "_handleSchedule: number of matching programs=%d" % ( len( programs ) ) )
 
-        # Go through list of (possible) program belonging to this schedule
-        for program in programs:
+            filteredPrograms = programs
+            lastRecording    = None
+            recordingTitles  = {}
 
-            # Title of program may not be unique in list; only filter out duplicates if not already done
-            if not recordingTitles.has_key( program.title ):
-                recordingTitles[program.title] = True
+            # Go through list of (possible) program belonging to this schedule
+            for program in programs:
 
-                # Get recordings with the same title
-                recordings       = Recording.getByTitleFromDb( conn, program.title, finishedOnly=True )
-                oldRecordings    = OldRecording.getByTitleFromDb( conn, program.title )
-                filteredPrograms = self._filterOutDuplicates( schedule, filteredPrograms, recordings, oldRecordings=oldRecordings, newRecordings=newRecordings )
+                # Title of program may not be unique in list; only filter out duplicates if not already done
+                if not recordingTitles.has_key( program.title ):
+                    recordingTitles[program.title] = True
 
-                # Find the last recording
-                for recording in recordings:
-                    if lastRecording and recording.startTime > lastRecording.startTime:
-                        lastRecording = recording
-                    elif not lastRecording:
-                        lastRecording = recording 
+                    # Get recordings with the same title
+                    recordings       = Recording.getByTitleFromDb( conn, program.title, finishedOnly=True )
+                    oldRecordings    = OldRecording.getByTitleFromDb( conn, program.title )
+                    filteredPrograms = self._filterOutDuplicates( schedule, filteredPrograms, recordings, oldRecordings=oldRecordings, newRecordings=newRecordings )
 
-        # We've probably reduced the size of the recording candicates 
-        programs = filteredPrograms
+                    # Find the last recording
+                    for recording in recordings:
+                        if lastRecording and recording.startTime > lastRecording.startTime:
+                            lastRecording = recording
+                        elif not lastRecording:
+                            lastRecording = recording 
 
-        # We expect the 'ONCE' type recording to have only matched on program
-        if ( schedule.type == Schedule.SCHEDULE_TYPE_ONCE and len( programs ) > 1 ):
-            self._logger.warning( "_handleSchedule: More than 1 recording candidate: %i" % ( len( programs ) ) )
+            # We've probably reduced the size of the recording candidates 
+            programs = filteredPrograms
 
-        # Now see if there are programs that match the timeslot
-        # If we are lucky, all programs will match
-        while len( programs ):
-            program   = programs.pop( 0 )
-            startTime = datetime.datetime.fromtimestamp( program.startTime )
+            # We expect the 'ONCE' type recording to have only matched on program
+#             if ( schedule.type == Schedule.SCHEDULE_TYPE_ONCE and len( programs ) > 1 ):
+#                 self._logger.warning( "_handleSchedule: More than 1 recording candidate: %i" % ( len( programs ) ) )
 
-            if matchFunction and matchFunction( schedule, startTime, timeslot, lastRecording ):
-                # Yes! We have a match
+            # Now see if there are programs that match the timeslot
+            # If we are lucky, all programs will match
+            while len( programs ):
+                program   = programs.pop( 0 )
+                startTime = datetime.datetime.fromtimestamp( program.startTime )
 
-                newRecording = None 
+                if matchFunction and matchFunction( schedule, startTime, timeslot, lastRecording ):
+                    # Yes! We have a match
 
-                # Get all channels that broadcast this program
-                channels = Channel.getAllByEpgIdFromDb( conn, program.epgId )
-                for channel in channels:
-                    # Sort channel urls based on preference for Hd or Unscrambled
-                    # Unscrambled is higher priority than Hd 
-                    # Default order = sd, hd
-                    # TODO: there could be multiple channels with multiple channels: sort total set of urls
-                    urls      = channel.urls
-                    urlsOrder = []
-                    if schedule.preferUnscrambled:
-                        if schedule.preferHd and urls.has_key( "hd" ) and not urls["hd"].scrambled:
+                    newRecording = None 
+
+                    # Get all channels that broadcast this program
+                    channels = Channel.getAllByEpgIdFromDb( conn, program.epgId )
+                    for channel in channels:
+                        # Sort channel urls based on preference for Hd or Unscrambled
+                        # Unscrambled is higher priority than Hd 
+                        # Default order = sd, hd
+                        # TODO: there could be multiple channels with multiple channels: sort total set of urls
+                        urls      = channel.urls
+                        urlsOrder = []
+                        if schedule.preferUnscrambled:
+                            if schedule.preferHd and urls.has_key( "hd" ) and not urls["hd"].scrambled:
+                                urlsOrder.append( "hd" )
+                                if urls.has_key( "sd" ):
+                                    urlsOrder.append( "sd" )
+                            elif urls.has_key( "sd" ) and not urls["sd"].scrambled:
+                                urlsOrder.append( "sd" )
+                                if urls.has_key( "hd" ):
+                                    urlsOrder.append( "hd" )
+                            elif urls.has_key( "hd" ) and not urls["hd"].scrambled:
+                                urlsOrder.append( "hd" )
+                                if urls.has_key( "sd" ):
+                                    urlsOrder.append( "sd" )
+                            else:
+                                if urls.has_key( "sd "):
+                                    urlsOrder.append( "sd" )
+                                if urls.has_key( "hd "):
+                                    urlsOrder.append( "hd" )
+                        elif urls.has_key( "hd" ) and schedule.preferHd:
                             urlsOrder.append( "hd" )
                             if urls.has_key( "sd" ):
                                 urlsOrder.append( "sd" )
-                        elif urls.has_key( "sd" ) and not urls["sd"].scrambled:
-                            urlsOrder.append( "sd" )
+                        else:
+                            if urls.has_key( "sd" ):
+                                urlsOrder.append( "sd" )
                             if urls.has_key( "hd" ):
                                 urlsOrder.append( "hd" )
-                        elif urls.has_key( "hd" ) and not urls["hd"].scrambled:
-                            urlsOrder.append( "hd" )
-                            if urls.has_key( "sd" ):
-                                urlsOrder.append( "sd" )
-                        else:
-                            if urls.has_key( "sd "):
-                                urlsOrder.append( "sd" )
-                            if urls.has_key( "hd "):
-                                urlsOrder.append( "hd" )
-                    elif urls.has_key( "hd" ) and schedule.preferHd:
-                        urlsOrder.append( "hd" )
-                        if urls.has_key( "sd" ):
-                            urlsOrder.append( "sd" )
-                    else:
-                        if urls.has_key( "sd" ):
-                            urlsOrder.append( "sd" )
-                        if urls.has_key( "hd" ):
-                            urlsOrder.append( "hd" )
 
-                    if len( urlsOrder ) == 0:
-                        self._logger.warning( "_handleSchedule: No Urls to record program %i - '%s'" % ( program.id, program.title ) )
+                        if len( urlsOrder ) == 0:
+                            self._logger.warning( "_handleSchedule: No Urls to record program %i - '%s'" % ( program.id, program.title ) )
 
-                    for urlType in urlsOrder:
-                        newRecording = self._createRecording( schedule, program, channel, urls[urlType] )
-                        if self._isRecorderBusyAtTimeframe( newRecordings, schedule, newRecording ):
-                            # But oh, it cannot be recorded at that time
-                            self._logger.warning( "_handleSchedule: Program %i - '%s' starting at %s cannot be recorded because recorder will be busy" % ( program.id, program.title, startTime ) )
+                        for urlType in urlsOrder:
+                            newRecording = self._createRecording( schedule, program, channel, urls[urlType] )
+                            if self._isRecorderBusyAtTimeframe( newRecordings, schedule, newRecording ):
+                                # But oh, it cannot be recorded at that time
+                                self._logger.warning( "_handleSchedule: Program %i - '%s' starting at %s cannot be recorded because recorder will be busy" % ( program.id, program.title, startTime ) )
 
-                            newRecording = None
-                        else:
-                            newRecordings.append( newRecording )
+                                newRecording = None
+                            else:
+                                newRecordings.append( newRecording )
 
-                            self._logger.info( "_handleSchedule: Program %i - '%s' (subtitle=%s, description=%s) starting at %s will be recorded" % ( program.id, program.title, program.subtitle, program.description, startTime ) )
+                                self._logger.info( "_handleSchedule: Program %i - '%s' (subtitle=%s, description=%s) starting at %s will be recorded" % ( program.id, program.title, program.subtitle, program.description, startTime ) )
 
-                            lastRecording = newRecording
+                                lastRecording = newRecording
 
-                            programs = self._filterOutDuplicates( schedule, programs, newRecordings=newRecordings )
+                                programs = self._filterOutDuplicates( schedule, programs, newRecordings=newRecordings )
 
-                            # Break from the urls loop
+                                # Break from the urls loop
+                                break
+
+                        # If newRecording is set, break from channels loop
+                        if not newRecording:
                             break
 
-                    # If newRecording is set, break from channels loop
-                    if not newRecording:
+                    if schedule.type == Schedule.SCHEDULE_TYPE_ONCE:
                         break
-            else:
-                self._logger.info( "_handleSchedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
-
-            if schedule.type == Schedule.SCHEDULE_TYPE_ONCE:
-                break
+                else:
+                    self._logger.info( "_handleSchedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
 
         return newRecordings
 
@@ -577,18 +591,26 @@ class Scheduler( threading.Thread ):
         """
         recording                   = Recording()
         recording.scheduleId        = schedule.id
-        recording.epgProgramId      = program.id
+        if program:
+            recording.epgProgramId  = program.id
+            recording.epgProgram    = program
+            recording.startTime     = program.startTime - schedule.startEarly
+            recording.endTime       = program.endTime + schedule.endLate
+            recording.length        = ((program.endTime + schedule.endLate) - (program.startTime - schedule.startEarly))
+            recording.title         = program.title
+        else:
+            recording.epgProgramId  = -1
+            recording.epgProgram    = None
+            recording.startTime     = schedule.startTime - schedule.startEarly
+            recording.endTime       = schedule.endTime + schedule.endLate
+            recording.length        = ((schedule.endTime + schedule.endLate) - (schedule.startTime - schedule.startEarly))
+            recording.title         = schedule.title
         recording.channelId         = channel.id
         recording.channelName       = channel.name
         recording.channelUrlType    = url.channelType
-        recording.startTime         = program.startTime - schedule.startEarly
-        recording.endTime           = program.endTime + schedule.endLate
-        recording.length            = ((program.endTime + schedule.endLate) - (program.startTime - schedule.startEarly))
-        recording.title             = program.title
         recording.streamArguments   = url.arguments
         recording.type              = url.channelType
         recording.scrambled         = url.scrambled
-        recording.epgProgram        = program
 
         return recording
 

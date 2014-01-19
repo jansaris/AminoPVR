@@ -317,8 +317,8 @@ class Schedule( object ):
                 channel = Channel.getFromDb( conn, self._channelId )
                 epgId   = channel.epgId
 
-            if self._type == Schedule.SCHEDULE_TYPE_ONCE:
-                startTime = self._startTime
+#            if self._type == Schedule.SCHEDULE_TYPE_ONCE:
+#                startTime = None #self._startTime
 
             searchWhere = EpgProgram.SEARCH_TITLE
 
@@ -328,7 +328,7 @@ class Schedule( object ):
     @classmethod
     def fromDict( cls, data, id=-1 ):  # @ReservedAssignment
         schedule = None
-        if schedule:
+        if data:
             try:
                 schedule                    = cls( id )
                 schedule.type               = data["type"]

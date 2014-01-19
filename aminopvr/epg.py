@@ -901,6 +901,7 @@ class ProgramAbstract( object ):
             where       = []
             whereValue  = []
             search      = []
+            title       = '%' + title + '%'
 
             if epgId:
                 where.append( "epg_id = ?" )
