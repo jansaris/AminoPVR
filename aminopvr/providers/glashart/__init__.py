@@ -370,7 +370,7 @@ class ContentProvider( threading.Thread ):
                         "STYLE":              r"\<link rel='stylesheet' type='text\/css' href='(?P<css_filename>.*)'\>\<\/link\>",
                         "REPLACE_STYLE":      r"<link rel='stylesheet' type='text/css' href='style.css'></link>",
                         "JAVASCRIPT":         r"\<script type='text\/javascript' src='(?P<js_filename>.*)'\>\<\/script\>",
-                        "REPLACE_JAVASCRIPT": r"<script type='text/javascript' src='api.js'/><script type='text/javascript' src='/assets/js/aminopvr.js'/><script type='text/javascript' src='/assets/js/service.js'/><script type='text/javascript' src='/assets/js/stub.js'/><script type='text/javascript' src='/assets/js/proxy.js'/><script type='text/javascript' src='code.js'></script>",
+                        "REPLACE_JAVASCRIPT": r"<script type='text/javascript' src='api.js'/><script type='text/javascript' src='/assets/js/aminopvr.js'/><script type='text/javascript' src='/assets/js/service.js'/><script type='text/javascript' src='/assets/js/impl.js'/><script type='text/javascript' src='/assets/js/proxy.js'/><script type='text/javascript' src='code.js'></script>",
                       }
         # "REPLACE_STYLE"                     => "<link rel='stylesheet' type='text/css' href='style.css'></link>",
         # "REPLACE_JAVASCRIPT"                => "<script type='text/javascript' src='js/api.js'/><script type='text/javascript' src='js/service.js'/><script type='text/javascript' src='js/stub.js'/><script type='text/javascript' src='js/proxy.js'/><script type='text/javascript' src='code.js'></script>",

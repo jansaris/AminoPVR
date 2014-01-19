@@ -16,13 +16,205 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+function VLCClass()
+{
+    this._vlcObject = null;
+    this._channels  = [];
+
+    this.__module = function()
+    {
+        return this.constructor.name;
+    };
+
+    this._onLoad = function()
+    {
+        try
+        {
+            this._vlcObject = document.createElement( 'embed' );
+            this._vlcObject.setAttribute( 'type',           'application/x-vlc-plugin' );
+            this._vlcObject.setAttribute( 'pluginspage',    'http://www.videolan.org' );
+            this._vlcObject.setAttribute( 'id',             'vlc' );
+            this._vlcObject.setAttribute( 'controls',       'false' );
+            this._vlcObject.setAttribute( 'width',          '100%' );
+            this._vlcObject.setAttribute( 'height',         '100%' );
+            this._vlcObject.style.left      = "0px";
+            this._vlcObject.style.top       = "0px";
+            this._vlcObject.style.position  = "absolute";
+            this._vlcObject.style.zIndex    = "0";
+
+            this._registerVLCEvent( 'MediaPlayerNothingSpecial',    this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerOpening',           this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerBuffering',         this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerPlaying',           this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerPaused',            this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerForward',           this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerBackward',          this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerEncounteredError',  this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerEndReached',        this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerTimeChanged',       this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerPositionChanged',   this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerSeekableChanged',   this._handleEvents );
+            this._registerVLCEvent( 'MediaPlayerPausableChanged',   this._handleEvents );
+
+            document.body.appendChild( this._vlcObject );
+
+            aminopvr.getChannelList( this, function( status, context, channels )
+            {
+                if ( status )
+                {
+                    try
+                    {
+                        for ( var i in channels )
+                        {
+                            var id = context._vlcObject.playlist.add( channels[i].getUrl(), channels[i].getName() );
+                            context._channels.push( { url: channels[i].getUrl(), channel: channels[i], id: id } );
+                        }
+                    }
+                    catch ( e )
+                    {
+                        logger.error( context.__module(), "_onLoad: setChannelList.callback: exception: " + e );
+                    }
+                }
+            }, true );
+        }
+        catch ( e )
+        {
+            logger.error( this.__module(), "_onLoad: exception: " + e );
+        }
+    };
+
+    this.play = function( url )
+    {
+        if ( this._vlcObject != null )
+        {
+            var urlParts    = url.split( ';' );
+            var url         = urlParts[0].substring( 4 ).replace( 'rtsp://', '' ).replace( 'igmp://', '' ).replace( '/', '' );
+            var ip          = url.split( ':' )[0];
+            var port        = url.split( ':' )[1];
+            var found       = false;
+
+            for ( var i in this._channels )
+            {
+                if ( (this._channels[i].url.indexOf( ip ) != -1) && (this._channels[i].url.indexOf( port ) != -1) )
+                {
+                    logger.warning( this.__module(), "play: going to play playlist item: " + this._channels[i].id );
+                    this._vlcObject.playlist.playItem( this._channels[i].id );
+                    found = true
+                    break;
+                }
+            }
+
+            if ( !found )
+            {
+                var channel = aminopvr.getChannelByIpPort( ip, port );
+
+                if ( channel != null )
+                {
+                    for ( var i in this._channels )
+                    {
+                        if ( this._channels[i].url == channel.getUrl() )
+                        {
+                            logger.warning( this.__module(), "play: adding url: " + url + " to list as playlist item: " + this._channels[i].id );
+                            this._channels.push( { url: url, channel: channel, id: this._channels[i].id } );
+
+                            logger.warning( this.__module(), "play: going to play playlist item: " + this._channels[i].id );
+                            this._vlcObject.playlist.playItem( this._channels[i].id );
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    logger.error( this.__module(), "play: channel with ip: " + ip + " and port: " + port + " not found" );
+                }
+            }
+
+            this._vlcObject.video.deinterlace.enable("yadif2x");
+        }
+    }
+
+    this.stop = function()
+    {
+        if ( this._vlcObject != null )
+        {
+            this._vlcObject.playlist.stop();
+        }
+    }
+
+    this._registerVLCEvent = function( event, handler )
+    {
+        if ( this._vlcObject )
+        {
+            if ( this._vlcObject.attachEvent )
+            {
+                // Microsoft
+                this._vlcObject.attachEvent( event, handler );
+            }
+            else if ( this._vlcObject.addEventListener )
+            {
+                // Mozilla: DOM level 2
+                this._vlcObject.addEventListener( event, handler, false );
+            }
+            else
+            {
+                // DOM level 0
+                this._vlcObject["on" + event] = handler;
+            }
+        }
+    };
+
+    // event callback function for testing
+    this._handleEvents = function( event )
+    {
+        if ( !event )
+        {
+            event = window.event; // IE
+        }
+        if ( event.target )
+        {
+            // Netscape based browser
+            targ = event.target;
+        }
+        else if ( event.srcElement )
+        {
+            // ActiveX
+            targ = event.srcElement;
+        }
+        else
+        {
+            // No event object, just the value
+            logger.error( this.__module(), "_handleEvents: Event value" + event );
+            return;
+        }
+        if ( targ.nodeType == 3 )   // defeat Safari bug
+        {
+            targ = targ.parentNode;
+        }
+
+        logger.error( this.__module(), "_handleEvents: Event " + event.type + " has fired from " + targ );
+    };
+
+    try
+    {
+        var self = this;
+        window.addEventListener( "load", function()
+        {
+            self._onLoad();
+        }, false );
+    }
+    catch ( e )
+    {
+        logger.critical( this.__module(), "init: exception: " + e );
+    }
+}
+
 function ASTBClass()
 {
     this.powerState = 0;
 
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
     this.DefaultKeys = function( keys ) { logger.info( this.__module(), "DefaultKeys( " + keys + " )" ); };
     this.WithChannels = function( channels ) { logger.info( this.__module(), "WithChannels( " + channels + " )" ); };
@@ -67,7 +259,11 @@ function ASTBClass()
         logger.info( this.__module(), "SetPowerState( " + state + " )" );
         this.powerState = state;
     };
-    this.Reboot = function() { logger.info( this.__module(), "Reboot()" ); };
+    this.Reboot = function()
+    {
+    	logger.info( this.__module(), "Reboot()" );
+    	location.reload();
+    };
     this.Upgrade = function( aa, bb ) { logger.info( this.__module(), "Upgrade( " + aa + ", " + bb + " )" ); };
     this.SetLEDState = function( led, state ) {};
     this.DebugString = function( debug ) { logger.info( this.__module(), "DebugString( " + debug + " )" ); };
@@ -92,7 +288,7 @@ function VideoDisplayClass()
 {
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
     this.SetChromaKey = function( key ) { logger.info( this.__module(), "SetChromaKey( " + key + " )" ); };
     this.SetAlphaLevel = function( level ) { logger.info( this.__module(), "SetAlphaLevel( " + level + " )" ); };
@@ -112,7 +308,7 @@ function BrowserClass()
 {
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
     this.SetToolbarState = function( state ) { logger.info( this.__module(), "SetToolbarState( " + state + " )" ); };
     this.FrameLoadResetsState = function( state ) { logger.info( this.__module(), "FrameLoadResetsState( " + state + " )" ); };
@@ -123,16 +319,27 @@ function BrowserClass()
 
 function AVMediaClass()
 {
+    this.vlc     = new VLCClass;
     this.onEvent = null;
     this.Event   = 0;
 
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
-    this.Kill = function() { logger.info( this.__module(), "Kill()" ); };
-    this.Play = function( url ) { logger.info( this.__module(), "Play( " + url + " )" ); };
-    this.Pause = function() { logger.info( this.__module(), "Play()" ); };
+    this.Kill = function()
+    {
+        logger.warning( this.__module(), "Kill()" );
+
+        this.vlc.stop();
+    };
+    this.Play = function( url )
+    {
+    	logger.warning( this.__module(), "Play( " + url + " )" );
+
+        this.vlc.play( url );
+    };
+    this.Pause = function() { logger.info( this.__module(), "Pause()" ); };
     this.Continue = function() { logger.info( this.__module(), "Continue()" ); };
     this.GetMSecPosition = function() { return 0; };
     this.SetMSecPosition = function( pos ) { return pos; };
@@ -174,13 +381,15 @@ function RecordingAsset()
 
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
     this.ReadMeta = function()
     {
         var self    = this;
         var context = {};
         context["asset"] = this;
+
+        logger.warning( this.__module(), "ReadMeta" );
 
         this._recording.readMarker( context, function( status, context, data )
         {
@@ -189,15 +398,15 @@ function RecordingAsset()
             {
                 asset.marker = data;
 
-                logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
+                logger.warning( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
             }
         }, false );
 
-        return "{'marker':" + this.marker + "}";
+        return '{"marker":' + this.marker + '}';
     };
     this.WriteMeta = function( meta )
     {
-        logger.info( this.__module(), "WriteMeta( " + meta + " )" );
+        logger.warning( this.__module(), "WriteMeta( " + meta + " )" );
 
         var meta    = eval( "(" + meta + ")" );
         this.marker = meta.marker;
@@ -209,7 +418,7 @@ function RecordingAsset()
         {
             if ( status )
             {
-                logger.info( self.__module(), "WriteMeta.callback: saved meta data" );
+                logger.warning( self.__module(), "WriteMeta.callback: saved meta data" );
             }
         }, false );
     };
@@ -240,7 +449,7 @@ function PVRClass()
 
     this.__module = function()
     {
-        return "stub." + this.constructor.name;
+        return "impl." + this.constructor.name;
     };
     this.GetPltInfo = function() { return "OK"; };
     this.GetStorageInfo = function()
@@ -276,7 +485,7 @@ function PVRClass()
     };
     this.GetDeviceInfo = function()
     {
-        return "{'id':'mythtv'}";
+        return "{'id':'AminoPVR'}";
     };
     this.GetDeviceStatus = function( deviceId )
     {
@@ -317,6 +526,7 @@ function PVRClass()
                 if ( generalConfig != null )
                 {
                     host = "rtsp://" + location.hostname + ":" + generalConfig.getRtspServerPort() + "/";
+//                    host = "http://" + location.hostname + ":" + generalConfig.getServerPort() + "/";
                 }
 
                 logger.warning( this.__module(), "_recordingListCallback.callback: host=" + host );
@@ -331,7 +541,8 @@ function PVRClass()
                     asset.duration       = Math.round( recording.getEndTime().getTime() / 1000 ) - asset.startTime;
                     asset.viewingControl = 12;
                     asset.position       = 0;
-                    asset.url            = "src=" + host + recording.getFilename() + ";servertype=mediabase";
+                    asset.url            = "src=" + host + recording.getFilename();// + ";servertype=mediabase";
+//                    asset.url            = "src=" + host + "recordings/" + recording.getId();
                     asset.marker         = recording.getMarker();
                     asset._recording     = recording;
     

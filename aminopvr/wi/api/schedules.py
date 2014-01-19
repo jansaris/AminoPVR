@@ -87,32 +87,40 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._acceptJson
     # TODO
-    def addScheduleNew( self, schedule ):
+    def addSchedule( self, schedule ):
         self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
         conn         = DBConnection()
  
         scheduleDict = json.loads( schedule )
         if scheduleDict:
-            newSchedule = Schedule.fromDict( schedule )
+            newSchedule = Schedule.fromDict( scheduleDict )
  
-            if newSchedule.channelId != -1:
-                channel = Channel.getFromDb( conn, newSchedule.channelId )
-                if not channel:
-                    self._logger.warning( "addSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
+            if newSchedule:
+                if newSchedule.channelId != -1:
+                    channel = Channel.getFromDb( conn, newSchedule.channelId )
+                    if not channel:
+                        self._logger.warning( "addSchedule: Schedule refers to non-existing channelId=%d" % ( newSchedule.channelId ) )
+    
+                newSchedule.addToDb( conn )
+                Scheduler().requestReschedule()
+    
+                return self._createResponse( API.STATUS_SUCCESS )
+            else:
+                self._logger.error( "addSchedule: Unable to create new schedule from scheduleDict=%r" % ( scheduleDict ) )
 
-            newSchedule.addToDb( conn )
-            Scheduler.requestReschedule()
+                return self._createResponse( API.STATUS_FAIL, "Unable to create Schedule object" )
 
-            return self._createResponse( API.STATUS_SUCCESS )
+        self._logger.error( "addSchedule: Unable to parse json=%s" % ( schedule ) )
 
-        return self._createResponse( API.STATUS_FAIL, "Unknown" )
+        return self._createResponse( API.STATUS_FAIL, "Error parsing json" )
 
     @cherrypy.expose
     @API._grantAccess
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
-    def addSchedule( self, url, titleId, startTime, endTime, aa ):
-        self._logger.debug( "addSchedule( url=%s, titleId=%s, startTime=%d, endTime=%d, aa=%s )" % ( url, titleId, startTime, endTime, aa ) )
+    def addScheduleStb( self, url, titleId, startTime, endTime, aa ):
+        self._logger.debug( "addScheduleStb( url=%s, titleId=%s, startTime=%d, endTime=%d, aa=%s )" % ( url, titleId, startTime, endTime, aa ) )
         conn      = DBConnection()
 
         # Split title and programId

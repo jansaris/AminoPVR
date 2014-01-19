@@ -60,7 +60,7 @@ class STBAPI( API ):
                     channelId = channelOld.id
                 channelNew = self._getChannelFromJson( channel, channelId )
                 newChannelNumbers.append( channelNew.number )
-                self._logger.info( "setChannelList: processing channel: %s" % ( channelNew.dump() ) )
+                self._logger.debug( "setChannelList: processing channel: %s" % ( channelNew.dump() ) )
                 if not channelNew:
                     self._logger.error( "setChannelList: unable to create channel for channel=%s", ( channel ) )
                 elif not channelOld:
@@ -85,13 +85,6 @@ class STBAPI( API ):
             self._logger.exception( "setChannelList: exception: channelList=%s" % ( channelList ) )
 
         return self._createResponse( API.STATUS_FAIL, { "numChannels": 0 } )
-
-    @cherrypy.expose
-    @API._grantAccess
-    # TODO: to be removed --> should become broadcast message from renderer to controllers
-    def setActiveChannel( self, channel ):
-        self._logger.debug( "setActiveChannel( %s )" % ( channel ) )
-        return self._createResponse( API.STATUS_SUCCESS )
 
     def _getChannelFromJson( self, json, channelId=-1 ):
         channel = PendingChannel.fromDict( json, channelId )

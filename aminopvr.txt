@@ -5,7 +5,7 @@ scheduler
 - prefer SD/HD
 - prefer unscrambled/scrambled
 - record at same time every day/weekday/weekendday/week
-- [todo] record once
+- [todo] record once -> inactivate or remove record once schedules after recording
 - record early / end late
 - [todo] record manually based on time & channel
 - [future] indicate recording group (e.g. TV Series, Food, Sport)
@@ -50,6 +50,7 @@ streams
 - basic authentication
 - all: apple hls?
 - support timeshift?
+- [todo] create RTSP index files after recordings (background)
 - [future] internal igmp proxy
 - [future] internal multicast > unicast proxy
 - [future] internal rtsp server

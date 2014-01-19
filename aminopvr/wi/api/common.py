@@ -60,6 +60,25 @@ class API( object ):
         return wrapper
 
     @classmethod
+    def _acceptJson( cls, target ):
+        def wrapper( *args, **kwargs ):
+            contentType   = cherrypy.request.headers['Content-Type']
+            if contentType == "application/json":
+                contentLength = cherrypy.request.headers['Content-Length']
+                rawBody       = cherrypy.request.body.read( int( contentLength ) )
+                jsonData      = json.loads( rawBody )
+
+                for arg in jsonData.keys():
+                    if not kwargs.has_key( arg ):
+                        kwargs[arg] = jsonData[arg]
+                        cls._apiLogger.debug( "_acceptJson: adding argument=%s to arguments" % ( arg ) )
+                    else:
+                        cls._apiLogger.warning( "_acceptJson: argument=%s already an argument" % ( arg ) )
+
+            return target( *args, **kwargs )
+        return wrapper
+
+    @classmethod
     def _addressInNetwork( cls, ip, nets ):
         # Is an address in a network
         ipAddress = struct.unpack( '=L', socket.inet_aton( ip ) )[0]

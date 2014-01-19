@@ -1097,7 +1097,7 @@ function AminoPVRClass()
 
         return requestContext["channel"];
     };
-    this._channelCallback = function( status, context, program )
+    this._channelCallback = function( status, context, channel )
     {
         if ( status )
         {

@@ -324,17 +324,6 @@ function StbController()
         try
         {
             logger.info( this.__module(), "setActiveChannel: " + channel );
-
-            var self    = this;
-            var request = new JsonAjaxRequest();
-            request.setCallback( function( status, context, data )
-            {
-                if ( status )
-                {
-                    logger.info( self.__module(), "setActiveChannel.callback: done: " + data );
-                }
-            } );
-            request.send( "GET", "/api/stb/setActiveChannel/" + channel, true );
         }
         catch ( e )
         {
