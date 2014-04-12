@@ -389,7 +389,7 @@ function RecordingAsset()
         var context = {};
         context["asset"] = this;
 
-        logger.warning( this.__module(), "ReadMeta" );
+        logger.info( this.__module(), "ReadMeta" );
 
         this._recording.readMarker( context, function( status, context, data )
         {
@@ -398,7 +398,7 @@ function RecordingAsset()
             {
                 asset.marker = data;
 
-                logger.warning( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
+                logger.info( self.__module(), "ReadMeta.callback: read meta data: marker=" + asset.marker );
             }
         }, false );
 
