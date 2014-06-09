@@ -85,7 +85,7 @@ function FetchChannelList( edit_favorites )
 {
     if ( channel_list.length == 0 )
     {
-        $.mobile.showPageLoadingMsg();
+//        $.mobile.showPageLoadingMsg();
 
         var context  = new Array();
         context["edit_favorites"] = edit_favorites;
@@ -130,7 +130,7 @@ function ChannelList_Fetched( status, context, channels )
         }
     }
 
-    $.mobile.hidePageLoadingMsg();
+//    $.mobile.hidePageLoadingMsg();
 
     fetching_channel_list = false;
 }
@@ -326,7 +326,7 @@ function GoToChannel( id )
 
 function ShowChannelInfo()
 {
-    $.mobile.showPageLoadingMsg();
+//    $.mobile.showPageLoadingMsg();
 
     $.getJSON( 'remote.php',
     {
@@ -359,7 +359,7 @@ function ShowChannelInfo()
         $( '#channel_programs_list' ).append( nownext.join( '' ) );
         $( '#channel_programs_list' ).listview( 'refresh' );
 
-        $.mobile.hidePageLoadingMsg();
+//        $.mobile.hidePageLoadingMsg();
 
         $( '#channel_content' ).css( 'display', 'block' );
     } )
@@ -375,7 +375,7 @@ function ChannelPlayHere()
 
     if ( channel && $( '#channel_pip' )[0].paused )
     {
-        $.mobile.showPageLoadingMsg();
+//        $.mobile.showPageLoadingMsg();
 
         console.log( "channel: " + channel_id );
 
@@ -398,7 +398,7 @@ function ChannelPlayHere()
                 channel_pip_interval = setInterval( function() { $( '#channel_video_status' ).html( '<p>ended: ' + $( '#channel_pip' )[0].ended + ', paused: ' + $( '#channel_pip' )[0].paused + ', networkState: ' + $( '#channel_pip' )[0].networkState + ', readyState: ' + $( '#channel_pip' )[0].readyState + '</p>' ); }, 1000 );
             }
 
-            $.mobile.hidePageLoadingMsg();
+//            $.mobile.hidePageLoadingMsg();
         } )
         .error( function( jqXHR, textStatus, errorThrown )
         {
@@ -437,7 +437,7 @@ function RecordingsToggleSort()
     {
         fetching_recording_list = true;
 
-        $.mobile.hidePageLoadingMsg();
+//        $.mobile.hidePageLoadingMsg();
 
         if ( recording_list_sort == "" )
         {
@@ -464,7 +464,7 @@ function FetchRecordingList()
 {
     var context = new Array();
 
-    $.mobile.showPageLoadingMsg();
+//    $.mobile.showPageLoadingMsg();
 
     aminopvr.getRecordingList( context, RecordingList_Fetched, true, recording_offset, RECORDING_COUNT );
 }
@@ -543,7 +543,7 @@ function RecordingList_Fetched( status, context, recordings )
         }
     }
 
-    $.mobile.hidePageLoadingMsg();
+//    $.mobile.hidePageLoadingMsg();
 
     fetching_recording_list = false;
 }
@@ -565,11 +565,11 @@ function GoToRecording( id )
 
 function ShowRecordingInfo()
 {
-    $.mobile.showPageLoadingMsg();
+//    $.mobile.showPageLoadingMsg();
 
     $( '#recording_name' ).html( '<h3>' + recording_list[recording_id].getTitle() + '</h3><p>' + recording_list[recording_id].getSubtitle() + '</p>' );
 
-    $.mobile.hidePageLoadingMsg();
+//    $.mobile.hidePageLoadingMsg();
 
     $( '#recording_content' ).css( 'display', 'block' );
 }
@@ -890,7 +890,7 @@ $( document ).bind( "pagebeforechange", function( e, data )
         {
             if ( channel_list.length == 0 )
             {
-                $.mobile.showPageLoadingMsg();
+//                $.mobile.showPageLoadingMsg();
                 FetchChannelList( true );
 
                 // Make sure to tell changepage we've handled this call so it doesn't
@@ -906,7 +906,7 @@ $( document ).bind( "pagebeforechange", function( e, data )
         {
             if ( recording_list.length == 0 )
             {
-                $.mobile.showPageLoadingMsg();
+//                $.mobile.showPageLoadingMsg();
                 FetchRecordingList( true );
 
                 // Make sure to tell changepage we've handled this call so it doesn't

@@ -88,7 +88,7 @@ def initWebserver( serverPort=8080 ):
         <br/>
     </body>
 </html>
-''' % '/aminopvr'
+''' % '/webui/'
 
     options = {
         'host':      '0.0.0.0',
@@ -113,6 +113,7 @@ def initWebserver( serverPort=8080 ):
     conf = {
         '/': {
             'tools.staticdir.root': options['data_root'],
+            'tools.staticfile.root': options['data_root'],
             'tools.encode.on': True,
             'tools.encode.encoding': 'utf-8'
         },
@@ -120,22 +121,26 @@ def initWebserver( serverPort=8080 ):
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/images'
         },
-        '/assets/js':     {
+        '/assets/js': {
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/js'
         },
-        '/assets/css':    {
+        '/assets/css': {
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/css'
         },
-        '/assets/webui/js':     {
+        '/assets/webui/js': {
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/webui/js'
         },
-        '/assets/webui/css':    {
+        '/assets/webui/css': {
             'tools.staticdir.on':  True,
             'tools.staticdir.dir': 'assets/webui/css'
         },
+        '/favicon.ico': {
+            'tools.staticfile.on':       True,
+            'tools.staticfile.filename': 'assets/favicon.ico'
+        }
     }
 
     webInterface = aminopvr.providers.webInterface
