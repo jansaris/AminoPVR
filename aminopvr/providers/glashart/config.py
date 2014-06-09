@@ -20,7 +20,7 @@ from aminopvr.config import ConfigSectionAbstract, defaultConfig
 class GlashartConfig( ConfigSectionAbstract ):
     _section = "Glashart"
     _options = {
-                 "iptv_base_url":           "http://w.zt6.nl",
+                 "iptv_base_url":           "http://w.stb.zt6.nl",
                  "tvmenu_path":             "tvmenu",
                  "tvmenu_index_path":       "%(iptv_base_url)s/%(tvmenu_path)s/index.xhtml.gz",
                  "epg_data_path":           "%(iptv_base_url)s/epgdata",
