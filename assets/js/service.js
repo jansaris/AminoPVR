@@ -278,6 +278,10 @@ function StbController()
                     var channel = new API_ChannelClass();
                     channel.getChannel( stbApi.channelList()[i] );
                     channelStreams = [];
+                    if ( channel.URLHDPlus != "" )
+                    {
+                        channelStreams.push( { url: channel.URLHD, is_hd: 2 } );
+                    }
                     if ( channel.URLHD != "" )
                     {
                         channelStreams.push( { url: channel.URLHD, is_hd: 1 } );

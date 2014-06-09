@@ -389,30 +389,53 @@ class Scheduler( threading.Thread ):
                     for channel in channels:
                         # Sort channel urls based on preference for Hd or Unscrambled
                         # Unscrambled is higher priority than Hd 
-                        # Default order = sd, hd
+                        # Default order = sd, hd, hd+
                         # TODO: there could be multiple channels with multiple channels: sort total set of urls
                         urls      = channel.urls
                         urlsOrder = []
                         if schedule.preferUnscrambled:
-                            if schedule.preferHd and urls.has_key( "hd" ) and not urls["hd"].scrambled:
-                                urlsOrder.append( "hd" )
+                            if schedule.preferHd:
+                                if urls.has_key( "hd" ) and not urls["hd"].scrambled:
+                                    urlsOrder.append( "hd" )
+                                if urls.has_key( "hd+" ) and not urls["hd+"].scrambled:
+                                    urlsOrder.append( "hd+" )
                                 if urls.has_key( "sd" ):
                                     urlsOrder.append( "sd" )
                             elif urls.has_key( "sd" ) and not urls["sd"].scrambled:
                                 urlsOrder.append( "sd" )
                                 if urls.has_key( "hd" ):
                                     urlsOrder.append( "hd" )
+                                if urls.has_key( "hd+" ):
+                                    urlsOrder.append( "hd+" )
                             elif urls.has_key( "hd" ) and not urls["hd"].scrambled:
                                 urlsOrder.append( "hd" )
+                                if urls.has_key( "hd+" ):
+                                    urlsOrder.append( "hd+" )
+                                if urls.has_key( "sd" ):
+                                    urlsOrder.append( "sd" )
+                            elif urls.has_key( "hd+" ) and not urls["hd+"].scrambled:
+                                urlsOrder.append( "hd+" )
+                                if urls.has_key( "hd" ):
+                                    urlsOrder.append( "hd" )
                                 if urls.has_key( "sd" ):
                                     urlsOrder.append( "sd" )
                             else:
-                                if urls.has_key( "sd "):
+                                if urls.has_key( "sd" ):
                                     urlsOrder.append( "sd" )
-                                if urls.has_key( "hd "):
+                                if urls.has_key( "hd" ):
                                     urlsOrder.append( "hd" )
+                                if urls.has_key( "hd+" ):
+                                    urlsOrder.append( "hd+" )
                         elif urls.has_key( "hd" ) and schedule.preferHd:
                             urlsOrder.append( "hd" )
+                            if urls.has_key( "hd+" ):
+                                urlsOrder.append( "hd+" )
+                            if urls.has_key( "sd" ):
+                                urlsOrder.append( "sd" )
+                        elif urls.has_key( "hd+" ) and schedule.preferHd:
+                            urlsOrder.append( "hd+" )
+                            if urls.has_key( "hd" ):
+                                urlsOrder.append( "hd" )
                             if urls.has_key( "sd" ):
                                 urlsOrder.append( "sd" )
                         else:
@@ -420,6 +443,8 @@ class Scheduler( threading.Thread ):
                                 urlsOrder.append( "sd" )
                             if urls.has_key( "hd" ):
                                 urlsOrder.append( "hd" )
+                            if urls.has_key( "hd+" ):
+                                urlsOrder.append( "hd+" )
 
                         if len( urlsOrder ) == 0:
                             self._logger.warning( "_handleSchedule: No Urls to record program %i - '%s'" % ( program.id, program.title ) )

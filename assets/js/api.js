@@ -73,6 +73,7 @@ function API_ChannelClass()
     this.Radio     = false;
     this.URL       = "";
     this.URLHD     = "";
+    this.URLHDPlus = "";
 
     this.getChannel = function( channel )
     {
@@ -112,7 +113,14 @@ function API_ChannelClass()
                 {
                     if ( channel.{channel_streams}[j].{channel_url_hd} !== undefined && channel.{channel_streams}[j].{channel_url_hd} == 1 )
                     {
-                        this.URLHD = channel.{channel_streams}[j].{channel_url};
+                        if ( channel.{channel_streams}[j].{channel_metadata} !== undefined && channel.{channel_streams}[j].{channel_metadata}["default"] == "HD+")
+                        {
+                            this.URLHDPlus = channel.{channel_streams}[j].{channel_url};
+                        }
+                        else
+                        {
+                            this.URLHD = channel.{channel_streams}[j].{channel_url};
+                        }
                     }
                     else
                     {

@@ -548,11 +548,17 @@ class ChannelAbstract( object ):
     def getChannelUrl( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
         channelUrl = None
 
-        if includeHd and self._urls.has_key( "hd" ):
-            if self._urls["hd"].scrambled and includeScrambled:
-                channelUrl = self._urls["hd"]
-            elif not self._urls["hd"].scrambled:
-                channelUrl = self._urls["hd"]
+        if includeHd and ( self._urls.has_key( "hd" ) or self._urls.has_key( "hd+" ) ):
+            if self._urls.has_key( "hd" ):
+                if self._urls["hd"].scrambled and includeScrambled:
+                    channelUrl = self._urls["hd"]
+                elif not self._urls["hd"].scrambled:
+                    channelUrl = self._urls["hd"]
+            elif self._urls.has_key( "hd+" ):
+                if self._urls["hd+"].scrambled and includeScrambled:
+                    channelUrl = self._urls["hd+"]
+                elif not self._urls["hd+"].scrambled:
+                    channelUrl = self._urls["hd+"]
         if not channelUrl:
             if self._urls.has_key( "sd" ):
                 if self._urls["sd"].scrambled and includeScrambled:
