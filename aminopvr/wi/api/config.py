@@ -25,6 +25,7 @@ class ConfigAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getGeneralConfig( self ):
         generalConfig = GeneralConfig( Config() )
         return self._createResponse( API.STATUS_SUCCESS, generalConfig.toDict() )

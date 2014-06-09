@@ -21,6 +21,7 @@ from aminopvr.epg import EpgProgram
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
+import types
 
 class EpgAPI( API ):
 
@@ -28,17 +29,15 @@ class EpgAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def index( self ):
         return "Epg API"
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( channelId=types.IntType, startTime=types.IntType, endType=types.IntType )
     def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
-        self._logger.debug( "getEpgForChannel( channelId=%s, startTime=%s, endTime=%s )" % ( channelId, startTime, endTime ) )
-        if startTime:
-            startTime = int( startTime )
-        if endTime:
-            endTime   = int( endTime )
+        self._logger.debug( "getEpgForChannel( channelId=%s, startTime=%s, endTime=%d )" % ( channelId, startTime, endTime ) )
 
         conn     = DBConnection()
         channel  = Channel.getFromDb( conn, channelId )
@@ -50,8 +49,9 @@ class EpgAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( originalId=types.IntType )
     def getEpgProgramByOriginalId( self, originalId ):
-        self._logger.debug( "getEpgProgramByOriginalId( originalId=%s )" % ( originalId ) )
+        self._logger.debug( "getEpgProgramByOriginalId( originalId=%d )" % ( originalId ) )
         conn        = DBConnection()
         epgProgram  = EpgProgram.getByOriginalIdFromDb( conn, originalId )
         if epgProgram:
@@ -61,6 +61,7 @@ class EpgAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getNowNextProgramList( self ):
         self._logger.debug( "getNowNextProgramList()" )
         conn     = DBConnection()

@@ -27,8 +27,9 @@ class API( object ):
 
     _apiLogger       = logging.getLogger( "aminopvr.WI.API" )
 
-    STATUS_FAIL      = 1
-    STATUS_SUCCESS   = 2
+    STATUS_SUCCESS          = 0
+    STATUS_FAIL             = 1
+    STATUS_ARGUMENT_ERROR   = 2
 
     @classmethod
     def _grantAccess( cls, target ):
@@ -60,20 +61,96 @@ class API( object ):
         return wrapper
 
     @classmethod
+    def _parseArguments( cls, *args, **kwargs ):
+        arguments = kwargs
+
+        def decorator( target ):
+            def _checkType( argType, argument ):
+                status = False
+                if isinstance( argument, argType ):
+                    status = True
+                else:
+                    if argType == types.BooleanType:
+                        if (type( argument ) in types.StringTypes and argument in [ "true", "True" ]) or (type( argument ) == types.IntType and argument == 1):
+                            argument = True
+                            status   = True
+                        elif (type( argument ) in types.StringTypes and argument in [ "false", "False" ]) or (type( argument ) == types.IntType and argument == 0):
+                            argument = False
+                            status   = True
+                    elif argType == types.IntType:
+                        if type( argument ) in types.StringTypes:
+                            try:
+                                argument = int( argument )
+                                status   = True
+                            except ValueError:
+                                status   = False
+                    elif argType in types.StringTypes:
+                        argument = str( argument )
+                return ( status, argument )
+
+            def wrapper( *args, **kwargs ):
+                argList = list( args )
+                if len( kwargs ) > len( arguments ):
+                    cls._apiLogger.error( "_parseArguments: too many arguments: got: %d, expected: %d" % ( len( kwargs ), len( arguments ) ) )
+                    return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "too many arguments: got: %d, expected: %d" % ( len( kwargs ), len( arguments ) ) )
+                elif len( argList ) - 1 > len( arguments.keys() ):
+                    cls._apiLogger.error( "_parseArguments: too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments.keys() ) ) )
+                    return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments.keys() ) ) )
+                else:
+                    cls._apiLogger.debug( "_parseArguments: arguments2: keys=%r, kwargs=%r" % ( arguments.keys(), arguments ) )
+                    for arg in argList:
+                        cls._apiLogger.debug( "_parseArguments: arg=%r" % ( arg ) )
+                    cls._apiLogger.debug( "_parseArguments: kwargs: keys=%r, kwargs=%r" % ( kwargs.keys(), kwargs ) )
+
+                    i = 1
+                    for key in arguments.keys():
+                        argument = None
+                        if i < len( argList ):
+                            argument = argList[i]
+                        elif key in kwargs.keys():
+                            argument = kwargs[key]
+
+                        if argument:
+                            status, argument = _checkType( arguments[key], argument )
+                            if not status:
+                                cls._apiLogger.error( "_parseArguments: unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, arguments[key] ) )
+                                return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, arguments[key] ) )
+
+                            if i < len( args ):
+                                argList[i] = argument
+                                if key in kwargs.keys():
+                                    del( kwargs[key] )
+                            elif key in kwargs.keys():
+                                kwargs[key] = argument
+                        i += 1
+
+                    for key in kwargs.keys():
+                        if key not in arguments.keys():
+                            cls._apiLogger.error( "_parseArguments: unknown argument with key: %s" % ( key ) )
+                            return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "unknown argument with key: %s" % ( key ) )
+    
+                    args = tuple( argList )
+    
+                return target( *args, **kwargs )
+            return wrapper
+        return decorator
+
+    @classmethod
     def _acceptJson( cls, target ):
         def wrapper( *args, **kwargs ):
-            contentType   = cherrypy.request.headers['Content-Type']
-            if contentType == "application/json":
-                contentLength = cherrypy.request.headers['Content-Length']
-                rawBody       = cherrypy.request.body.read( int( contentLength ) )
-                jsonData      = json.loads( rawBody )
+            if 'Content-Type' in cherrypy.request.headers:
+                contentType   = cherrypy.request.headers['Content-Type']
+                if contentType == "application/json":
+                    contentLength = cherrypy.request.headers['Content-Length']
+                    rawBody       = cherrypy.request.body.read( int( contentLength ) )
+                    jsonData      = json.loads( rawBody )
 
-                for arg in jsonData.keys():
-                    if not kwargs.has_key( arg ):
-                        kwargs[arg] = jsonData[arg]
-                        cls._apiLogger.debug( "_acceptJson: adding argument=%s to arguments" % ( arg ) )
-                    else:
-                        cls._apiLogger.warning( "_acceptJson: argument=%s already an argument" % ( arg ) )
+                    for arg in jsonData.keys():
+                        if not kwargs.has_key( arg ):
+                            kwargs[arg] = jsonData[arg]
+                            cls._apiLogger.debug( "_acceptJson: adding argument=%s to arguments" % ( arg ) )
+                        else:
+                            cls._apiLogger.warning( "_acceptJson: argument=%s already an argument" % ( arg ) )
 
             return target( *args, **kwargs )
         return wrapper
@@ -101,13 +178,16 @@ class API( object ):
                     return True
             return False
 
-    def _createResponse( self, status, data=None ):
+    @classmethod
+    def _createResponse( cls, status, data=None ):
         response = {}
         response["status"] = "unknown"
         if status == API.STATUS_SUCCESS:
             response["status"] = "success"
         elif status == API.STATUS_FAIL:
             response["status"] = "fail"
+        elif status == API.STATUS_ARGUMENT_ERROR:
+            response["status"] = "argument_error"
         if data:
             response["data"] = data
         cherrypy.response.headers["Content-Type"] = "application/json"

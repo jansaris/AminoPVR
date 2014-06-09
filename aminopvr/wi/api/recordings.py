@@ -20,6 +20,7 @@ from aminopvr.recording import Recording
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
+import types
 
 class RecordingsAPI( API ):
 
@@ -27,11 +28,13 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def index( self ):
         return "Recordings API"
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getNumRecordings( self ):
         self._logger.debug( "getNumRecordings()" )
         conn = DBConnection()
@@ -39,14 +42,10 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( offset=types.IntType, count=types.IntType, sort=types.IntType )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getRecordingList( self, offset=None, count=None, sort=None ):
         self._logger.debug( "getRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )
-
-        if offset:
-            offset = int( offset )
-        if count:
-            count  = int( count )
 
         conn            = DBConnection()
         recordings      = Recording.getAllFromDb( conn, offset=offset, count=count, sort=sort )
@@ -59,13 +58,13 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getRecordingById( self, id ):  # @ReservedAssignment
         self._logger.debug( "getRecordingById( id=%s )" % ( id ) )
 
-        recordingId = int( id )
         conn        = DBConnection()
-        recording   = Recording.getFromDb( conn, recordingId )
+        recording   = Recording.getFromDb( conn, id )
         if recording:
             return self._createResponse( API.STATUS_SUCCESS, recording.toDict() )
         else:
@@ -73,37 +72,38 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType, rerecord=types.BooleanType )
     def deleteRecording( self, id, rerecord=False ):  # @ReservedAssignment
         self._logger.debug( "deleteRecording( id=%s, rerecord=%s )" % ( id, rerecord ) )
         conn        = DBConnection()
-        rerecord    = int( rerecord )
-        recordingId = int( id )
-        recording   = Recording.getFromDb( conn, recordingId )
+        recording   = Recording.getFromDb( conn, id )
         if recording:
             recording.deleteFromDb( conn, rerecord )
             return self._createResponse( API.STATUS_SUCCESS )
         else:
-            self._logger.warning( "deleteRecording: recording with id=%d does not exist" % ( recordingId ) )
+            self._logger.warning( "deleteRecording: recording with id=%d does not exist" % ( id ) )
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType )
     def getRecordingMarker( self, id ):  # @ReservedAssignment
         self._logger.debug( "getRecordingMarker( id=%s )" % ( id ) )
         conn      = DBConnection()
-        recording = Recording.getFromDb( conn, int( id ) )
+        recording = Recording.getFromDb( conn, id )
         if recording:
             return self._createResponse( API.STATUS_SUCCESS, { "marker": recording.marker / 1024 / 1024 } )
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType, marker=types.IntType )
     def setRecordingMarker( self, id, marker ):  # @ReservedAssignment
         self._logger.debug( "setRecordingMarker( id=%s, marker=%s )" % ( id, marker ) )
         conn      = DBConnection()
-        recording = Recording.getFromDb( conn, int( id ) )
+        recording = Recording.getFromDb( conn, id )
         if recording:
-            recording.marker = int( marker ) * 1024 * 1024
+            recording.marker = marker * 1024 * 1024
             self._logger.warn( "setRecordingMarker: marker=%d" % ( recording.marker ) )
             recording.addToDb( conn )
             return self._createResponse( API.STATUS_SUCCESS )

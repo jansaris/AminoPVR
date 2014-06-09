@@ -34,6 +34,7 @@ import logging
 import mimetypes
 import os
 import re
+import types
 import urllib
 
 class STBAPI( API ):
@@ -41,6 +42,7 @@ class STBAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( channelList=types.StringTypes )
     # TODO: this is too STB/provider specific
     def setChannelList( self, channelList ):
         self._logger.debug( "setChannelList( %s )" % ( channelList ) )
@@ -90,6 +92,7 @@ class STBAPI( API ):
         channel = PendingChannel.fromDict( json, channelId )
         if channel:
             urlRe   = re.compile( r"(?P<protocol>[a-z]{3,5}):\/\/(?P<ip>[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):(?P<port>[0-9]{1,5})(?P<arguments>;.*)?" )
+            self._logger.debug( "_getChannelFromJson: json=%r" % ( json ) )
             for stream in json["streams"]:
                 urlMatch = urlRe.search( stream["url"] )
                 if urlMatch:
@@ -100,7 +103,9 @@ class STBAPI( API ):
                     arguments = u""
                     if urlMatch.group( "arguments" ):
                         arguments = urlMatch.group( "arguments" )
-                    if stream["is_hd"]:
+                    if stream["is_hd"] == 2:
+                        urlType = u"hd+"
+                    elif stream["is_hd"] == 1:
                         urlType = u"hd"
                     channelUrl              = PendingChannelUrl( urlType )
                     channelUrl.protocol     = protocol
@@ -124,11 +129,13 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def index( self ):
         return "Welcome to AminoPVR API"
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     # TODO: --> api/status
     def getStorageInfo( self ):
         self._logger.debug( "getStorageInfo()" )
@@ -138,6 +145,8 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._acceptJson
+    @API._parseArguments()
     # TODO: --> api/admin
     def activatePendingChannels( self ):
         self._logger.debug( "activatePendingChannels()" )
@@ -230,6 +239,7 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     # TODO: --> api/admin
     def requestEpgUpdate( self ):
         self._logger.debug( "requestEpgUpdate()" )
@@ -244,8 +254,10 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._acceptJson
+    @API._parseArguments( logData=types.StringTypes )
     # TODO: --> api/admin
-    def postLog( self, logData ):
+    def postLog( self, logData="[]" ):
         self._logger.debug( "postLog( %s )" % ( logData ) )
         logs = json.loads( logData )
         for log in logs:

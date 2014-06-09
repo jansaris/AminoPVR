@@ -20,15 +20,16 @@ from aminopvr.wi.controller import Controller
 import cherrypy
 import json
 import logging
+import types
 
 class ControllerAPI( API ):
     _logger = logging.getLogger( "aminopvr.WI.ControllerAPI" )
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( type=types.IntType )
     def init( self, type=0 ):       # @ReservedAssignment - API needs this symbolname
-        self._logger.debug( "init( type=%s )" % ( type ) )
-        type       = int( type )    # @ReservedAssignment
+        self._logger.debug( "init( type=%d )" % ( type ) )
         controller = Controller()
         id_        = controller.addListener( cherrypy.request.remote.ip, type )
         self._logger.warning( "init: added listener with id=%d for ip=%s and type=%d" % ( id_, cherrypy.request.remote.ip, type ) )
@@ -44,9 +45,9 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType )
     def poll( self, id=-1 ):    # @ReservedAssignment - API needs this symbolname
-        self._logger.debug( "poll( id=%s )" % ( id ) )
-        id         = int( id )  # @ReservedAssignment - API needs this symbolname
+        self._logger.debug( "poll( id=%d )" % ( id ) )
         controller = Controller()
         if controller.isListener( id ):
             message = controller.getMessage( id, 25 )
@@ -61,10 +62,9 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( fromId=types.IntType, toId=types.IntType, message=types.StringTypes )
     def sendMessage( self, fromId, toId, message ):
-        self._logger.debug( "sendMessage( fromId=%s, toId=%s, message=%s )" % ( fromId, toId, message ) )
-        fromId      = int( fromId )
-        toId        = int( toId )
+        self._logger.debug( "sendMessage( fromId=%d, toId=%d, message=%s )" % ( fromId, toId, message ) )
         controller  = Controller()
         if not controller.isListener( fromId ):
             return self._createResponse( API.STATUS_FAIL, { "message": "Listener with id=%d is not registered" % ( fromId ) } )
@@ -76,6 +76,7 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getListenerList( self ):
         controller = Controller()
         listeners  = controller.getListeners()

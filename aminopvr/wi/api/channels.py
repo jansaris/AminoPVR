@@ -21,6 +21,7 @@ from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
+import types
 
 class ChannelsAPI( API ):
 
@@ -28,11 +29,13 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def index( self ):
         return "Channels API"
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getNumChannels( self ):
         self._logger.debug( "getNumChannels()" )
         conn = DBConnection()
@@ -40,8 +43,9 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( tv=types.BooleanType, radio=types.BooleanType, unicast=types.BooleanType, includeScrambled=types.BooleanType, includeHd=types.BooleanType )
     def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
-        self._logger.debug( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
+        self._logger.info( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
         conn          = DBConnection()
         channels      = Channel.getAllFromDb( conn, includeRadio=radio, tv=tv )
         channelsArray = []
@@ -58,8 +62,9 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( ip=types.StringTypes, port=types.IntType )
     def getChannelByIpPort( self, ip, port ):
-        self._logger.debug( "getChannelByIpPort( ip=%s, port=%s )" % ( ip, port ) )
+        self._logger.debug( "getChannelByIpPort( ip=%s, port=%d )" % ( ip, port ) )
         conn      = DBConnection()
         channelId = ChannelUrl.getChannelByIpPortFromDb( conn, ip, int( port ) )
         if channelId:

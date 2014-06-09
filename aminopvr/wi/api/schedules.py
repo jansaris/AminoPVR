@@ -25,6 +25,7 @@ import cherrypy
 import json
 import logging
 import re
+import types
 
 class SchedulesAPI( API ):
 
@@ -32,11 +33,13 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def index( self ):
         return "Schedules API"
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getScheduleList( self ):
         self._logger.debug( "getScheduleList()" )
@@ -51,10 +54,11 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( title=types.StringTypes, channelId=types.IntType )
     def getScheduleByTitleAndChannelId( self, title, channelId ):
-        self._logger.debug( "getScheduleByTitleAndChannelId( title=%s, channelId=%s )" % ( title, channelId ) )
+        self._logger.debug( "getScheduleByTitleAndChannelId( title=%s, channelId=%d )" % ( title, channelId ) )
         conn        = DBConnection()
-        schedule    = Schedule.getByTitleAndChannelIdFromDb( conn, title, int( channelId ) )
+        schedule    = Schedule.getByTitleAndChannelIdFromDb( conn, title, channelId )
         if schedule:
             return self._createResponse( API.STATUS_SUCCESS, schedule.toDict() )
         else:
@@ -62,6 +66,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments()
     def getNumScheduledRecordings( self ):
         self._logger.debug( "getNumScheduledRecordings()" )
         scheduledRecordings = Scheduler().getScheduledRecordings()
@@ -69,14 +74,11 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( offset=types.IntType, count=types.IntType, sort=types.IntType )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     # TODO: --> this function returns recordings, so should it be part of RecordingsAPI?
     def getScheduledRecordingList( self, offset=None, count=None, sort=None ):
         self._logger.debug( "getScheduledRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )
-        if offset:
-            offset = int( offset )
-        if count:
-            count  = int( count )
         scheduledRecordings = Scheduler().getScheduledRecordings()
         scheduledRecordingsArray = []
         for scheduledRecording in scheduledRecordings:
@@ -88,6 +90,7 @@ class SchedulesAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     @API._acceptJson
+    @API._parseArguments( schedule=types.StringTypes )
     # TODO
     def addSchedule( self, schedule ):
         self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
@@ -118,6 +121,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( url=types.StringTypes, titleId=types.StringTypes, startTime=types.IntType, endTime=types.IntType, aa=types.StringTypes )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def addScheduleStb( self, url, titleId, startTime, endTime, aa ):
         self._logger.debug( "addScheduleStb( url=%s, titleId=%s, startTime=%d, endTime=%d, aa=%s )" % ( url, titleId, startTime, endTime, aa ) )
@@ -168,7 +172,7 @@ class SchedulesAPI( API ):
                             schedule.preferUnscrambled  = False
                             schedule.dupMethod          = Schedule.DUPLICATION_METHOD_TITLE | Schedule.DUPLICATION_METHOD_SUBTITLE
                             schedule.addToDb( conn )
-                            Scheduler.requestReschedule()
+                            Scheduler().requestReschedule()
 
                         return self._createResponse( API.STATUS_SUCCESS, schedule.id )
                     else:
@@ -184,6 +188,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( id=types.IntType )
     def deleteSchedule( self, id ):  # @ReservedAssignment
         self._logger.debug( "deleteSchedule( id=%s )" % ( id ) )
 
@@ -191,7 +196,7 @@ class SchedulesAPI( API ):
         schedule = Schedule.getFromDb( conn, int( id ) )
         if schedule:
             schedule.deleteFromDb( conn )
-            Scheduler.requestReschedule()
+            Scheduler().requestReschedule()
             return self._createResponse( API.STATUS_SUCCESS )
         else:
             self._logger.error( "deleteSchedule: Unable to find schedule with id=%d" % ( int( id ) ) )
@@ -200,6 +205,8 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._acceptJson
+    @API._parseArguments( id=types.IntType, schedule=types.StringTypes )
     def changeSchedule( self, id, schedule ):  # @ReservedAssignment
         self._logger.debug( "changeSchedule( id=%s, schedule=%s )" % ( id, schedule ) )
 
@@ -216,7 +223,7 @@ class SchedulesAPI( API ):
 
                 if currSchedule != newSchedule:
                     newSchedule.addToDb( conn )
-                    Scheduler.requestReschedule()
+                    Scheduler().requestReschedule()
                 else:
                     self._logger.warning( "changeSchedule: no changes in Schedule" )
 
