@@ -33,16 +33,12 @@ class InputStreamConfig( ConfigSectionAbstract ):
                  "http_base_url": "http://localhost:4022/[protocol]/[ip]:[port]"
                }
 
-    @property
-    def httpBaseUrl( self ):
-        return self._get( "http_base_url" )
-
 class InputStreamAbstract( object ):
     """
     InputStreamAbstract base class
     """
     def __init__( self ):
-        self._logger.debug( "InputStreamAbstract.__init__()" )
+        pass
 
     @classmethod
     def createInputStream( cls, protocol, url ):
@@ -62,6 +58,8 @@ class InputStreamAbstract( object ):
     def getUrl( cls, protocol, url ):
         if protocol == InputStreamProtocol.HTTP:
             return HttpInputStream.getUrl( url )
+        elif protocol == InputStreamProtocol.MULTICAST:
+            return MulticastInputStream.getUrl( url )
         return None
 
 defaultConfig.append( InputStreamAbstract )
@@ -81,7 +79,7 @@ class MulticastInputStream( InputStreamAbstract ):
             self._socket = MulticastSocket( self._port, True )
             self._socket.add( self._ip )
         except:
-            self._logger.error( "Cannot open multicast: %s:%i, filename: %s" % ( self._ip, self._port ) )
+            self._logger.error( "Cannot open multicast: %s:%i" % ( self._ip, self._port ) )
             return False
         return True
 
@@ -90,6 +88,15 @@ class MulticastInputStream( InputStreamAbstract ):
 
     def read( self, length ):
         return self._socket.recv( length )
+
+    @classmethod
+    def getUrl( cls, url ):
+        if url.arguments == ";rtpskip=yes":
+            protocol = "rtp"
+        else:
+            protocol = "udp"
+
+        return protocol + "://%s:%d" % ( url.ip, url.port )
 
 class HttpInputStream( InputStreamAbstract ):
     _logger = logging.getLogger( "aminopvr.HttpInputStream" )

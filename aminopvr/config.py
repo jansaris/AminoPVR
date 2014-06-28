@@ -21,6 +21,7 @@ from aminopvr.tools import Singleton
 import ConfigParser
 import logging
 import os
+import re
 
 
 class ConfigSectionAbstract( object ):
@@ -44,6 +45,18 @@ class ConfigSectionAbstract( object ):
         unsupportedOptions = set( self._sectionOptions ).difference( set( self._options.keys() ) )
         for option in unsupportedOptions:
             self._logger.warning( "__init__: option: %s not supported" % ( option ) )
+
+    @classmethod
+    def _convert( cls, name ):
+        s1 = re.sub( '(.)([A-Z][a-z]+)', r'\1_\2', name )
+        return re.sub( '([a-z0-9])([A-Z])', r'\1_\2', s1 ).lower()
+
+    def __getattr__( self, name ):
+        attr = self._convert( name )
+#        assert attribute in self._objects.keys(), "attribute with name %s does not exist!" % ( attr )
+        if attr in self._options.keys():
+            return self._get( attr )
+        raise AttributeError
 
     def createDefaults( self ):
         assert self._section != None, "_section member not defined!"
@@ -111,10 +124,6 @@ class GeneralConfig( ConfigSectionAbstract ):
     """
 
     @property
-    def apiKey( self ):
-        return self._get( "api_key" )
-
-    @property
     def serverPort( self ):
         return self._getInt( "server_port" )
 
@@ -123,24 +132,8 @@ class GeneralConfig( ConfigSectionAbstract ):
         return const.RTSP_SERVER_PORT       # Currently a fixed port number
 
     @property
-    def provider( self ):
-        return self._get( "provider" )
-
-    @property
-    def inputStreamSupport( self ):
-        return self._get( "input_stream_support" )
-
-    @property
     def localAccessNets( self ):
         return self._get( "local_access_nets" ).split( ',' )
-
-    @property
-    def recordingsPath( self ):
-        return self._get( "recordings_path" )
-
-    @property
-    def timeslotDelta( self ):
-        return self._get( "timeslot_delta" )
 
 class DebugConfig( ConfigSectionAbstract ):
     _section = "Debug"

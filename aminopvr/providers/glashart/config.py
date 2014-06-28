@@ -33,48 +33,4 @@ class GlashartConfig( ConfigSectionAbstract ):
                  "grab_content_interval":   "24h"
                }
 
-    @property
-    def iptvBaseUrl( self ):
-        return self._get( "iptv_base_url" )
-
-    @property
-    def tvmenuPath( self ):
-        return self._get( "tvmenu_path" )
-
-    @property
-    def tvmenuIndexPath( self ):
-        return self._get( "tvmenu_index_path" )
-
-    @property
-    def epgDataPath( self ):
-        return self._get( "epg_data_path" )
-
-    @property
-    def epgChannelsPath( self ):
-        return self._get( "epg_channels_path" )
-
-    @property
-    def channelLogoPath( self ):
-        return self._get( "channel_logo_path" )
-
-    @property
-    def channelThumbPath( self ):
-        return self._get( "channel_thumb_path" )
-
-    @property
-    def grabEpgTime( self ):
-        return self._get( "grab_epg_time" )
-
-    @property
-    def grabEpgInterval( self ):
-        return self._get( "grab_epg_interval" )
-
-    @property
-    def grabContentTime( self ):
-        return self._get( "grab_content_time" )
-
-    @property
-    def grabContentInterval( self ):
-        return self._get( "grab_content_interval" )
-
 defaultConfig.append( GlashartConfig )
