@@ -72,3 +72,22 @@ class ChannelsAPI( API ):
             if channel:
                 return self._createResponse( API.STATUS_SUCCESS, channel.toDict() )
         return self._createResponse( API.STATUS_FAIL )
+
+    @cherrypy.expose
+    @API._grantAccess
+    @API._parseArguments( unicast=types.BooleanType, includeScrambled=types.BooleanType, includeHd=types.BooleanType )
+    def createM3U( self, unicast=True, includeScrambled=False, includeHd=True ):
+        self._logger.info( "createM3U( unicast=%s, includeScrambled=%s, includeHd=%s )" % ( unicast, includeScrambled, includeHd ) )
+        conn     = DBConnection()
+        channels = Channel.getAllFromDb( conn )
+
+        protocol = InputStreamProtocol.HTTP
+        if not unicast:
+            protocol = InputStreamProtocol.MULTICAST
+
+        m3u = "#EXTM3U\n"
+        for channel in channels:
+            m3u += channel.toM3UEntry( protocol, includeScrambled, includeHd )
+
+        cherrypy.response.headers["Content-Type"] = "text/plain"
+        return m3u

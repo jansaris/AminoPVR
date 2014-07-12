@@ -602,6 +602,30 @@ class ChannelAbstract( object ):
         else:
             return None
 
+    def toM3UEntry( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
+        output = ""
+
+        for urlType in self._urls.keys():
+            channelName   = self._name
+            channelNumber = self._number
+            if includeHd:
+                if urlType == "sd" and ( self._urls.has_key( "hd" ) or self._urls.has_key( "hd+" ) ):
+                    channelName   = channelName + " SD"
+                    channelNumber = channelNumber + 9000
+                if urlType == "hd+" and self._urls.has_key( "hd" ):
+                    channelName   = channelName + " HD+"
+                    channelNumber = channelNumber + 8000
+
+            if urlType != "sd" or includeHd:
+                output += "#EXTINF:-1,%i - %s\n" % ( channelNumber, channelName )
+                output += "#EXTICON:%s\n" % ( "/assets/images/channels/logos/" + self.logo )
+                output += "#EXTTYPE:%s\n" % ( urlType )
+                output += "#EXTMYTHTV:xmltvid=%s\n" % ( self._epgId )
+                output += "%s\n" % ( self._urls[urlType].getUrl( protocol ) )
+
+        return output
+
+
     def dump( self ):
         radio = self._radio and ", radio" or ""
         urls  = ""
