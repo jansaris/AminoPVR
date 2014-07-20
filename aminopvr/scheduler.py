@@ -32,6 +32,7 @@ import os
 import sys
 import threading
 import time
+from aminopvr.tsdecrypt import IsTsDecryptSupported
 
 class Scheduler( threading.Thread ):
     """
@@ -331,6 +332,10 @@ class Scheduler( threading.Thread ):
         self._logger.info( "_handleSchedule: Processing schedule %i - '%s' (%s)" % ( schedule.id, schedule.title, scheduleType ) )
         self._logger.debug( "_handleSchedule: dupMethod=%i, timeslot=%s" % ( schedule.dupMethod, timeslot ) )
 
+        includeScrambled = False
+        if IsTsDecryptSupported():
+            includeScrambled = True
+
         if manualSchedule:
             # SCHEDULE_TYPE_MANUAL_EVERY_DAY: create timers for next 7 days at timeslot
             # SCHEDULE_TYPE_MANUAL_EVERY_WEEKDAY: create timers for next 5 weekdays at timeslot
@@ -393,7 +398,7 @@ class Scheduler( threading.Thread ):
                         # TODO: there could be multiple channels with multiple channels: sort total set of urls
                         urls      = channel.urls
                         urlsOrder = []
-                        if schedule.preferUnscrambled:
+                        if schedule.preferUnscrambled and not includeScrambled:
                             if schedule.preferHd:
                                 if urls.has_key( "hd" ) and not urls["hd"].scrambled:
                                     urlsOrder.append( "hd" )
@@ -686,9 +691,13 @@ class Scheduler( threading.Thread ):
                             generalConfig     = GeneralConfig( Config() )
                             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) )
 
+                            protocol     = InputStreamProtocol.MULTICAST
+                            if IsTsDecryptSupported():
+                                protocol = InputStreamProtocol.TSDECRYPT
+
                             # Hmm, recording didn't start
                             # Mark recording as unfinished
-                            recorder.startRecording( channelUrl, timerId, recordingFilename, InputStreamProtocol.HTTP, self._recorderCallback )
+                            recorder.startRecording( channelUrl, timerId, recordingFilename, protocol, self._recorderCallback )
                         else:
                             self._logger.error( "_startRecording: Channel %s does not have a channelUrl of type %s" % ( channel.name, recording.channelUrlType ) )
                     else:

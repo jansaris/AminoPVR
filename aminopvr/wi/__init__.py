@@ -20,6 +20,7 @@ from aminopvr import const
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
 from aminopvr.wi.api import AminoPVRAPI
+from aminopvr.wi.channels import Channels
 from aminopvr.wi.recordings import Recordings
 from cherrypy.lib.static import serve_file, serve_fileobj
 import aminopvr.providers
@@ -44,6 +45,7 @@ class WebUI( object ):
 
 class WebInterface( object ):
     api         = AminoPVRAPI()
+    channels    = Channels()
     recordings  = Recordings()
     webui       = WebUI()
 
@@ -162,6 +164,9 @@ def initWebserver( serverPort=8080 ):
                 'tools.auth_basic.on':            False
             },
             '/assets': {
+                'tools.auth_basic.on':            False
+            },
+            '/channels': {
                 'tools.auth_basic.on':            False
             },
             '/recordings': {
