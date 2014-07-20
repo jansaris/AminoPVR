@@ -42,7 +42,7 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( offset=types.IntType, count=types.IntType, sort=types.IntType )
+    @API._parseArguments( [("offset", types.IntType), ("count", types.IntType), ("sort", types.IntType)] )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getRecordingList( self, offset=None, count=None, sort=None ):
         self._logger.debug( "getRecordingList( offset=%s, count=%s, sort=%s )" % ( offset, count, sort ) )
@@ -58,7 +58,7 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType )
+    @API._parseArguments( [("id", types.IntType)] )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def getRecordingById( self, id ):  # @ReservedAssignment
         self._logger.debug( "getRecordingById( id=%s )" % ( id ) )
@@ -72,7 +72,7 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType, rerecord=types.BooleanType )
+    @API._parseArguments( [("id", types.IntType), ("rerecord", types.BooleanType)] )
     def deleteRecording( self, id, rerecord=False ):  # @ReservedAssignment
         self._logger.debug( "deleteRecording( id=%s, rerecord=%s )" % ( id, rerecord ) )
         conn        = DBConnection()
@@ -86,7 +86,7 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType )
+    @API._parseArguments( [("id", types.IntType)] )
     def getRecordingMarker( self, id ):  # @ReservedAssignment
         self._logger.debug( "getRecordingMarker( id=%s )" % ( id ) )
         conn      = DBConnection()
@@ -97,7 +97,7 @@ class RecordingsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType, marker=types.IntType )
+    @API._parseArguments( [("id", types.IntType), ("marker", types.IntType)] )
     def setRecordingMarker( self, id, marker ):  # @ReservedAssignment
         self._logger.debug( "setRecordingMarker( id=%s, marker=%s )" % ( id, marker ) )
         conn      = DBConnection()

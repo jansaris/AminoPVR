@@ -18,6 +18,7 @@
 from aminopvr.channel import Channel, ChannelUrl
 from aminopvr.db import DBConnection
 from aminopvr.input_stream import InputStreamProtocol
+from aminopvr.tsdecrypt import IsTsDecryptSupported
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
@@ -43,7 +44,7 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( tv=types.BooleanType, radio=types.BooleanType, unicast=types.BooleanType, includeScrambled=types.BooleanType, includeHd=types.BooleanType )
+    @API._parseArguments( [("tv", types.BooleanType), ("radio", types.BooleanType), ("unicast", types.BooleanType), ("includeScrambled", types.BooleanType), ("includeHd", types.BooleanType)] )
     def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
         self._logger.info( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
         conn          = DBConnection()
@@ -51,8 +52,11 @@ class ChannelsAPI( API ):
         channelsArray = []
 
         protocol = InputStreamProtocol.HTTP
-        if not unicast:
-            protocol = InputStreamProtocol.MULTICAST
+        if IsTsDecryptSupported():
+            protocol         = InputStreamProtocol.TSDECRYPT
+            includeScrambled = True
+        elif not unicast:
+            protocol         = InputStreamProtocol.MULTICAST
 
         for channel in channels:
             channelJson = channel.toDict( protocol, includeScrambled, includeHd )
@@ -62,7 +66,7 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( ip=types.StringTypes, port=types.IntType )
+    @API._parseArguments( [("ip", types.StringTypes), ("port", types.IntType)] )
     def getChannelByIpPort( self, ip, port ):
         self._logger.debug( "getChannelByIpPort( ip=%s, port=%d )" % ( ip, port ) )
         conn      = DBConnection()
@@ -75,7 +79,7 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( unicast=types.BooleanType, includeScrambled=types.BooleanType, includeHd=types.BooleanType )
+    @API._parseArguments( [("unicast", types.BooleanType), ("includeScrambled", types.BooleanType), ("includeHd", types.BooleanType)] )
     def createM3U( self, unicast=True, includeScrambled=False, includeHd=True ):
         self._logger.info( "createM3U( unicast=%s, includeScrambled=%s, includeHd=%s )" % ( unicast, includeScrambled, includeHd ) )
         conn     = DBConnection()

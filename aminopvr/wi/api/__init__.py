@@ -42,7 +42,7 @@ class STBAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( channelList=types.StringTypes )
+    @API._parseArguments( [("channelList", types.StringTypes)] )
     # TODO: this is too STB/provider specific
     def setChannelList( self, channelList ):
         self._logger.debug( "setChannelList( %s )" % ( channelList ) )
@@ -71,6 +71,8 @@ class STBAPI( API ):
                 elif channelOld != channelNew:
                     self._logger.info( "setChannelList: updating channel: %i - %s" % ( channelNew.number, channelNew.name ) )
                     channelNew.addToDb( conn )
+                else:
+                    self._logger.debug( "setChannelList: same channel: %i - %s" % ( channelNew.number, channelNew.name ) )
 
             currentChannels       = PendingChannel.getAllFromDb( conn, includeRadio=True, tv=True )
             currentChannelNumbers = [ channel.number for channel in currentChannels ]
@@ -255,7 +257,7 @@ class AminoPVRAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     @API._acceptJson
-    @API._parseArguments( logData=types.StringTypes )
+    @API._parseArguments( [("logData", types.StringTypes)] )
     # TODO: --> api/admin
     def postLog( self, logData="[]" ):
         self._logger.debug( "postLog( %s )" % ( logData ) )

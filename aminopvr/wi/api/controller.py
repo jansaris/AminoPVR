@@ -27,7 +27,7 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( type=types.IntType )
+    @API._parseArguments( [("type", types.IntType)] )
     def init( self, type=0 ):       # @ReservedAssignment - API needs this symbolname
         self._logger.debug( "init( type=%d )" % ( type ) )
         controller = Controller()
@@ -45,7 +45,7 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType )
+    @API._parseArguments( [("id", types.IntType)] )
     def poll( self, id=-1 ):    # @ReservedAssignment - API needs this symbolname
         self._logger.debug( "poll( id=%d )" % ( id ) )
         controller = Controller()
@@ -62,7 +62,7 @@ class ControllerAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( fromId=types.IntType, toId=types.IntType, message=types.StringTypes )
+    @API._parseArguments( [("fromId", types.IntType), ("toId", types.IntType), ("message", types.StringTypes)] )
     def sendMessage( self, fromId, toId, message ):
         self._logger.debug( "sendMessage( fromId=%d, toId=%d, message=%s )" % ( fromId, toId, message ) )
         controller  = Controller()

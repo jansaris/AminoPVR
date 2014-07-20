@@ -54,7 +54,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( title=types.StringTypes, channelId=types.IntType )
+    @API._parseArguments( [("title", types.StringTypes), ("channelId", types.IntType)] )
     def getScheduleByTitleAndChannelId( self, title, channelId ):
         self._logger.debug( "getScheduleByTitleAndChannelId( title=%s, channelId=%d )" % ( title, channelId ) )
         conn        = DBConnection()
@@ -74,7 +74,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( offset=types.IntType, count=types.IntType, sort=types.IntType )
+    @API._parseArguments( [("offset", types.IntType), ("count", types.IntType), ("sort", types.IntType)] )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     # TODO: --> this function returns recordings, so should it be part of RecordingsAPI?
     def getScheduledRecordingList( self, offset=None, count=None, sort=None ):
@@ -90,7 +90,7 @@ class SchedulesAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     @API._acceptJson
-    @API._parseArguments( schedule=types.StringTypes )
+    @API._parseArguments( [("schedule", types.StringTypes)] )
     # TODO
     def addSchedule( self, schedule ):
         self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
@@ -121,7 +121,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( url=types.StringTypes, titleId=types.StringTypes, startTime=types.IntType, endTime=types.IntType, aa=types.StringTypes )
+    @API._parseArguments( [("url", types.StringTypes), ("titleId", types.StringTypes), ("startTime", types.IntType), ("endTime", types.IntType), ("aa", types.StringTypes)] )
     # TODO: this is still very STB oriented --> define proper API here and in JavaScript
     def addScheduleStb( self, url, titleId, startTime, endTime, aa ):
         self._logger.debug( "addScheduleStb( url=%s, titleId=%s, startTime=%d, endTime=%d, aa=%s )" % ( url, titleId, startTime, endTime, aa ) )
@@ -160,7 +160,7 @@ class SchedulesAPI( API ):
                                 elif timeDiff >= (1 * 24 * 60 * 60):
                                     schedule.type = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
                                 schedule.addToDb( conn )
-                                Scheduler.requestReschedule()
+                                Scheduler().requestReschedule()
                         else:
                             schedule                    = Schedule()
                             schedule.type               = Schedule.SCHEDULE_TYPE_ONCE
@@ -188,7 +188,7 @@ class SchedulesAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( id=types.IntType )
+    @API._parseArguments( [("id", types.IntType)] )
     def deleteSchedule( self, id ):  # @ReservedAssignment
         self._logger.debug( "deleteSchedule( id=%s )" % ( id ) )
 
@@ -206,7 +206,7 @@ class SchedulesAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     @API._acceptJson
-    @API._parseArguments( id=types.IntType, schedule=types.StringTypes )
+    @API._parseArguments( [("id", types.IntType), ("schedule", types.StringTypes)] )
     def changeSchedule( self, id, schedule ):  # @ReservedAssignment
         self._logger.debug( "changeSchedule( id=%s, schedule=%s )" % ( id, schedule ) )
 

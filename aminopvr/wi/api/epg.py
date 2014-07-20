@@ -35,7 +35,7 @@ class EpgAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( channelId=types.IntType, startTime=types.IntType, endType=types.IntType )
+    @API._parseArguments( [("channelId", types.IntType), ("startTime", types.IntType), ("endType", types.IntType)] )
     def getEpgForChannel( self, channelId, startTime=None, endTime=None ):
         self._logger.debug( "getEpgForChannel( channelId=%s, startTime=%s, endTime=%d )" % ( channelId, startTime, endTime ) )
 
@@ -49,7 +49,7 @@ class EpgAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( originalId=types.IntType )
+    @API._parseArguments( [("originalId", types.IntType)] )
     def getEpgProgramByOriginalId( self, originalId ):
         self._logger.debug( "getEpgProgramByOriginalId( originalId=%d )" % ( originalId ) )
         conn        = DBConnection()

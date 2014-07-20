@@ -61,8 +61,11 @@ class API( object ):
         return wrapper
 
     @classmethod
-    def _parseArguments( cls, *args, **kwargs ):
-        arguments = kwargs
+    def _parseArguments( cls, argList=[] ):
+        arguments    = []
+        argumentList = argList
+        for key, _ in argumentList:
+            arguments.append( key )
 
         def decorator( target ):
             def _checkType( argType, argument ):
@@ -93,17 +96,18 @@ class API( object ):
                 if len( kwargs ) > len( arguments ):
                     cls._apiLogger.error( "_parseArguments: too many arguments: got: %d, expected: %d" % ( len( kwargs ), len( arguments ) ) )
                     return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "too many arguments: got: %d, expected: %d" % ( len( kwargs ), len( arguments ) ) )
-                elif len( argList ) - 1 > len( arguments.keys() ):
-                    cls._apiLogger.error( "_parseArguments: too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments.keys() ) ) )
-                    return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments.keys() ) ) )
+                elif len( argList ) - 1 > len( arguments ):
+                    cls._apiLogger.error( "_parseArguments: too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments ) ) )
+                    return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "too many arguments: got: %d, expected: %d" % ( len( argList ) - 1, len( arguments ) ) )
                 else:
-                    cls._apiLogger.debug( "_parseArguments: arguments2: keys=%r, kwargs=%r" % ( arguments.keys(), arguments ) )
+                    for key, argType in argumentList:
+                        cls._apiLogger.debug( "_parseArguments: argumentList[]: key=%s, argType=%r" % ( key, argType ) )
                     for arg in argList:
-                        cls._apiLogger.debug( "_parseArguments: arg=%r" % ( arg ) )
+                        cls._apiLogger.debug( "_parseArguments: argList[]=%r" % ( arg ) )
                     cls._apiLogger.debug( "_parseArguments: kwargs: keys=%r, kwargs=%r" % ( kwargs.keys(), kwargs ) )
 
                     i = 1
-                    for key in arguments.keys():
+                    for key, argType in argumentList:
                         argument = None
                         if i < len( argList ):
                             argument = argList[i]
@@ -111,10 +115,10 @@ class API( object ):
                             argument = kwargs[key]
 
                         if argument:
-                            status, argument = _checkType( arguments[key], argument )
+                            status, argument = _checkType( argType, argument )
                             if not status:
-                                cls._apiLogger.error( "_parseArguments: unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, arguments[key] ) )
-                                return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, arguments[key] ) )
+                                cls._apiLogger.error( "_parseArguments: unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, argType ) )
+                                return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "unexpected type for key: %s: value: %s, expected: %r" % ( key, argument, argType ) )
 
                             if i < len( args ):
                                 argList[i] = argument
@@ -125,7 +129,7 @@ class API( object ):
                         i += 1
 
                     for key in kwargs.keys():
-                        if key not in arguments.keys():
+                        if key not in arguments:
                             cls._apiLogger.error( "_parseArguments: unknown argument with key: %s" % ( key ) )
                             return cls._createResponse( API.STATUS_ARGUMENT_ERROR, "unknown argument with key: %s" % ( key ) )
     
