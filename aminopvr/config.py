@@ -113,7 +113,7 @@ class GeneralConfig( ConfigSectionAbstract ):
                  "server_port":          8080,
                  "rtsp_server_port":     const.RTSP_SERVER_PORT,    # Currently a fixed port number
                  "provider":             "Glashart",
-                 "input_stream_support": "multicast,http",
+                 "input_stream_support": "tsdecrypt,multicast,http",
                  "local_access_nets":    "127.0.0.1",
                  "recordings_path":      "./recordings",
                  "timeslot_delta":       "5m",

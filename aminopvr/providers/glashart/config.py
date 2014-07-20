@@ -30,7 +30,13 @@ class GlashartConfig( ConfigSectionAbstract ):
                  "grab_epg_time":           "06:00",
                  "grab_epg_interval":       "24h",
                  "grab_content_time":       "06:00",
-                 "grab_content_interval":   "24h"
+                 "grab_content_interval":   "24h",
+                 "vcas_update_interval":    "5m",
+                 "vcas_ini_file":           "../iptv/Verimatrix.ini",
+                 "vcas_interface":          "eth1",
+                 "vcas_json_file":          "../iptv/channels.json",
+                 "vcas_const_cw_file":      "../iptv/constcw",
+                 "vcas_mac_address":        "001122334455"
                }
 
 defaultConfig.append( GlashartConfig )

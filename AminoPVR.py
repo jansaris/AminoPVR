@@ -50,12 +50,19 @@ cherryPyFileHandler = logging.FileHandler( "AminoPVR.log" )
 cherryPyFileHandler.setLevel( logging.WARNING )
 cherryPyFileHandler.setFormatter( formatter )
 
+vcasPyFileHandler = logging.FileHandler( "AminoPVR.log" )
+vcasPyFileHandler.setLevel( logging.WARNING )
+vcasPyFileHandler.setFormatter( formatter )
+
 logger = logging.getLogger( "aminopvr" )
 logger.setLevel( logging.WARNING )
 logger.addHandler( fileHandler )
 
 cherryPyLogger = logging.getLogger( "cherrypy" )
 cherryPyLogger.addHandler( cherryPyFileHandler )
+
+vcasPyLogger = logging.getLogger( "VCASpy" )
+vcasPyLogger.addHandler( vcasPyFileHandler )
 
 
 signal.signal( signal.SIGINT,   aminopvr.signalHandler )

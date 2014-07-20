@@ -39,6 +39,7 @@ recorder        = None
 scheduler       = None
 epgGrabber      = None
 contentProvider = None
+vcasProvider    = None
 rtspServer      = None
 
 def init():
@@ -69,13 +70,15 @@ def signalHandler( signalNumber=None, frame=None ):
 def shutdown():
     logger.warning( "Let's stop everything before we exit" )
 
-    global epgGrabber, contentProvider, recorder, scheduler, resourceMonitor
+    global epgGrabber, contentProvider, vcasProvider, recorder, scheduler, resourceMonitor
 
     stopRtspServer()
     if epgGrabber:
         epgGrabber.stop()
     if contentProvider:
         contentProvider.stop()
+    if vcasProvider:
+        vcasProvider.stop()
     if recorder:
         recorder.stopAllRecordings()
     if scheduler:
@@ -107,7 +110,7 @@ def isRecordingActive():
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
-    global epgGrabber, contentProvider, recorder, scheduler, resourceMonitor
+    global epgGrabber, contentProvider, vcasProvider, recorder, scheduler, resourceMonitor
 
     generalConfig   = GeneralConfig( Config() )
     resourceMonitor = ResourceMonitor()
@@ -130,14 +133,14 @@ def aminoPVRProcess():
 
     recorder.start()
 
-    global epgGrabber, contentProvider
-
     epgGrabber = provider.EpgProvider()
     epgGrabber.start()
 #    epgGrabber.requestEpgUpdate()
     contentProvider = provider.ContentProvider()
     contentProvider.start()
 #    contentProvider.requestContentUpdate()
+    vcasProvider = provider.VcasProvider()
+    vcasProvider.start()
 
 #    from aminopvr.channel import ChannelUrl
 #    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol

@@ -22,6 +22,7 @@ from aminopvr.db import DBConnection
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.providers.glashart.epg import EpgProvider
 from aminopvr.providers.glashart.page import PageSymbol
+from aminopvr.providers.glashart.vcas import VcasProvider
 from aminopvr.providers.glashart.wi import SetupWebInterface, WebInterface
 from aminopvr.timer import Timer
 from aminopvr.tools import getPage, Singleton, parseTimedetlaString
@@ -43,6 +44,7 @@ def RegisterProvider():
     aminopvr.providers.webInterface         = WebInterface
     aminopvr.providers.epgProvider          = EpgProvider
     aminopvr.providers.contentProvider      = ContentProvider
+    aminopvr.providers.vcasProvder          = VcasProvider
 
 class ContentProvider( threading.Thread ):
     __metaclass__ = Singleton

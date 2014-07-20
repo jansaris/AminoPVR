@@ -17,6 +17,7 @@
 """
 from aminopvr.config import Config, ConfigSectionAbstract, defaultConfig
 from aminopvr.multicast import MulticastSocket
+from aminopvr.tsdecrypt import TsDecrypt
 from lib import httpplus
 import logging
 import socket
@@ -26,11 +27,14 @@ import urlparse
 class InputStreamProtocol( object ):
     MULTICAST = 1
     HTTP      = 2
+    TSDECRYPT = 3
 
 class InputStreamConfig( ConfigSectionAbstract ):
     _section = "InputStreams"
     _options = {
-                 "http_base_url": "http://localhost:4022/[protocol]/[ip]:[port]"
+                 "http_base_url":       "http://localhost:4022/[protocol]/[ip]:[port]",
+                 "tsdecrypt_base_ip":   "224.5.5.[number]",
+                 "tsdecrypt_base_port": 1234
                }
 
 class InputStreamAbstract( object ):
@@ -52,6 +56,8 @@ class InputStreamAbstract( object ):
             return MulticastInputStream( url.ip, url.port )
         elif protocol == InputStreamProtocol.HTTP:
             return HttpInputStream( url )
+        elif protocol == InputStreamProtocol.TSDECRYPT:
+            return TsDecryptInputStream( url )
         return None
 
     @classmethod
@@ -60,6 +66,8 @@ class InputStreamAbstract( object ):
             return HttpInputStream.getUrl( url )
         elif protocol == InputStreamProtocol.MULTICAST:
             return MulticastInputStream.getUrl( url )
+        elif protocol == InputStreamProtocol.TSDECRYPT:
+            return TsDecryptInputStream.getUrl( url )
         return None
 
 defaultConfig.append( InputStreamAbstract )
@@ -87,7 +95,16 @@ class MulticastInputStream( InputStreamAbstract ):
         self._socket.close()
 
     def read( self, length ):
-        return self._socket.recv( length )
+        data        = ""
+        dataLen     = 0
+        prevDataLen = 0
+        while ( dataLen < length ):
+            data   += self._socket.recv( length )
+            dataLen = len( data )
+            if dataLen == prevDataLen:
+                break
+            prevDataLen = dataLen
+        return data
 
     @classmethod
     def getUrl( cls, url ):
@@ -97,6 +114,49 @@ class MulticastInputStream( InputStreamAbstract ):
             protocol = "udp"
 
         return protocol + "://%s:%d" % ( url.ip, url.port )
+
+class TsDecryptInputStream( MulticastInputStream ):
+    _logger = logging.getLogger( "aminopvr.TsDecryptInputStream" )
+
+    _inUse  = []
+
+    def __init__( self, url ):
+        useIp = 1
+        for number in self._inUse:
+            if number >= useIp:
+                useIp = number + 1
+
+        self._useIp = useIp
+        self._inUse.append( useIp )
+
+        inputStreamConfig = InputStreamConfig( Config() )
+        formatMap = {
+                        "[number]": str( useIp )
+                    }
+
+        baseIp  = inputStreamConfig.tsdecryptBaseIp
+        ip      = reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, baseIp )
+        port    = int( inputStreamConfig.tsdecryptBasePort ) + useIp
+
+        self._tsdecrypt = TsDecrypt( url, ip, port )
+        MulticastInputStream.__init__( self, ip, port )
+
+    def __del__( self ):
+        try:
+            self.close()
+        except:
+            pass
+        self._tsdecrypt.terminate()
+        self._inUse.remove( self._useIp )
+        self._logger.info( "TsDecryptInputStream object destroyed" )
+
+    def close( self ):
+        super( TsDecryptInputStream, self ).close()
+        self._tsdecrypt.terminate()
+
+    @classmethod
+    def getUrl( cls, url ):
+        return "/channels/%d" % ( url.id )
 
 class HttpInputStream( InputStreamAbstract ):
     _logger = logging.getLogger( "aminopvr.HttpInputStream" )
@@ -181,6 +241,14 @@ class HttpInputStream( InputStreamAbstract ):
 
 def main():
     sys.stderr.write( "main()\n" );
+    stream = TsDecryptInputStream( "224.5.5.6", 1234 )
+    if stream.open():
+        sys.stderr.write( "Opened stream\n" )
+        while True:
+            data = stream.read( 188 * 10 )
+            sys.stderr.write( "read %d bytes.\n" % ( len( data ) ) );
+    else:
+        sys.stderr.write( "Could not open stream\n" )
 
 # allow this to be a module
 if __name__ == '__main__':

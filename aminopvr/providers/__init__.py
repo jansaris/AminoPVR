@@ -19,3 +19,4 @@ setupWebInterface   = None
 webInterface        = None
 epgProvider         = None
 contentProvider     = None
+vcasProvider        = None
