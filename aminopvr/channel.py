@@ -29,6 +29,7 @@ class ChannelUrlAbstract( object ):
     _tableName   = None
 
     def __init__( self, channelType="sd" ):
+        self._id          = -1
         self._channelType = unicode( channelType )
         self._protocol    = "igmp"
         self._ip          = "0.0.0.0"
@@ -89,6 +90,10 @@ class ChannelUrlAbstract( object ):
         self._protocol = unicode( protocol )
 
     @property
+    def id( self ):
+        return self._id
+
+    @property
     def ip( self ):
         return self._ip
 
@@ -127,7 +132,7 @@ class ChannelUrlAbstract( object ):
         if conn:
             rows = conn.execute( "SELECT * FROM %s WHERE channel_id=?" % ( cls._tableName ), ( channelId, ) )
             for row in rows:
-                urls[unicode( row["type"] )] = cls._createChannelUrlFromDbDict( row )
+                urls[unicode( row["type"] )]     = cls._createChannelUrlFromDbDict( row, channelId )
 
         return urls
 
@@ -138,7 +143,7 @@ class ChannelUrlAbstract( object ):
         if conn:
             row = conn.execute( "SELECT * FROM %s WHERE channel_id=? AND type=?" % ( cls._tableName ), ( channelId, channelType ) )
             if row:
-                url = cls._createChannelUrlFromDbDict( row[0] )
+                url = cls._createChannelUrlFromDbDict( row[0], channelId )
 
         return url
 
@@ -152,7 +157,7 @@ class ChannelUrlAbstract( object ):
         return None
 
     @classmethod
-    def _createChannelUrlFromDbDict( cls, channelUrlData ):
+    def _createChannelUrlFromDbDict( cls, channelUrlData, channelId ):
         url = None
         if channelUrlData:
             try:
@@ -162,6 +167,7 @@ class ChannelUrlAbstract( object ):
                 url.port        = channelUrlData["port"]
                 url.arguments   = channelUrlData["arguments"]
                 url.scrambled   = channelUrlData["scrambled"]
+                url._id         = channelId
             except:
                 cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -253,20 +259,20 @@ class ChannelAbstract( object ):
                        hash( self._inactive ) ) )
 
     def __eq__( self, other ):
-        # Not comparng _id as it might not be set at comparison time.
-        # For insert/update descision it is not relevant
+        # Not comparing _id as it might not be set at comparison time.
+        # For insert/update decision it is not relevant
         if not other:
             return False
         assert isinstance( other, ChannelAbstract ), "Other object not instance of class ChannelAbstract: %r" % ( other )
-        return ( self._epgId                                                            == other._epgId                         and
-                 self._number                                                           == other._number                        and
-                 self._name                                                             == other._name                          and
-                 self._nameShort                                                        == other._nameShort                     and
-                 os.path.basename( self._logo )                                         == os.path.basename( other._logo )      and
-                 os.path.basename( self._thumbnail )                                    == os.path.basename( other._thumbnail ) and
-                 self._radio                                                            == other._radio                         and
-                 set( self._urls.values() ).intersection( set( other._urls.values() ) ) == set( self._urls.values() )           and
-                 self._inactive                                                         == other._inactive )
+        return ( self._epgId                            == other._epgId                         and
+                 self._number                           == other._number                        and
+                 self._name                             == other._name                          and
+                 self._nameShort                        == other._nameShort                     and
+                 os.path.basename( self._logo )         == os.path.basename( other._logo )      and
+                 os.path.basename( self._thumbnail )    == os.path.basename( other._thumbnail ) and
+                 self._radio                            == other._radio                         and
+                 set( self._urls.values() )             == set( other._urls.values() )          and
+                 self._inactive                         == other._inactive )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
@@ -484,7 +490,7 @@ class ChannelAbstract( object ):
                 channel.inactive    = channelData["inactive"]
                 channel.getUrlsFromDb( conn )
             except:
-                cls._logger.error( "_createChannelUrlFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
+                cls._logger.error( "_createChannelFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
                 channel = None
         return channel
@@ -593,12 +599,15 @@ class ChannelAbstract( object ):
     def toDict( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
         channelUrl = self.getChannelUrl( protocol, includeScrambled, includeHd )
         if channelUrl:
+            logoPath = ""
+            if len( self.logo ) > 0:
+                logoPath = "/assets/images/channels/logos/" + self.logo
             return { "id":        self._id,
                      "epg_id":    self._epgId,
                      "number":    self._number,
                      "name":      self._name,
                      "url":       channelUrl,
-                     "logo_path": "/assets/images/channels/logos/" + self.logo }
+                     "logo_path": logoPath }
         else:
             return None
 
