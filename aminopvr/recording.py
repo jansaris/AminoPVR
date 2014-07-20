@@ -512,7 +512,7 @@ class RecordingAbstract( object ):
                           "title":        self.title,
                           "channel_id":   self.channelId,
                           "channel_name": self.channelName,
-                          "url":          "/aminopvr/recordings/%d" % ( self.id ),
+                          "url":          "/recordings/%d" % ( self.id ),
                           "filename":     self.filename,
                           "file_size":    self.fileSize / 1024 / 1024,
                           "scrambled":    self.scrambled,
