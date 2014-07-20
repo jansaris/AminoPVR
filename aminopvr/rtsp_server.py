@@ -26,7 +26,7 @@ import threading
 
 class RtspServer( subprocess.Popen ):
     """
-    Run rsync as a subprocess sending output to a logger.
+    Run live555MediaServer as a subprocess sending output to a logger.
     This class subclasses subprocess.Popen
     """
 

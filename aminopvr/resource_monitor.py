@@ -75,10 +75,10 @@ class ResourceMonitor( object ):
             else:
                 instance._dataIn[dataType] = { "last": 0, "total": amount }
         elif direction == "out":
-            if instance._dateOut.has_key( dataType ):
-                instance._dateOut[dataType]["total"] += amount
+            if instance._dataOut.has_key( dataType ):
+                instance._dataOut[dataType]["total"] += amount
             else:
-                instance._dateOut[dataType] = { "last": 0, "total": amount }
+                instance._dataOut[dataType] = { "last": 0, "total": amount }
         else:
             cls._logger.error( "ResourceMonitor.report: unknown direction=%s" % ( direction ) )
 
