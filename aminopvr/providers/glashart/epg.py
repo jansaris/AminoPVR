@@ -460,10 +460,9 @@ class EpgProvider( threading.Thread ):
 
         # print if there are keys not yet handled by this class
         for key in json.keys():
-            if ( key != "start" and key != "end" and key != "id" and key != "name" and
-                 key != "description" and key != "episodeTitle" and key != "actors" and
-                 key != "directors" and key != "genres" and key != "presenters" and
-                 key != "aspectratio" and key != "nicamWarning" and key != "nicamParentalRating" ):
+            if key not in ["start", "end", "id", "name", "description", "episodeTitle", "actors",
+                           "directors", "genres", "presenters", "aspectratio", "nicamWarning",
+                           "nicamParentalRating", "disableRestart", "restartPriceTier"]:
                 self._logger.warning( "Unknown json key: %s: %s" % ( key, json[key] ) )
 
         return program
