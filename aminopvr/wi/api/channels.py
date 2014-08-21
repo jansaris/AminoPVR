@@ -79,15 +79,11 @@ class ChannelsAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
-    @API._parseArguments( [("unicast", types.BooleanType), ("includeScrambled", types.BooleanType), ("includeHd", types.BooleanType)] )
-    def createM3U( self, unicast=True, includeScrambled=False, includeHd=True ):
-        self._logger.info( "createM3U( unicast=%s, includeScrambled=%s, includeHd=%s )" % ( unicast, includeScrambled, includeHd ) )
+    @API._parseArguments( [("protocol", types.IntType), ("includeScrambled", types.BooleanType), ("includeHd", types.BooleanType)] )
+    def createM3U( self, protocol=InputStreamProtocol.TSDECRYPT, includeScrambled=False, includeHd=True ):
+        self._logger.info( "createM3U( protocol=%d, includeScrambled=%s, includeHd=%s )" % ( protocol, includeScrambled, includeHd ) )
         conn     = DBConnection()
         channels = Channel.getAllFromDb( conn )
-
-        protocol = InputStreamProtocol.HTTP
-        if not unicast:
-            protocol = InputStreamProtocol.MULTICAST
 
         m3u = "#EXTM3U\n"
         for channel in channels:
