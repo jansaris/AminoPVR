@@ -33,7 +33,6 @@ class InputStreamConfig( ConfigSectionAbstract ):
     _section = "InputStreams"
     _options = {
                  "http_base_url":       "http://localhost:4022/[protocol]/[ip]:[port]",
-                 "tsdecrypt_base_ip":   "224.5.5.[number]",
                  "tsdecrypt_base_port": 1234
                }
 
@@ -115,7 +114,53 @@ class MulticastInputStream( InputStreamAbstract ):
 
         return protocol + "://%s:%d" % ( url.ip, url.port )
 
-class TsDecryptInputStream( MulticastInputStream ):
+class UdpInputStream( InputStreamAbstract ):
+    _logger = logging.getLogger( "aminopvr.UdpInputStream" )
+
+    def __init__( self, ip, port ):
+        InputStreamAbstract.__init__( self )
+
+        self._ip     = ip
+        self._port   = port
+        self._socket = None
+
+    def open( self ):
+        try:
+            self._socket = socket.socket( socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP )
+            self._socket.setsockopt( socket.SOL_SOCKET, socket.SO_REUSEADDR, 1 )
+            if hasattr( socket, "SO_REUSEPORT" ):
+                self._socket.setsockopt( socket.SOL_SOCKET, socket.SO_REUSEPORT, 1 )
+            self._socket.bind( ('', self._port) )
+        except:
+            self._logger.error( "Cannot open Udp: %s:%i" % ( self._ip, self._port ) )
+            return False
+        return True
+
+    def close( self ):
+        self._socket.close()
+
+    def read( self, length ):
+        data        = ""
+        dataLen     = 0
+        prevDataLen = 0
+        while ( dataLen < length ):
+            data   += self._socket.recv( length )
+            dataLen = len( data )
+            if dataLen == prevDataLen:
+                break
+            prevDataLen = dataLen
+        return data
+
+    @classmethod
+    def getUrl( cls, url ):
+        if url.arguments == ";rtpskip=yes":
+            protocol = "rtp"
+        else:
+            protocol = "udp"
+
+        return protocol + "://%s:%d" % ( url.ip, url.port )
+
+class TsDecryptInputStream( UdpInputStream ):
     _logger = logging.getLogger( "aminopvr.TsDecryptInputStream" )
 
     _inUse  = []
@@ -130,16 +175,12 @@ class TsDecryptInputStream( MulticastInputStream ):
         self._inUse.append( useIp )
 
         inputStreamConfig = InputStreamConfig( Config() )
-        formatMap = {
-                        "[number]": str( useIp )
-                    }
 
-        baseIp  = inputStreamConfig.tsdecryptBaseIp
-        ip      = reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, baseIp )
+        ip      = "127.0.0.1"
         port    = int( inputStreamConfig.tsdecryptBasePort ) + useIp
 
         self._tsdecrypt = TsDecrypt( url, ip, port )
-        MulticastInputStream.__init__( self, ip, port )
+        UdpInputStream.__init__( self, ip, port )
 
     def __del__( self ):
         try:
