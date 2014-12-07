@@ -21,10 +21,29 @@ html,body {
 
 .small { font-size: 9pt }
 
+.x-channel {
+    width:              8em;
+    height:             70px;
+    padding:            0 !important;
+    text-align:         center;
+    vertical-align:     middle;
+    background-color:   #202a49;
+    white-space:        nowrap;
+}
+.x-channel img {
+    position:           relative;
+    top:                -4px;
+    vertical-align:     middle;
+    max-width:          70px;
+    max-height:         30px;
+    padding:            5px;
+}
+
 .cat_Action         { background-color: #906020; }
 .cat_Adult          { background-color: #702020; }
 .cat_Animals        { background-color: #609060; }
 .cat_Art_Music      { background-color: #801060; }
+.cat_Arts_Culture   { background-color: #801060; }
 .cat_Business       { background-color: #703010; }
 .cat_Children       { background-color: #B00010; }
 .cat_Comedy         { background-color: #006080; }

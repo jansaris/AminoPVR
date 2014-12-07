@@ -16,17 +16,22 @@
 #if $channelIndex % 10 == 0
 <tr>
     <td class="menu" align="right">&lt;</td>
-    #for $i in $range($timeBlocks)
-    #set $block = $i + 1
-    <td class="menu nowrap" colspan="3" style="width: 7%" align="center">$block</td>
+    #for $timeBlock in $timeBlocks
+    <td class="menu nowrap" colspan="$timeBlock.blocks" style="width: $timeBlock.percentage%" align="center">$timeBlock.time</td>
     #end for
     <td class="menu">&gt;</td>
 </tr>
 #end if
 <tr>
-    <td class="">$channel.number</td>
+    <td class="x-channel"><img src="$channel.logo_path" title="$channel.number - $channel.name"/><br/>$channel.number</td>
     #for $program in $channel.programs
-    <td class="small cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">$program.title</td>
+    <td class="small cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
+        #if 'subtitle' in $program
+        $program.title: <br/>$program.subtitle
+        #else
+        $program.title
+        #end if
+    </td>
     #end for
     <td>&nbsp;</td>
 </tr>

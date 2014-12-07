@@ -28,6 +28,19 @@ import os
 
 _logger = logging.getLogger( "aminopvr.WI" )
 
+_TIMEBLOCKS             = 12
+_TIMEBLOCK_LENGTH       = 5
+_CHARACTERS_PER_BLOCK   = 5
+
+def _calculateBlockOffset( timestamp ):
+    offset = timestamp / (_TIMEBLOCK_LENGTH * 60.0)
+    return int( round( offset ) )
+
+def _truncateString( string, blocks ):
+    if len( string ) > (blocks * _CHARACTERS_PER_BLOCK):
+        string = "%s..." % ( string[:(blocks * _CHARACTERS_PER_BLOCK) - 3] )
+    return string
+
 class WebUIEpg( object ):
     _logger = logging.getLogger( "aminopvr.WI.WebUI.Epg" )
     
@@ -38,47 +51,66 @@ class WebUIEpg( object ):
             symbols = {}
             symbols["channels"] = []
 
-            timeBlocks      = 12
-            percentage      = 85.0 / (timeBlocks * 3)
+            timeBlocks      = _TIMEBLOCKS
+            percentage      = 85.0 / (_TIMEBLOCKS * 3)
             now             = datetime.datetime.now()
             startTime       = getTimestamp( now ) - (getTimestamp( now ) % (15 * 60))
             endTime         = startTime + (15 * 60 * timeBlocks)
-            lastStartTime   = startTime
+            blockOffset     = 0
+
+            symbols["timeBlocks"] = []
+            for i in range( _TIMEBLOCKS ):
+                timeBlock = {}
+                timeBlock["time"]       = datetime.datetime.fromtimestamp( startTime + (i * 15 * 60) ).strftime("%H:%M")
+                timeBlock["blocks"]     = 3
+                timeBlock["percentage"] = int( round( 3 * percentage ) )
+                symbols["timeBlocks"].append( timeBlock )
 
             channels = Channel.getAllFromDb( conn )
             for channel in channels:
                 channelDict = channel.toDict( includeScrambled=True, includeHd=True )
                 if channelDict:
                     channelDict["programs"] = []
-                    programs = EpgProgram.getAllByEpgIdFromDb( conn, channel.epgId, startTime, endTime )
+                    programs    = EpgProgram.getAllByEpgIdFromDb( conn, channel.epgId, startTime, endTime )
+                    blockOffset = 0
                     for program in programs:
                         if program.endTime > startTime and program.startTime < endTime:
-                            if program.startTime > lastStartTime:
-                                blocks = (program.startTime - lastStartTime) / (5 * 60)
-                                channelDict["programs"].append( { "title": "NO DATA", "blocks": int( blocks ), "percentage": int( blocks * percentage ), "category": "Unknown" } )
                             programStartTime = program.startTime
                             programEndTime   = program.endTime
                             if programStartTime < startTime:
                                 programStartTime = startTime
                             if programEndTime > endTime:
                                 programEndTime = endTime
-                            blocks = (programEndTime - programStartTime) / (5 * 60)
-                            if blocks < 1.0:
-                                blocks = 1.0
-                            titleLength = len( program.title )
-                            programDict = program.toDict()
-                            if titleLength > int(blocks * 4):
-                                lastChar = int(blocks * 4) - 3;
-                                if lastChar <= 0:
-                                    programDict["title"] = "..."
+                            startBlock = _calculateBlockOffset( programStartTime - startTime )
+                            endBlock   = _calculateBlockOffset( programEndTime - startTime )
+                            if startBlock > blockOffset:
+                                blocks = startBlock - blockOffset
+                                channelDict["programs"].append( { "title": "...", "blocks": blocks, "percentage": int( round( blocks * percentage ) ), "category": "Unknown" } )
+                            if endBlock > blockOffset:
+                                blocks      = endBlock - startBlock
+                                programDict = program.toDict()
+
+                                programDict["title"] = _truncateString( programDict["title"], blocks )
+                                if "subtitle" in programDict:
+                                    subtitle = program.subtitle
+                                    if subtitle.find( program.title ) == 0:
+                                        subtitle = subtitle[len(program.title):]
+                                        if len( subtitle ) > 0 and subtitle[0] == ':':
+                                            subtitle = subtitle[1:]
+                                        subtitle.strip()
+                                    if len( subtitle ) > 0:
+                                        programDict["subtitle"] = _truncateString( subtitle, blocks )
+                                    else:
+                                        del programDict["subtitle"]
+                                programDict["blocks"]     = blocks
+                                programDict["percentage"] = int( round( blocks * percentage ) )
+                                if "genres" in programDict:
+                                    category = programDict["genres"][0]
+                                    programDict["category"] = category.replace( "/", "_" )
                                 else:
-                                    programDict["title"] = "%s..." % ( programDict["title"][:lastChar])
-                            programDict["blocks"]     = int(blocks)
-                            programDict["percentage"] = int(blocks * percentage)
-                            programDict["category"]   = "Action"
-                            channelDict["programs"].append( programDict )
-                            lastStartTime = programEndTime
+                                    programDict["category"]   = "Unknown"
+                                channelDict["programs"].append( programDict )
+                                blockOffset = endBlock
                     symbols["channels"].append( channelDict )
-        symbols["timeBlocks"] = timeBlocks
         template = Template( file=os.path.join( DATA_ROOT, "assets/webui/epg/index.html.tmpl" ), searchList=[symbols] )
         return template.respond()

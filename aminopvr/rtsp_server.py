@@ -44,13 +44,21 @@ class RtspServer( subprocess.Popen ):
         generalConfig = GeneralConfig( Config() )
 
         # spawn the rtsp server process
-        super( RtspServer, self ).__init__( os.path.join( const.DATA_ROOT, "bin", rtspServer ),
-                                            cwd=os.path.abspath( generalConfig.recordingsPath ),
-                                            shell=False,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            bufsize=1,
-                                            close_fds='posix' )
+        if sys.platform == 'win32':
+            super( RtspServer, self ).__init__( os.path.join( const.DATA_ROOT, "bin", rtspServer ),
+                                                cwd=os.path.abspath( generalConfig.recordingsPath ),
+                                                shell=False,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                bufsize=1 )
+        else:
+            super( RtspServer, self ).__init__( os.path.join( const.DATA_ROOT, "bin", rtspServer ),
+                                                cwd=os.path.abspath( generalConfig.recordingsPath ),
+                                                shell=False,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                bufsize=1,
+                                                close_fds='posix' )
 
         if self.pid != 0:
             self._logger.warning( "RTSP server started with PID=%d" % ( self.pid ) )
