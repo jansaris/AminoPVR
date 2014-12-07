@@ -17,15 +17,20 @@
 """
 from Cheetah.Template import Template
 from aminopvr import const
+from aminopvr.channel import Channel
 from aminopvr.const import DATA_ROOT
 from aminopvr.db import DBConnection
+from aminopvr.epg import EpgProgram
+from aminopvr.tools import getTimestamp
 from aminopvr.wi.api import AminoPVRAPI
 from aminopvr.wi.channels import Channels
+from aminopvr.wi.epg import WebUIEpg
 from aminopvr.wi.recordings import Recordings
 from cherrypy.lib.static import serve_file, serve_fileobj
 import aminopvr.providers
 import cherrypy
 import cherrypy.lib.auth_basic
+import datetime
 import json
 import logging
 import os
@@ -34,8 +39,11 @@ import urllib
 
 _logger = logging.getLogger( "aminopvr.WI" )
 
+
 class WebUI( object ):
     _logger = logging.getLogger( "aminopvr.WI.WebUI" )
+
+    epg = WebUIEpg()
 
     @cherrypy.expose
     def index( self ):

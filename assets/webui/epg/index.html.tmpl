@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Page Title</title>
+    <link rel="stylesheet" href="/assets/webui/css/epg.css" />
+    <script src="/assets/js/aminopvr.js"></script>
+    <script src="/assets/webui/js/ui.js"></script>
+</head>
+
+<body>
+
+<table width="100%" border="0" cellpadding="4" cellspacing="2" class="list small">
+#set $channelIndex = 0
+#for $channel in $channels
+#if $channelIndex % 10 == 0
+<tr>
+    <td class="menu" align="right">&lt;</td>
+    #for $i in $range($timeBlocks)
+    #set $block = $i + 1
+    <td class="menu nowrap" colspan="3" style="width: 7%" align="center">$block</td>
+    #end for
+    <td class="menu">&gt;</td>
+</tr>
+#end if
+<tr>
+    <td class="">$channel.number</td>
+    #for $program in $channel.programs
+    <td class="small cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">$program.title</td>
+    #end for
+    <td>&nbsp;</td>
+</tr>
+#set $channelIndex = $channelIndex + 1
+#end for
+</table>
+
+</body>
+</html>
