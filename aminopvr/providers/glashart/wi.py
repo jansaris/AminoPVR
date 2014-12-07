@@ -68,6 +68,13 @@ class _WIGlashart( object ):
         return self._serveDBContent( "api.js", "application/javascript" )
 
     @cherrypy.expose
+    def restarttv_json( self, *args, **kwargs ):
+        self._logger.debug( "restarttv_json( %s, %s )" )
+        method = cherrypy.request.method.upper()
+        url    = _getGlashartConfig().iptvBaseUrl + "/" + _getGlashartConfig().tvmenuPath + "/restarttv.json"
+        return self._serveRemoteContent( url, method, kwargs )
+
+    @cherrypy.expose
     def vodinfo( self, *args, **kwargs ):
         self._logger.debug( "vodinfo( %s, %s )" )
         cherrypy.response.headers["Content-Type"] = "text/plain"

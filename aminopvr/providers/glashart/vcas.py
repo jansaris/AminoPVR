@@ -15,89 +15,91 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
+from aminopvr import const
 from aminopvr.config import Config
 from aminopvr.providers.glashart.config import GlashartConfig
-from aminopvr.timer import Timer
-from aminopvr.tools import Singleton, parseTimedetlaString, printTraceback
-#import lib.VCASpy.vcas.connector as vcas.connector
-from lib.VCASpy import VcasConnector
-import datetime
+from aminopvr.tools import parseTimedetlaString
 import logging
-import threading
-import time
+import os.path
+import signal
+import subprocess
 import sys
+import threading
 
-class VcasProvider( threading.Thread ):
-    __metaclass__ = Singleton
+class VcasProvider( subprocess.Popen ):
+    """
+    Run vmcam as a subprocess sending output to a logger.
+    This class subclasses subprocess.Popen
+    """
 
-    _logger       = logging.getLogger( "aminopvr.providers.glashart.VcasProvider" )
+    _logger      = logging.getLogger( 'aminopvr.VcasProvider' )
+    _vmcamLogger = logging.getLogger( 'aminopvr.VcasProvider.vmcam' )
 
     def __init__( self ):
-        threading.Thread.__init__( self )
+    
+        vmcamServer = "vmcam"
+        if sys.platform == 'win32':
+            vmcamServer = ""
 
-        self._logger.debug( "VcasProvider" )
+        glashartConfig = GlashartConfig( Config() )
+        updateInterval = parseTimedetlaString( glashartConfig.vcasUpdateInterval )
 
-        self._glashartConfig = GlashartConfig( Config() )
+        self._logger.warning( "Starting VCAS VMCAM server with interval %s" % ( updateInterval ) )
 
-        now            = datetime.datetime.now()
-        updateInterval = parseTimedetlaString( self._glashartConfig.vcasUpdateInterval )
-        updateTime     = now + updateInterval
+        #-e ./etc/ -c ../../Verimatrix.ini -t 86400 -keyblockonly
+        args = []
+        args.append( os.path.join( const.DATA_ROOT, "bin", "vmcam" ) )
+        args.append( "-e" )
+        args.append( "./etc/" )
+        args.append( "-c" )
+        args.append( glashartConfig.vcasIniFile )
+        args.append( "-t" )
+        args.append( "%d" % ( updateInterval.total_seconds() ) )
+        args.append( "-keyblockonly" )
 
-        self._logger.warning( "Starting VCAS update timer with interval %s" % ( updateInterval ) )
+        self._logger.info( "Command line: %s" % ( ' '.join( args ) ) )
 
-        self._running = True
-        self._event   = threading.Event()
-        self._event.clear()
+        if vmcamServer != "":
+            # spawn the vmcam server process
+            super( VcasProvider, self ).__init__( args,
+                                                  cwd=os.path.abspath( os.path.join( const.DATA_ROOT, "bin" ) ),
+                                                  shell=False,
+                                                  stdout=subprocess.PIPE,
+                                                  stderr=subprocess.PIPE,
+                                                  bufsize=1,
+                                                  close_fds='posix' )
+    
+            if self.pid != 0:
+                self._logger.warning( "VMCAM server started with PID=%d" % ( self.pid ) )
+            else:
+                self._logger.error( "VMCAM server not started" )
+    
+            # start stdout and stderr logging threads
+            self._LogThread( self.stdout, self._vmcamLogger.debug )
+            self._LogThread( self.stderr, self._vmcamLogger.info )
 
-        self._timer = Timer( [ { "time": updateTime, "callback": self._timerCallback, "callbackArguments": None } ],
-                             pollInterval       = 10.0,
-                             recurrenceInterval = updateInterval )
+    def terminate( self ):
+        if self.pid != 0:
+            self._logger.warning( "Stopping VMCAM server" )
+            self.send_signal( signal.SIGTERM )
+            self.wait()
+            self._logger.warning( "VMCAM server stopped" )
 
-    def requestVcasUpdate( self, wait=False ):
-        if not self._event.isSet():
-            self._event.set()
-            if wait:
-                while self._event.isSet():
-                    time.sleep( 1.0 )
-            return True
-        else:
-            self._logger.warning( "Vcas update in progress: skipping request" )
-            return False
+    def _LogThread( self, pipe, logger ):
+        """
+        Start a thread logging output from pipe
+        """
 
-    def stop( self ):
-        self._logger.warning( "Stopping VcasProvider" )
-        self._timer.stop()
-        self._running = False
-        self._event.set()
-        self.join()
+        # thread function to log subprocess output
+        def _LogOutput(out, logger):
+            for line in iter( out.readline, b'' ):
+                logger( line.rstrip( '\n' ) )
 
-    def run( self ):
-        while self._running:
-            self._event.wait()
-            if self._running:
-                try:
-                    self._update()
-                except:
-                    self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
-                    printTraceback()
-                # Request a reschedule
-            self._event.clear()
-
-    def _timerCallback( self, event, arguments ):
-        if event == Timer.TIME_TRIGGER_EVENT:
-            self._logger.info( "Time to update VCAS." )
-            self.requestVcasUpdate( True )
-
-    def _update( self ):
-        self._logger.debug( "VcasProvider._update" )
-
-        self._logger.info( "Updating VCAS channel list." )
-
-        VcasConnector( self._glashartConfig.vcasIniFile,
-                       self._glashartConfig.vcasInterface,
-                       self._glashartConfig.vcasJsonFile,
-                       self._glashartConfig.vcasConstCwFile,
-                       self._glashartConfig.vcasMacAddress )
+        # start thread
+        t = threading.Thread( target=_LogOutput, args=( pipe, logger ) )
+        t.daemon = True # thread dies with the program
+        t.start()
 
 def main():
     sys.stderr.write( "main()\n" );

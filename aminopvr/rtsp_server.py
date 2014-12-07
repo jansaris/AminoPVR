@@ -43,7 +43,7 @@ class RtspServer( subprocess.Popen ):
 
         generalConfig = GeneralConfig( Config() )
 
-        # spawn the rsync process
+        # spawn the rtsp server process
         super( RtspServer, self ).__init__( os.path.join( const.DATA_ROOT, "bin", rtspServer ),
                                             cwd=os.path.abspath( generalConfig.recordingsPath ),
                                             shell=False,

@@ -78,7 +78,7 @@ def shutdown():
     if contentProvider:
         contentProvider.stop()
     if vcasProvider:
-        vcasProvider.stop()
+        vcasProvider.terminate()
     if recorder:
         recorder.stopAllRecordings()
     if scheduler:
@@ -140,7 +140,6 @@ def aminoPVRProcess():
     contentProvider.start()
 #    contentProvider.requestContentUpdate()
     vcasProvider = provider.VcasProvider()
-    vcasProvider.start()
 
 #    from aminopvr.channel import ChannelUrl
 #    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
