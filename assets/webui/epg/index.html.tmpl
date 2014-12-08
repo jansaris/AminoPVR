@@ -25,7 +25,7 @@
 <tr>
     <td class="x-channel"><img src="$channel.logo_path" title="$channel.number - $channel.name"/><br/>$channel.number</td>
     #for $program in $channel.programs
-    <td class="small cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
+    <td class="small program cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
         #if 'subtitle' in $program
         $program.title: <br/>$program.subtitle
         #else

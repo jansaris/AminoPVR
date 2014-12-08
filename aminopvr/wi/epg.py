@@ -30,15 +30,16 @@ _logger = logging.getLogger( "aminopvr.WI" )
 
 _TIMEBLOCKS             = 12
 _TIMEBLOCK_LENGTH       = 5
-_CHARACTERS_PER_BLOCK   = 5
+_CHARACTERS_PER_BLOCK   = 5.5
 
 def _calculateBlockOffset( timestamp ):
     offset = timestamp / (_TIMEBLOCK_LENGTH * 60.0)
     return int( round( offset ) )
 
 def _truncateString( string, blocks ):
-    if len( string ) > (blocks * _CHARACTERS_PER_BLOCK):
-        string = "%s..." % ( string[:(blocks * _CHARACTERS_PER_BLOCK) - 3] )
+    limit = int( round( (((blocks - 1) * _CHARACTERS_PER_BLOCK) + (_CHARACTERS_PER_BLOCK / 2.0)) ) )
+    if len( string ) > limit:
+        string = "%s..." % ( string[:limit - 3] )
     return string
 
 class WebUIEpg( object ):
