@@ -4,7 +4,7 @@ html,body {
     padding:            0;
     font-size:          9pt;
     font-family:        Arial, Helvetica, sans-serif;
-    background-color:   #dedede;
+    background-color:   #e0e0e0;
     color:              #000000;
 }
 
@@ -19,7 +19,72 @@ html,body {
 
 .nowrap { white-space: nowrap }
 
+.truncate > div {
+    position:       relative;
+    overflow:       hidden;
+    height:         3em;
+}
+
+/* visible content */
+.truncate > div > span {
+    display:        block;
+    position:       absolute; 
+    max-width:      100%;
+    white-space:    nowrap;
+    overflow:       hidden;
+    text-overflow:  ellipsis;
+}
+
+/* spacer content */
+/*.truncate > div:after {
+    content:        attr(title);
+    overflow:       hidden;
+    height:         0;
+    display:        block;
+}*/
+
 .small { font-size: 9pt }
+
+#program_details_proto {
+    display:            none;
+}
+
+.program_details {
+    background-color:   #d0d0d0;
+    vertical-align:     text-top;
+}
+
+.program_details_section {
+    display:            block;
+    width:              640px;
+    float:              left;
+}
+
+.program_details_record {
+    display:            none;
+}
+
+.program_details_title {
+    font-size:          14pt;
+    font-weight:        bold;
+}
+
+.program_details_subtitle {
+    font-size:          14pt;
+}
+
+.program_details_header {
+    float:              right;
+    width:              100%;
+}
+
+.program_details_header > div {
+    background-color:   #c0c0c0;
+    font-size:          12pt;
+    float:              right;
+    padding:            4px;
+}
+
 
 .x-channel {
     width:              8em;
@@ -39,7 +104,17 @@ html,body {
     padding:            5px;
 }
 
-.program { background-color: #eeeeee; border-left-width: 6px; border-left-style: solid; }
+.program {
+    background-color:   #eeeeee;
+    border-left-width:  6px;
+    border-left-style:  solid;
+    cursor:             pointer;
+    vertical-align:     text-top;
+}
+
+.selectedProgram {
+    background-color:   #cecece;
+}
 
 .cat_Action         { border-left-color: #906020; }
 .cat_Adult          { border-left-color: #702020; }

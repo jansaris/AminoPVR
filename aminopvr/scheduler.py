@@ -95,6 +95,10 @@ class Scheduler( threading.Thread ):
                     recordings.append( recording )
         return recordings
 
+    def getScheduleMatches( self, schedule ):
+        conn = DBConnection()
+        return self._handleSchedule( conn, schedule, [] )
+
     def run( self ):
         self._logger.debug( "Scheduler.run()" )
 
@@ -287,6 +291,9 @@ class Scheduler( threading.Thread ):
             - If so, find another channel and channel url and try again
             - Else, create a new 'recording.Recording' and add it to the list
         """
+
+        if schedule.inactive:
+            return newRecordings
 
         matchFunction  = None
         manualSchedule = False

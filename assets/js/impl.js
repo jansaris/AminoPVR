@@ -676,7 +676,10 @@ function PVRClass()
         var title       = titleId.split( "||[", 2 )[0];
         var programId   = titleId.split( "||[", 2 )[1];
 
-        var program = aminopvr.getEpgProgramByOriginalId( programId );
+        this.epgProgram = null;
+        aminopvr.getEpgProgramByOriginalId( programId, null, function( status, context, schedules ) { self._epgProgramCallback( status, context, schedules ); }, false );
+
+        var program = this.epgProgram;
         if ( program )
         {
             var urlRe    = /([a-z]{3,5}):\/\/([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):([0-9]{1,5})(;.*)?/;
@@ -723,8 +726,8 @@ function PVRClass()
 
                         schedule.setType                ( schedule.SCHEDULE_TYPE_ONCE );
                         schedule.setChannelId           ( channelId );
-                        schedule.setStartTime           ( startTime );
-                        schedule.setEndTime             ( endTime );
+                        schedule.setStartTime           ( new Date( startTime * 1000 ) );
+                        schedule.setEndTime             ( new Date( endTime * 1000 ) );
                         schedule.setTitle               ( title );
                         schedule.setPreferHd            ( true );
                         schedule.setPreferUnscrambled   ( false );
@@ -740,6 +743,22 @@ function PVRClass()
         }
 
         return added ? "OK" : "ERR";
+    };
+    this._epgProgramCallback = function( status, context, epgProgram )
+    {
+        if ( status )
+        {
+            try
+            {
+                this.epgProgram = epgProgram;
+
+                logger.info( this.__module(), "_epgProgramCallback: Downloaded epg program" );
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_epgProgramCallback: exception: " + e );
+            }
+        }
     };
     this.DeleteSchedule = function() { return "OK"; };
     this.RequestDeviceReformat = function( aa ) { return "OK"; };

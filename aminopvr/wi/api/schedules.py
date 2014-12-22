@@ -44,7 +44,7 @@ class SchedulesAPI( API ):
     def getScheduleList( self ):
         self._logger.debug( "getScheduleList()" )
         conn           = DBConnection()
-        schedules      = Schedule.getAllFromDb( conn, includeInactive=True )
+        schedules      = Schedule.getAllFromDb( conn )
         schedulesArray = []
         for schedule in schedules:
             scheduleJson = schedule.toDict()
@@ -91,6 +91,32 @@ class SchedulesAPI( API ):
     @API._grantAccess
     @API._acceptJson
     @API._parseArguments( [("schedule", types.StringTypes)] )
+    def getMatches( self, schedule ):
+        self._logger.debug( "getMatches( schedule=%s )" % ( schedule ) )
+
+        scheduleDict = json.loads( schedule )
+        if scheduleDict:
+            newSchedule = Schedule.fromDict( scheduleDict, scheduleDict["id"] )
+            if newSchedule:
+                matchedRecordings = Scheduler().getScheduleMatches( newSchedule )
+                matchedRecordingsArray = []
+                for matchedRecording in matchedRecordings:
+                    matchedRecordingJson = matchedRecording.toDict()
+                    if matchedRecordingJson:
+                        matchedRecordingsArray.append( matchedRecordingJson )
+                return self._createResponse( API.STATUS_SUCCESS, matchedRecordingsArray )
+            else:
+                self._logger.error( "getMatches: Unable to create new schedule from scheduleDict=%r" % ( scheduleDict ) )
+
+                return self._createResponse( API.STATUS_FAIL, "Unable to create Schedule object" )
+        self._logger.error( "getMatches: Unable to parse json=%s" % ( schedule ) )
+        
+        return self._createResponse( API.STATUS_FAIL, "Error parsing json" )
+
+    @cherrypy.expose
+    @API._grantAccess
+    @API._acceptJson
+    @API._parseArguments( [("schedule", types.StringTypes)] )
     # TODO
     def addSchedule( self, schedule ):
         self._logger.debug( "addSchedule( schedule=%s )" % ( schedule ) )
@@ -109,7 +135,7 @@ class SchedulesAPI( API ):
                 newSchedule.addToDb( conn )
                 Scheduler().requestReschedule()
     
-                return self._createResponse( API.STATUS_SUCCESS )
+                return self._createResponse( API.STATUS_SUCCESS, newSchedule.id )
             else:
                 self._logger.error( "addSchedule: Unable to create new schedule from scheduleDict=%r" % ( scheduleDict ) )
 

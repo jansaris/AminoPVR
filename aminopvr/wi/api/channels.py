@@ -45,8 +45,8 @@ class ChannelsAPI( API ):
     @cherrypy.expose
     @API._grantAccess
     @API._parseArguments( [("tv", types.BooleanType), ("radio", types.BooleanType), ("unicast", types.BooleanType), ("includeScrambled", types.BooleanType), ("includeHd", types.BooleanType)] )
-    def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=False, includeHd=True ):
-        self._logger.info( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
+    def getChannelList( self, tv=True, radio=False, unicast=True, includeScrambled=True, includeHd=True ):
+        self._logger.debug( "getChannelList( tv=%s, radio=%s, unicast=%s, includeScrambled=%s, includeHd=%s )" % ( tv, radio, unicast, includeScrambled, includeHd ) )
         conn          = DBConnection()
         channels      = Channel.getAllFromDb( conn, includeRadio=radio, tv=tv )
         channelsArray = []

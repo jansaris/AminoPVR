@@ -30,7 +30,7 @@ _logger = logging.getLogger( "aminopvr.WI" )
 
 _TIMEBLOCKS             = 12
 _TIMEBLOCK_LENGTH       = 5
-_CHARACTERS_PER_BLOCK   = 5.5
+_CHARACTERS_PER_BLOCK   = 100#5.5
 
 def _calculateBlockOffset( timestamp ):
     offset = timestamp / (_TIMEBLOCK_LENGTH * 60.0)
@@ -53,18 +53,21 @@ class WebUIEpg( object ):
             symbols["channels"] = []
 
             timeBlocks      = _TIMEBLOCKS
-            percentage      = 85.0 / (_TIMEBLOCKS * 3)
+            percentage      = 95.0 / (_TIMEBLOCKS * 3)
             now             = datetime.datetime.now()
             startTime       = getTimestamp( now ) - (getTimestamp( now ) % (15 * 60))
             endTime         = startTime + (15 * 60 * timeBlocks)
             blockOffset     = 0
 
+            symbols["startTime"]     = startTime
+            symbols["endTime"]       = endTime
+            symbols["numTimeBlocks"] = _TIMEBLOCKS * 3
             symbols["timeBlocks"] = []
             for i in range( _TIMEBLOCKS ):
                 timeBlock = {}
                 timeBlock["time"]       = datetime.datetime.fromtimestamp( startTime + (i * 15 * 60) ).strftime("%H:%M")
                 timeBlock["blocks"]     = 3
-                timeBlock["percentage"] = int( round( 3 * percentage ) )
+                timeBlock["percentage"] = round( 3 * percentage, 1 )
                 symbols["timeBlocks"].append( timeBlock )
 
             channels = Channel.getAllFromDb( conn )
@@ -86,7 +89,7 @@ class WebUIEpg( object ):
                             endBlock   = _calculateBlockOffset( programEndTime - startTime )
                             if startBlock > blockOffset:
                                 blocks = startBlock - blockOffset
-                                channelDict["programs"].append( { "title": "...", "blocks": blocks, "percentage": int( round( blocks * percentage ) ), "category": "Unknown" } )
+                                channelDict["programs"].append( { "title": "...", "blocks": blocks, "percentage": round( blocks * percentage, 1 ), "category": "Unknown" } )
                             if endBlock > blockOffset:
                                 blocks      = endBlock - startBlock
                                 programDict = program.toDict()
@@ -104,7 +107,7 @@ class WebUIEpg( object ):
                                     else:
                                         del programDict["subtitle"]
                                 programDict["blocks"]     = blocks
-                                programDict["percentage"] = int( round( blocks * percentage ) )
+                                programDict["percentage"] = round( blocks * percentage, 1 )
                                 if "genres" in programDict:
                                     category = programDict["genres"][0]
                                     programDict["category"] = category.replace( "/", "_" )

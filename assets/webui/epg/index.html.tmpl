@@ -4,34 +4,115 @@
 <head>
     <title>Page Title</title>
     <link rel="stylesheet" href="/assets/webui/css/epg.css" />
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="/assets/js/aminopvr.js"></script>
-    <script src="/assets/webui/js/ui.js"></script>
+    <script src="/assets/webui/js/epg.js"></script>
+    <script type="text/javascript">
+
+        _startTime = $startTime;
+        _endTime   = $endTime;
+
+    </script>
 </head>
 
 <body>
 
-<table width="100%" border="0" cellpadding="4" cellspacing="2" class="list small">
+<table width="100%" border="0" cellpadding="4" cellspacing="2" class="list small" id="program_grid">
+<tr id="program_details_proto" class="program_details">
+    <td>&nbsp;</td>
+    <td colspan="$numTimeBlocks">
+        <div class="program_details_section">
+            <span class="program_details_title"></span><br/>
+            <span class="program_details_subtitle"></span><br/>
+            <span class="program_details_details"></span><br/>
+            <span class="program_details_similar"></span><br/>
+        </div>
+        <div class="program_details_record">
+            <span>Schedules:
+                <select name="record_schedules">
+                </select>
+            </span><br />
+            <span>When:
+                <select name="record_type">
+                    <option value="1">Single recording</option>
+                    <option value="2">This timeslot every day</option>
+                    <option value="3">This timeslot every week</option>
+                    <option value="4">Once every day</option>
+                    <option value="5">Once every week</option>
+                    <option value="6">Any time</option>
+                    <option value="7">Every day (manual)</option>
+                    <option value="8">Every weekday (manual)</option>
+                    <option value="9">Every weekend (manual)</option>
+                    <option value="10">Every week (manual)</option>
+                </select>
+            </span><br />
+            <span>Title: <input type="text" name="record_title" /></span><br />
+            <span>Start time: <input type="datetime-local" name="record_starttime" /></span><br />
+            <span>End time: <input type="datetime-local" name="record_endtime" /></span><br />
+            <span>From:
+                <select name="record_channel">
+                    <option value="-1">Any channel</option>
+#for $channel in $channels
+                    <option value="$channel.id">$channel.name</option>
+#end for
+                </select>
+            </span><br />
+            <span>Handle duplicates:
+                <select name="record_duplicate_method" multiple>
+                    <option value="0">No duplicate detection</option>
+                    <option value="1">Detection on title</option>
+                    <option value="2">Detection on subtitle</option>
+                    <option value="4">Detection on description</option>
+                </select>
+            </span><br />
+            <span>Prefer HD: <input type="checkbox" name="record_prefer_hd" /></span><br />
+            <span>Prefer unscrambled: <input type="checkbox" name="record_prefer_unscrambled" /></span><br />
+            <span>Start early: <input type="number" name="record_start_early" /></span><br />
+            <span>End late: <input type="number" name="record_end_late" /></span><br />
+            <span>Inactive: <input type="checkbox" name="record_inactive" /></span><br />
+            <span><input type="button" name="record_record" value="Record" /><input type="button" name="record_remove" value="Remove" /></span><br />
+            <span class="program_details_record_matches"></span>
+        </div>
+        <div class="program_details_header">
+            <div onclick="ProgramDetails()">programs details</div>
+            <div>similar programs</div>
+            <div onclick="ProgramDetailsRecord()">record</div>
+            <div>recordings</div>
+        </div>
+    </td>
+    <td>&nbsp;</td>
+</tr>
 #set $channelIndex = 0
 #for $channel in $channels
-#if $channelIndex % 10 == 0
-<tr>
-    <td class="menu" align="right">&lt;</td>
+    #if $channelIndex % 10 == 0
+<tr class="menu">
+    <td align="right" onclick="ShowEarlierTimeblock()">&lt;</td>
     #for $timeBlock in $timeBlocks
-    <td class="menu nowrap" colspan="$timeBlock.blocks" style="width: $timeBlock.percentage%" align="center">$timeBlock.time</td>
+    <td class="nowrap" colspan="$timeBlock.blocks" style="width: $timeBlock.percentage%" align="center">$timeBlock.time</td>
     #end for
-    <td class="menu">&gt;</td>
+    <td onlick="ShowLaterTimeblock()">&gt;</td>
 </tr>
-#end if
-<tr>
+    #end if
+<tr id="channel_$channel.id">
     <td class="x-channel"><img src="$channel.logo_path" title="$channel.number - $channel.name"/><br/>$channel.number</td>
     #for $program in $channel.programs
-    <td class="small program cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
-        #if 'subtitle' in $program
-        $program.title: <br/>$program.subtitle
-        #else
-        $program.title
-        #end if
+        #if 'id' in $program
+    <td class="small program truncate cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" id="program_$program.id" onclick="ShowProgramDetails('program_$program.id')">
+        <div>
+            <span>
+                    #if 'subtitle' in $program
+                $program.title:<br/>$program.subtitle
+                    #else
+                $program.title
+                    #end if
+            </span>
+        </div>
     </td>
+        #else
+    <td class="small program truncate cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
+        $program.title
+    </td>
+        #end if
     #end for
     <td>&nbsp;</td>
 </tr>

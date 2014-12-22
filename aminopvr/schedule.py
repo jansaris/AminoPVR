@@ -182,14 +182,10 @@ class Schedule( object ):
         self._inactive = int( inactive )
 
     @classmethod
-    def getAllFromDb( cls, conn, includeInactive=False ):
+    def getAllFromDb( cls, conn ):
         schedules = []
         if conn:
-            rows = []
-            if includeInactive:
-                rows = conn.execute( "SELECT * FROM schedules" )
-            else:
-                rows = conn.execute( "SELECT * FROM schedules WHERE inactive = 0" )
+            rows = conn.execute( "SELECT * FROM schedules" )
             for row in rows:
                 schedule = cls._createScheduleFromDbDict( row )
                 schedules.append( schedule )

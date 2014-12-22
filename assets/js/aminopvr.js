@@ -658,6 +658,8 @@ function AminoPVRRecording()
     };
     this.readMarker = function( context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -685,6 +687,8 @@ function AminoPVRRecording()
     this.writeMeta = function( marker, context, callback, async )
     {
         logger.info( this.__module(), "writeMeta( " + marker + " )" );
+
+        async = async || true;
 
         this._marker = marker;
 
@@ -783,7 +787,7 @@ function AminoPVRSchedule()
         this._preferUnscrambled = ("prefer_unscrambled"     in json) ? json["prefer_unscrambled"]   : false;
         this._dupMethod         = ("dup_method"             in json) ? json["dup_method"]           : -1;
         this._startEarly        = ("start_early"            in json) ? json["start_early"]          : 0;
-        this._endLate           = ("end_late"               in json) ? json["start_late"]           : 0;
+        this._endLate           = ("end_late"               in json) ? json["end_late"]             : 0;
         this._inactive          = ("inactive"               in json) ? json["inactive"]             : false;
     };
     this.toJson = function()
@@ -831,7 +835,7 @@ function AminoPVRSchedule()
     };
     this.setStartTime = function( startTime )
     {
-        this._startTime = new Date( startTime * 1000 );
+        this._startTime = startTime;
     };
     this.getEndTime = function()
     {
@@ -839,7 +843,7 @@ function AminoPVRSchedule()
     };
     this.setEndTime = function( endTime )
     {
-        this._endTime = new Date( endTime * 1000 );
+        this._endTime = endTime;
     };
     this.getTitle = function()
     {
@@ -898,9 +902,26 @@ function AminoPVRSchedule()
         this._inactive = inactive;
     };
 
+    this.getMatches = function( context, callback, async )
+    {
+        async = async || true;
+
+        logger.info( this.__module(), "getMatches()" );
+
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
+        request.setPostData( "schedule=" + encodeURIComponent( Array2JSON( this.toJson() ) ) );
+        request.setCallback( function( status, context, matchedRecordings ) { aminopvr._recordingListCallback( status, context, matchedRecordings ); } );
+        request.send( "POST", "/api/schedules/getMatches", async );
+    };
     this.addToDb = function()
     {
-        logger.info( this.__module(), "deleteFromDb()" );
+        logger.info( this.__module(), "addToDb()" );
 
         var requestContext      = {};
         requestContext["added"] = false;
@@ -908,6 +929,7 @@ function AminoPVRSchedule()
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
+        request.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
         request.setPostData( "schedule=" + encodeURIComponent( Array2JSON( this.toJson() ) ) );
         request.setCallback( function( status, context, data )
         {
@@ -1030,6 +1052,8 @@ function AminoPVRClass()
 
     this.getChannelList = function( context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1131,10 +1155,14 @@ function AminoPVRClass()
             }
         }
     };
-    this.getEpgProgramByOriginalId = function( originalId )
+    this.getEpgProgramByOriginalId = function( originalId, context, callback, async )
     {
+        async = async || true;
+
         var requestContext = {};
-        requestContext["program"] = null;
+        requestContext["program"]  = null;
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
 
         logger.info( this.__module(), "getEpgProgramByOriginalId: Downloading program by originalId=" + originalId );
 
@@ -1142,9 +1170,24 @@ function AminoPVRClass()
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
         request.setCallback( function( status, context, program ) { self._epgProgramCallback( status, context, program ); } );
-        request.send( "GET", "/api/epg/getEpgProgramByOriginalId/" + originalId, false );
+        request.send( "GET", "/api/epg/getEpgProgramByOriginalId/" + originalId, async );
+    };
+    this.getEpgProgramById = function( id, context, callback, async )
+    {
+        async = async || true;
 
-        return requestContext["program"];
+        var requestContext = {};
+        requestContext["program"]  = null;
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        logger.info( this.__module(), "getEpgProgramById: Downloading program by id=" + id );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, program ) { self._epgProgramCallback( status, context, program ); } );
+        request.send( "GET", "/api/epg/getEpgProgramById/" + id, async );
     };
     this._epgProgramCallback = function( status, context, program )
     {
@@ -1167,7 +1210,7 @@ function AminoPVRClass()
                 logger.error( this.__module(), "_epgProgramCallback: exception: " + e );
                 if ( "callback" in context )
                 {
-                    context["callback"]( false, context["context"] );
+                    context["callback"]( false, context["context"], null );
                 }
             }
         }
@@ -1176,12 +1219,60 @@ function AminoPVRClass()
             logger.error( this.__module(), "_epgProgramCallback: Downloading program failed" );
             if ( "callback" in context )
             {
-                context["callback"]( false, context["context"] );
+                context["callback"]( false, context["context"], null );
             }
         }
     };
+    this.getEpgProgramsByTitleAndEpgId = function( title, epgId, context, callback, async )
+    {
+        async = async || true;
+
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        titleAndEpgId = title;
+        if ( epgId != null )
+        {
+            titleAndEpgId += "/" + epgId;
+        }
+
+        logger.info( this.__module(), "getEpgProgramsByTitleAndEpgId: Downloading program list by title and epgId" );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, programs ) { self._epgProgramListCallback( status, context, programs ); } );
+        request.send( "GET", "/api/epg/getEpgProgramsByTitleAndEpgId/" + titleAndEpgId, async );
+    };
+    this.getProgramList = function( epgId, startTime, endTime, context, callback, async )
+    {
+        async = async || true;
+
+        var requestContext         = {};
+        requestContext["context"]  = context;
+        requestContext["callback"] = callback;
+
+        logger.info( this.__module(), "getProgramList: Downloading program list" );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, programs ) { self._epgProgramListCallback( status, context, programs ); } );
+
+        if ( epgId != null )
+        {
+            request.send( "GET", "/api/epg/getEpgForChannel/" + epgId + "/" + startTime + "/" + endTime, async );
+        }
+        else
+        {
+            request.send( "GET", "/api/epg/getEpg/" + startTime + "/" + endTime, async );
+        }
+    }
     this.getNowNextProgramList = function( context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1191,15 +1282,16 @@ function AminoPVRClass()
         var self    = this;
         var request = new JsonAjaxRequest();
         request.setContext( requestContext );
-        request.setCallback( function( status, context, programs ) { self._nowNextProgramListCallback( status, context, programs ); } );
+        request.setCallback( function( status, context, programs ) { self._epgProgramListCallback( status, context, programs ); } );
         request.send( "GET", "/api/epg/getNowNextProgramList", async );
     };
-    this._nowNextProgramListCallback = function( status, context, programs )
+    this._epgProgramListCallback = function( status, context, programs )
     {
         if ( status )
         {
             try
             {
+                var count = 0;
                 var pvrPrograms = new Array();
                 for ( var epgId in programs )
                 {
@@ -1208,10 +1300,11 @@ function AminoPVRClass()
                     {
                         pvrPrograms[epgId][i] = new AminoPVREpgProgram();
                         pvrPrograms[epgId][i].fromJson( programs[epgId][i] );
+                        count++;
                     }
                 }
 
-                logger.info( this.__module(), "_nowNextProgramListCallback: Downloaded now/next program list; count = " + pvrPrograms.length );
+                logger.info( this.__module(), "_epgProgramListCallback: Downloaded program list; count = " + count );
 
                 if ( "callback" in context )
                 {
@@ -1220,7 +1313,7 @@ function AminoPVRClass()
             }
             catch ( e )
             {
-                logger.error( this.__module(), "_nowNextProgramListCallback: exception: " + e );
+                logger.error( this.__module(), "_epgProgramListCallback: exception: " + e );
                 if ( "callback" in context )
                 {
                     context["callback"]( false, context["context"] );
@@ -1229,7 +1322,7 @@ function AminoPVRClass()
         }
         else
         {
-            logger.error( this.__module(), "_nowNextProgramListCallback: Downloading now/next program list failed" );
+            logger.error( this.__module(), "_epgProgramListCallback: Downloading now/next program list failed" );
             if ( "callback" in context )
             {
                 context["callback"]( false, context["context"] );
@@ -1239,6 +1332,8 @@ function AminoPVRClass()
 
     this.getRecordingList = function( context, callback, async, offset, count )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1377,6 +1472,8 @@ function AminoPVRClass()
     };
     this.getScheduleList = function( context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1478,6 +1575,8 @@ function AminoPVRClass()
     };
     this.getScheduledRecordingList = function( context, callback, async, offset, count )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1599,6 +1698,8 @@ function AminoPVRController( type, handlerInst )
     };
     this.sendMessage = function( toId, message, context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;
@@ -1645,6 +1746,8 @@ function AminoPVRController( type, handlerInst )
     };
     this.getListenerList = function( context, callback, async )
     {
+        async = async || true;
+
         var requestContext         = {};
         requestContext["context"]  = context;
         requestContext["callback"] = callback;

@@ -852,21 +852,57 @@ class ProgramAbstract( object ):
         return programs
 
     @classmethod
-    def getAllByEpgIdFromDb( cls, conn, epgId, startTime=None, endTime=None ):
+    def getAllByEpgIdFromDb( cls, conn, epgId=None, startTime=None, endTime=None ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         programs = []
         if conn:
-            rows = None
-            if startTime == None:
-                if endTime == None:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) )
-                else:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) )
-            else:
-                if endTime == None:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime ) )
-                else:
-                    rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime ) )
+            rows        = None
+            where       = []
+            whereValue  = []
+
+            if epgId:
+                where.append( "epg_id = ?" )
+                whereValue.append( epgId )
+
+            if startTime and endTime:
+                where.append( "end_time > ?" )
+                whereValue.append( startTime )
+                where.append( "start_time < ?" )
+                whereValue.append( endTime )
+            elif startTime:
+                where.append( "end_time > ?" )
+                whereValue.append( startTime )
+            elif endTime:
+                where.append( "start_time < ?" )
+                whereValue.append( endTime )
+
+            query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " ORDER BY epg_id ASC, start_time ASC"
+            if len( where ) > 0:
+                query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY epg_id ASC, start_time ASC"
+            rows  = conn.execute( query, whereValue )
+
+#             if epgId:
+#                 if startTime == None:
+#                     if endTime == None:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) )
+#                     else:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) )
+#                 else:
+#                     if endTime == None:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, ) )
+#                     else:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime, ) )
+#             else:
+#                 if startTime == None:
+#                     if endTime == None:
+#                         rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC"  % ( cls._tableName ) )
+#                     else:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE start_time < ? ORDER BY epg_id ASC, start_time ASC"  % ( cls._tableName ), ( endTime, ) )
+#                 else:
+#                     if endTime == None:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) )
+#                     else:
+#                         rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? AND start_time < ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, endTime, ) )
             programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
 
         return programs
@@ -908,7 +944,7 @@ class ProgramAbstract( object ):
                 whereValue.append( epgId )
 
             if startTime:
-                where.append( "start_time > ?" )
+                where.append( "end_time > ?" )
                 whereValue.append( startTime )
 
             if searchWhere & ProgramAbstract.SEARCH_TITLE:
