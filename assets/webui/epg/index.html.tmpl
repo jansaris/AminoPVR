@@ -5,22 +5,37 @@
     <title>Page Title</title>
     <link rel="stylesheet" href="/assets/webui/css/epg.css" />
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="/assets/webui/js/spin.js"></script>
     <script src="/assets/js/aminopvr.js"></script>
+    <script src="/assets/webui/js/lib.js"></script>
     <script src="/assets/webui/js/epg.js"></script>
-    <script type="text/javascript">
-
-        _startTime = $startTime;
-        _endTime   = $endTime;
-
-    </script>
 </head>
 
 <body>
 
+<div id="timeblock" class="timeblock"></div>
+<div id="timeblock_select" style="float: right">
+<table border="0" cellpadding="4" cellspacing="2">
+    <tr>
+        <td>Browse:</td>
+        <td><input type="datetime-local" name="timeblock_select" /></td>
+    </tr>
+</table>
+</div>
+
 <table width="100%" border="0" cellpadding="4" cellspacing="2" class="list small" id="program_grid">
+    <thead>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+<div id="screen"></div>
+
+<table style="display: none">
 <tr id="program_details_proto" class="program_details">
     <td>&nbsp;</td>
-    <td colspan="$numTimeBlocks">
+    <td class="program_details_body">
         <div class="program_details_section">
             <span class="program_details_title"></span><br/>
             <span class="program_details_subtitle"></span><br/>
@@ -52,9 +67,6 @@
             <span>From:
                 <select name="record_channel">
                     <option value="-1">Any channel</option>
-#for $channel in $channels
-                    <option value="$channel.id">$channel.name</option>
-#end for
                 </select>
             </span><br />
             <span>Handle duplicates:
@@ -82,42 +94,6 @@
     </td>
     <td>&nbsp;</td>
 </tr>
-#set $channelIndex = 0
-#for $channel in $channels
-    #if $channelIndex % 10 == 0
-<tr class="menu">
-    <td align="right" onclick="ShowEarlierTimeblock()">&lt;</td>
-    #for $timeBlock in $timeBlocks
-    <td class="nowrap" colspan="$timeBlock.blocks" style="width: $timeBlock.percentage%" align="center">$timeBlock.time</td>
-    #end for
-    <td onlick="ShowLaterTimeblock()">&gt;</td>
-</tr>
-    #end if
-<tr id="channel_$channel.id">
-    <td class="x-channel"><img src="$channel.logo_path" title="$channel.number - $channel.name"/><br/>$channel.number</td>
-    #for $program in $channel.programs
-        #if 'id' in $program
-    <td class="small program truncate cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" id="program_$program.id" onclick="ShowProgramDetails('program_$program.id')">
-        <div>
-            <span>
-                    #if 'subtitle' in $program
-                $program.title:<br/>$program.subtitle
-                    #else
-                $program.title
-                    #end if
-            </span>
-        </div>
-    </td>
-        #else
-    <td class="small program truncate cat_$program.category" colspan="$program.blocks" style="width: $program.percentage%" valign="top">
-        $program.title
-    </td>
-        #end if
-    #end for
-    <td>&nbsp;</td>
-</tr>
-#set $channelIndex = $channelIndex + 1
-#end for
 </table>
 
 </body>

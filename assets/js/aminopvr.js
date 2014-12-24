@@ -1322,7 +1322,7 @@ function AminoPVRClass()
         }
         else
         {
-            logger.error( this.__module(), "_epgProgramListCallback: Downloading now/next program list failed" );
+            logger.error( this.__module(), "_epgProgramListCallback: Downloading program list failed" );
             if ( "callback" in context )
             {
                 context["callback"]( false, context["context"] );

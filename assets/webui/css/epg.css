@@ -15,6 +15,10 @@ html,body {
 
 .menu { background-color: #cecece }
 
+.scroll_time {
+    cursor:             pointer;
+}
+
 .list { background-color: #ffffff }
 
 .nowrap { white-space: nowrap }
@@ -45,8 +49,10 @@ html,body {
 
 .small { font-size: 9pt }
 
-#program_details_proto {
-    display:            none;
+.timeblock {
+    font-size:          14pt;
+    font-weight:        bold;
+    text-align:         right;
 }
 
 .program_details {
@@ -86,7 +92,7 @@ html,body {
 }
 
 
-.x-channel {
+.channel {
     width:              8em;
     height:             70px;
     padding:            0 !important;
@@ -95,7 +101,7 @@ html,body {
     background-color:   #dedede;
     white-space:        nowrap;
 }
-.x-channel img {
+.channel img {
     position:           relative;
     top:                -4px;
     vertical-align:     middle;
@@ -149,3 +155,11 @@ html,body {
 .cat_War            { border-left-color: #B06050; }
 .cat_Western        { border-left-color: #806040; }
 .cat_Unknown        { border-left-color: #303030; }
+
+#screen
+{
+    position:   absolute;
+    left:       0;
+    top:        0;
+    background: #000;
+}
