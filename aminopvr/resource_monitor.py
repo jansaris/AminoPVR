@@ -38,12 +38,11 @@ class Watchdog( object ):
 
         self._timer = Timer( [ { "time": watchdogTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=watchdogInterval )
 
-        ResourceMonitor.__instance = self
+        Watchdog.__instance = self
 
     def stop( self ):
         self._logger.warning( "Stopping Watchdog" )
         self._timer.stop()
-        self._printTotals()
 
     def add( self, name, callback ):
         self._watchdog[name] = { "callback": callback, "lastkick": 0 }
