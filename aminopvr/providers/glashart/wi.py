@@ -163,8 +163,8 @@ class _WIGlashart( object ):
             url = url + "?" + urllib.urlencode( args )
         content, code, mime = aminopvr.tools.getPage( url, None, method=method, args=args )
         if code == 200:
-            if "Content-Encoding: x-gzip" in str( mime ):
-                cherrypy.response.headers["Content-Encoding"]= "x-gzip"
+            if "Content-Encoding: gzip" in str( mime ):
+                cherrypy.response.headers["Content-Encoding"]= "gzip"
             return serve_fileobj( content, content_type=mime.gettype() )
         else:
             raise cherrypy.HTTPError( code )

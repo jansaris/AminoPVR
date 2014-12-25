@@ -412,7 +412,9 @@ class ContentProvider( threading.Thread ):
                     "REDIRECT_FIX":                   r"if\s*\(([a-z]{1})\s*=\s*([a-z]{1}\.[A-Za-z]{1})\.redirect\){",
                     "REPLACE_REDIRECT_FIX":           r'if(\2.redirect){\1=\2.redirect;DebugLog( "Redirecting to: " + \1 );',
                     "AJAX_FIX":                       r".open\(\"([A-Za-z]{3,4})\",",
-                    "REPLACE_AJAX_FIX":               r'.open("\1","/glashart/"+'
+                    "REPLACE_AJAX_FIX":               r'.open("\1","/glashart/"+',
+                    "RESTARTTV_FIX":                  r"\"/tvmenu/restarttv\.json\"",
+                    "REPLACE_RESTARTTV_FIX":          r'"/restarttv.json"'
                  }
         #    "REPLACE_INIT_FUNCTION": "\${0};/* id_begin *//* id_end */",
         #    "REPLACE_LAST_JS_LINE": "/* id_begin */try { PowerOn(); } catch( e ) { %s( \"Unable to call PowerOn(): \" + e ); }/* id_end */\${0}",
@@ -470,6 +472,13 @@ class ContentProvider( threading.Thread ):
                                       fileContent )
         if count == 0:
             self._logger.error( "_modifyCodeJs: could not replace REPLACE_AJAX_FIX" )
+            return None
+
+        fileContent, count = re.subn( regExp["RESTARTTV_FIX"],
+                                      regExp["REPLACE_RESTARTTV_FIX"],
+                                      fileContent )
+        if count == 0:
+            self._logger.error( "_modifyCodeJs: could not replace REPLACE_RESTARTTV_FIX" )
             return None
 
         return fileContent
