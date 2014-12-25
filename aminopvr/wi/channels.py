@@ -18,6 +18,7 @@
 from aminopvr.db import DBConnection
 from aminopvr.channel import Channel
 from aminopvr.input_stream import InputStreamProtocol, InputStreamAbstract
+from aminopvr.resource_monitor import Watchdog
 from aminopvr.tsdecrypt import IsTsDecryptSupported
 from aminopvr.wi.api.common import API
 import cherrypy
@@ -67,15 +68,23 @@ class Channels( API ):
             if url:
                 inputStream = InputStreamAbstract.createInputStream( protocol, url )
                 if inputStream.open():
+                    def watchdogTimeout():
+                        self._logger.warning( "default: watchdog timed out; close stream" )
+                        inputStream.close()
+                        Watchdog().remove( url )
+                    Watchdog().add( url, watchdogTimeout )
                     cherrypy.response.headers[ "Content-Type" ] = "video/mp2t"
                     def content():
                         self._logger.info( "default: opened stream" )
+                        Watchdog().kick( url, 10 )
                         data = inputStream.read( BUFFER_SIZE )
                         while len( data ) > 0:
                             yield data
+                            Watchdog().kick( url, 10 )
                             data = inputStream.read( BUFFER_SIZE )
                         self._logger.info( "default: EOS" )
                         inputStream.close()
+                        Watchdog().remove( url )
 
                     return content()
                 else:

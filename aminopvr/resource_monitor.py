@@ -20,6 +20,54 @@ from aminopvr.tools import Singleton
 import datetime
 import logging
 
+class Watchdog( object ):
+    __metaclass__ = Singleton
+
+    __instance = None
+
+    _logger = logging.getLogger( "aminopvr.Watchdog" )
+
+    def __init__( self ):
+        self._watchdog = [];
+
+        now                 = datetime.datetime.now()
+        watchdogInterval    = datetime.timedelta( seconds=1 )
+        watchdogTime        = now + watchdogInterval
+
+        self._logger.warning( "Starting Watchdog timer @ %s with interval %s" % ( watchdogTime, watchdogInterval ) )
+
+        self._timer = Timer( [ { "time": watchdogTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=watchdogInterval )
+
+        ResourceMonitor.__instance = self
+
+    def stop( self ):
+        self._logger.warning( "Stopping Watchdog" )
+        self._timer.stop()
+        self._printTotals()
+
+    def add( self, name, callback ):
+        self._watchdog[name] = { "callback": callback, "lastkick": 0 }
+
+    def kick( self, watchdogId, kick ):
+        if not watchdogId in self._watchdogs:
+            self._watchdog[watchdogId]["lastkick"] = datetime.datetime.now() + kick
+        else:
+            self._logger.error( "Watchdog %s already exists" % ( watchdogId ) )
+
+    def remove( self, watchdogId ):
+        if watchdogId in self._watchdogs:
+            del self._watchdog[watchdogId]
+        else:
+            self._logger.error( "Watchdog %s does not exists" % ( watchdogId ) )
+        
+    def _timerCallback( self, event, arguments ):
+        now = datetime.datetime.now()
+        for watchdogId in self._watchdog:
+            watchdog = self._watchdog[watchdogId]
+            if watchdog["lastkick"] != 0 and watchdog["lastkick"] < now:
+                self._logger.warning( "Watchdog %s not kicked in time" % ( watchdogId ) )
+                watchdog["callback"]()
+
 class ResourceMonitor( object ):
     __metaclass__ = Singleton
 

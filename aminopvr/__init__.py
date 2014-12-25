@@ -20,7 +20,7 @@ from aminopvr.config import Config, GeneralConfig, DebugConfig
 from aminopvr.db import DBConnection
 from aminopvr.recorder import Recorder
 from aminopvr.recording import Recording
-from aminopvr.resource_monitor import ResourceMonitor
+from aminopvr.resource_monitor import ResourceMonitor, Watchdog
 from aminopvr.rtsp_server import RtspServer
 from aminopvr.scheduler import Scheduler
 from aminopvr.timer import Timer
@@ -35,6 +35,7 @@ import traceback
 logger          = logging.getLogger( "aminopvr" )
 
 resourceMonitor = None
+watchdog        = None
 recorder        = None
 scheduler       = None
 epgGrabber      = None
@@ -85,6 +86,8 @@ def shutdown():
         scheduler.stop()
     if resourceMonitor:
         resourceMonitor.stop()
+    if watchdog:
+        watchdog.stop()
     stopWebserver()
     logger.warning( "Everything has stopped, now exit" )
     logging.shutdown()
@@ -110,10 +113,11 @@ def isRecordingActive():
 def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
-    global epgGrabber, contentProvider, vcasProvider, recorder, scheduler, resourceMonitor
+    global epgGrabber, contentProvider, vcasProvider, recorder, scheduler, resourceMonitor, watchdog
 
     generalConfig   = GeneralConfig( Config() )
     resourceMonitor = ResourceMonitor()
+    watchdog        = Watchdog()
     recorder        = Recorder()
     scheduler       = Scheduler()
     startRtspServer()
