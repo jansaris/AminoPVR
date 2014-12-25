@@ -27,6 +27,29 @@ Date.prototype._toHHMM = function()
     return time;
 }
 
+Date.prototype._toLocalJSON = function()
+{
+    return this.getFullYear() + "-" + zeroPadded( this.getMonth() + 1 ) + "-" + zeroPadded( this.getDate() ) + "T" + zeroPadded( this.getHours() ) + ":" + zeroPadded( this.getMinutes() ) + ":" + zeroPadded( this.getSeconds() );
+}
+
+Date.prototype._toUTC = function()
+{
+    return new Date( this._getUTCTime() );
+}
+
+Date.prototype._getUTCTime = function()
+{
+    return this.getTime() + (this.getTimezoneOffset() * 60000);
+}
+
+function zeroPadded( val )
+{
+    if ( val >= 10 )
+        return val;
+    else
+        return '0' + val;
+}
+
 function roundTo15Minutes( timestamp )
 {
     return timestamp - (timestamp % (15 * 60));

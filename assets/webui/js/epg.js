@@ -38,6 +38,7 @@ function Init()
     programRequestContext["callback"] = function () { _populateProgramsInEpgGrid(); }; 
 
     var timeblockSelect = $( '#timeblock_select input[name="timeblock_select"]' );
+    timeblockSelect.attr( 'step', 60 * _TIMEBLOCK_LENGTH * _COLS_PER_BLOCK );
     timeblockSelect.change( function( event ) { _updateTimeblock(); } );
 
     _showLoadingIcon();
@@ -222,7 +223,7 @@ function _updateEpgGridHeader()
     $( '#timeblock' ).html( new Date( _startTime * 1000 )._toHuman() );
 
     var timeblockSelect = $( '#timeblock_select input[name="timeblock_select"]' );
-    timeblockSelect.val( new Date( _startTime * 1000 ).toJSON().slice( 0, 19 ) );
+    timeblockSelect.val( new Date( _startTime * 1000 )._toLocalJSON() );
 }
 
 function _populateChannelsInEpgGrid()
@@ -396,7 +397,7 @@ function ShowLaterTimeblock()
 function _updateTimeblock()
 {
     var timespan = _endTime - _startTime;
-    _startTime   = Math.round( new Date( $( '#timeblock_select input[name="timeblock_select"]' ).val() ).getTime() / 1000 );
+    _startTime   = Math.round( new Date( $( '#timeblock_select input[name="timeblock_select"]' ).val() )._getUTCTime() / 1000 );
     _startTime   = roundTo15Minutes( _startTime );
     _endTime     = _startTime + timespan;
 
@@ -409,6 +410,7 @@ function _updateEpgGrid()
 
     _epgDataValid = false;
 
+    _hideProgramDetails();
     _updateEpgGridHeader();
 
     var programRequestContext = {};
@@ -420,20 +422,8 @@ function ShowProgramDetails( program )
 {
     if ( _currentProgramDetails != program )
     {
-        if ( _currentProgramDetails != null )
-        {
-            var programCell = $( "#" + _currentProgramDetails );
-            if ( programCell != null )
-            {
-                programCell.removeClass( "selectedProgram" );
-            }
-            _currentProgramDetails = null;
-            _currentEpgProgram     = null;
-            _currentSchedule       = null;
-        }
+        _hideProgramDetails();
 
-        $( "#program_details" ).remove();
-    
         var programDetails = $( "#program_details_proto" ).clone();
         programDetails.attr( "id", "program_details" );
         programDetails.find( ".program_details_body" ).attr( 'colspan', _COLS_PER_BLOCK * _TIMEBLOCKS );
@@ -467,6 +457,23 @@ function ShowProgramDetails( program )
 
         window.location.hash = program;
     }
+}
+
+function _hideProgramDetails()
+{
+    if ( _currentProgramDetails != null )
+    {
+        var programCell = $( "#" + _currentProgramDetails );
+        if ( programCell != null )
+        {
+            programCell.removeClass( "selectedProgram" );
+        }
+        _currentProgramDetails = null;
+        _currentEpgProgram     = null;
+        _currentSchedule       = null;
+    }
+
+    $( "#program_details" ).remove();
 }
 
 function _programDetailsCallback( status, context, epgProgram )
@@ -580,6 +587,9 @@ function ProgramDetailsRecord()
 
         _updateRecordingSchedulesSelection();
     }
+
+    recordStartTime.attr( 'step', 60 );
+    recordEndTime.attr( 'step', 60 );
 
     recordChannel.unbind( "change" );
     recordType.unbind( "change" );
@@ -719,8 +729,8 @@ function _updateRecordingFields( schedule )
     }
 
     recordChannel.val( schedule.getChannelId() );
-    recordStartTime.val( schedule.getStartTime().toJSON().slice( 0, 19 ) );
-    recordEndTime.val( schedule.getEndTime().toJSON().slice( 0, 19 ) );
+    recordStartTime.val( schedule.getStartTime()._toLocalJSON() );
+    recordEndTime.val( schedule.getEndTime()._toLocalJSON() );
     recordTitle.val( schedule.getTitle() );
     recordDupMethod.val( dupMethod );
     recordStartEarly.val( schedule.getStartEarly() );
@@ -800,8 +810,8 @@ function _getScheduleFromElements()
 
     _currentSchedule.setType                ( parseInt( recordType.val() ) );
     _currentSchedule.setChannelId           ( parseInt( recordChannel.val() ) );
-    _currentSchedule.setStartTime           ( new Date( recordStartTime.val() ) );
-    _currentSchedule.setEndTime             ( new Date( recordEndTime.val() ) );
+    _currentSchedule.setStartTime           ( new Date( recordStartTime.val() )._toUTC() );
+    _currentSchedule.setEndTime             ( new Date( recordEndTime.val() )._toUTC() );
     _currentSchedule.setTitle               ( recordTitle.val() );
     _currentSchedule.setStartEarly          ( parseInt( recordStartEarly.val() ) );
     _currentSchedule.setEndLate             ( parseInt( recordEndLate.val() ) );
