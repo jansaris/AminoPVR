@@ -24,6 +24,7 @@ from aminopvr.wi.api.common import API
 import cherrypy
 import logging
 import types
+import uuid
 
 BUFFER_SIZE = 40 * 188
 
@@ -68,23 +69,24 @@ class Channels( API ):
             if url:
                 inputStream = InputStreamAbstract.createInputStream( protocol, url )
                 if inputStream.open():
+                    watchdogId = uuid.uuid1()
                     def watchdogTimeout():
-                        self._logger.warning( "default: watchdog timed out; close stream" )
+                        self._logger.warning( "default: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
                         inputStream.close()
-                        Watchdog().remove( url )
-                    Watchdog().add( url, watchdogTimeout )
+                        Watchdog().remove( watchdogId )
+                    Watchdog().add( watchdogId, watchdogTimeout )
                     cherrypy.response.headers[ "Content-Type" ] = "video/mp2t"
                     def content():
                         self._logger.info( "default: opened stream" )
-                        Watchdog().kick( url, 10 )
+                        Watchdog().kick( watchdogId, 10 )
                         data = inputStream.read( BUFFER_SIZE )
                         while len( data ) > 0:
                             yield data
-                            Watchdog().kick( url, 10 )
+                            Watchdog().kick( watchdogId, 10 )
                             data = inputStream.read( BUFFER_SIZE )
                         self._logger.info( "default: EOS" )
                         inputStream.close()
-                        Watchdog().remove( url )
+                        Watchdog().remove( watchdogId )
 
                     return content()
                 else:
