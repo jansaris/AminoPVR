@@ -20,7 +20,7 @@ var __module = "aminopvr.webui.epg";
 
 function Init()
 {
-    logger.init( true );
+    logger.init( true, logger.INFO );
 
     _channels       = {};
     _programs       = {};
@@ -238,15 +238,7 @@ function _populateChannelsInEpgGrid()
 
     function compare( a, b )
     {
-        if ( a.getNumber() < b.getNumber() )
-        {
-            return -1;
-        }
-        if ( a.getNumber() > b.getNumber() )
-        {
-            return 1;
-        }
-        return 0;
+        return a.compare( b );
     }
 
     channels.sort( compare );
@@ -284,15 +276,7 @@ function _populateProgramsInEpgGrid()
 
             function compare( a, b )
             {
-                if ( a.getStartTime().getTime() < b.getStartTime().getTime() )
-                {
-                    return -1;
-                }
-                if ( a.getStartTime().getTime() > b.getStartTime().getTime() )
-                {
-                    return 1;
-                }
-                return 0;
+                return a.compare( b );
             }
 
             programs.sort( compare );
@@ -550,6 +534,7 @@ function ProgramDetailsRecord()
         recordSchedules.find( "option" ).remove().end().append( '<option value="-1">New...</option>' ).val( '-1' );
         for ( var i in _schedules )
         {
+            // TODO: check if _schedule would match program or it could be a similar program (based on (start of) title)
             if ( _schedules[i].getTitle() == _currentEpgProgram.getTitle() )
             {
                 recordSchedules.append( $( "<option></option>" ).attr( "value", i ).text( _schedules[i].getTitle() ) ).val( i ); 

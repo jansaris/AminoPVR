@@ -119,6 +119,7 @@ function LoggerClass()
     this._ONSCREEN_DEBUG_LOG_LIMIT = 20;
 
     this._consoleLogging   = false;
+    this._consoleLogLevel  = this.ERROR;
     this._debugLog         = [];
     this._debugDiv         = null;
     this._remoteDebug      = false;
@@ -128,9 +129,10 @@ function LoggerClass()
     {
         return "aminopvr." + this.constructor.name;
     };
-    this.init = function( consoleLogging )
+    this.init = function( consoleLogging, consoleLogLevel )
     {
-        this._consoleLogging = consoleLogging || false;
+        this._consoleLogging = consoleLogging   || false;
+        this._consoleLogLevel = consoleLogLevel || this.ERROR;
 
         if ( !this._consoleLogging )
         {
@@ -272,7 +274,7 @@ function LoggerClass()
             }
             else
             {
-                if ( window.console )
+                if ( window.console && (level >= this._consoleLogLevel) )
                 {
                     window.console.log( "[" + level + "] " + (new Date).getTime() + ": <" + module + "> " + text );
                 }
@@ -416,6 +418,24 @@ function AminoPVRChannel()
         this._url    = ("url"       in json) ? json["url"]       : "";
     };
 
+    this.compare = function( obj, fullObject )
+    {
+        fullObject = fullObject || false;
+        if (!fullObject)
+        {
+            if ( this._number < obj._number )
+            {
+                return -1;
+            }
+            if ( this._number > obj._number )
+            {
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
+    };
+
     this.getId = function()
     {
         return this._id;
@@ -480,6 +500,23 @@ function AminoPVREpgProgram()
         this._ratings        = ("ratings"         in json) ? json["ratings"]         : new Array();
         this._aspectRatio    = ("aspect_ratio"    in json) ? json["aspect_ratio"]    : "";
         this._parentalRating = ("parental_rating" in json) ? json["parental_rating"] : "";
+    };
+    this.compare = function( obj, fullObject )
+    {
+        fullObject = fullObject || false;
+        if (!fullObject)
+        {
+            if ( this._startTime.getTime() < obj._startTime.getTime() )
+            {
+                return -1;
+            }
+            if ( this._startTime.getTime() > obj._startTime.getTime() )
+            {
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
     };
 
     this.getId = function()
