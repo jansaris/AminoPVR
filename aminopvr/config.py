@@ -36,11 +36,13 @@ class ConfigSectionAbstract( object ):
         self._logger.debug( "__init__( config=%r )" % ( config ) )
 
         self._config         = config
+
         self._sectionOptions = self._config.getSection( self._section )
         if not self._sectionOptions:
-            self._logger.info( "__init__: section doesn't exist, so added" )
+            self._logger.warning( "__init__: section doesn't exist, so added" )
             self._config.addSection( self._section )
             self._sectionOptions = self._config.getSection( self._section )
+            self.createDefaults()
 
         unsupportedOptions = set( self._sectionOptions ).difference( set( self._options.keys() ) )
         for option in unsupportedOptions:
@@ -112,7 +114,7 @@ class GeneralConfig( ConfigSectionAbstract ):
                  "api_key":              "",
                  "server_port":          8080,
                  "rtsp_server_port":     const.RTSP_SERVER_PORT,    # Currently a fixed port number
-                 "provider":             "Glashart",
+                 "provider":             "glashart",
                  "input_stream_support": "tsdecrypt,multicast,http",
                  "local_access_nets":    "127.0.0.1",
                  "recordings_path":      "./recordings",
@@ -152,15 +154,12 @@ class Config( object ):
 
     def __init__( self, filename="aminopvr.conf"  ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )
+        print "Config.__init__( filename=%s )" % ( filename )
         self._filename = filename
         self._config   = ConfigParser.ConfigParser()
+
         if os.path.exists( self._configFilename( self._filename ) ):
             self._config.read( self._configFilename( self._filename ) )
-        else:
-            for configClass in defaultConfig:
-                config = configClass( self )
-                config.createDefaults()
-            self._config.write( self._configFilename( self._filename ) )
 
     def getSection( self, section ):
         options = None
