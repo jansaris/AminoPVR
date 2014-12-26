@@ -1,0 +1,33 @@
+[General]
+api_key=
+server_port=8080
+provider=glashart
+input_stream_support=http
+local_access_nets=127.0.0.1,192.168.0.0/16
+recordings_path=./recordings
+
+[InputStreams]
+# UDPXY base url and format
+# [protocol]: stream protocol (e.g. udp vs rtp)
+# [ip]: ip of multicast stream
+# [port]: port of multicast stream
+http_base_url=http://server:4022/[protocol]/[ip]:[port]
+tsdecrypt_base_port=1234
+
+[Glashart]
+iptv_base_url=http://w.stb.zt6.nl
+tvmenu_path=tvmenu
+tvmenu_index_path=%(iptv_base_url)s/%(tvmenu_path)s/index.xhtml.gz
+epg_data_path=%(iptv_base_url)s/epgdata
+epg_channels_path=%(iptv_base_url)s/epgdata/channels
+channel_logo_path=%(iptv_base_url)s/%(tvmenu_path)s/images/channels
+channel_thumb_path=%(iptv_base_url)s/%(tvmenu_path)s/images/channelsthumb
+grab_epg_time=06:00
+grab_epg_interval=24h
+grab_content_time=07:00
+grab_content_interval=24h
+vcas_update_interval=7d
+vcas_ini_file=
+
+[Debug]
+logger=aminopvr.trace:DEBUG
