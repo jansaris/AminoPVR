@@ -154,7 +154,6 @@ class Config( object ):
 
     def __init__( self, filename="aminopvr.conf"  ):
         self._logger.debug( "Config.__init__( filename=%s )" % ( filename ) )
-        print "Config.__init__( filename=%s )" % ( filename )
         self._filename = filename
         self._config   = ConfigParser.ConfigParser()
 
