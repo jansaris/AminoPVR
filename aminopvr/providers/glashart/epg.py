@@ -162,6 +162,8 @@ class EpgProvider( threading.Thread ):
             if self._running:
                 try:
                     self._grabAll()
+                    if not self._haveEnoughEpgData():
+                        self._logger.warning( "Updated Epg, but there is still not enough data available.")
                 except:
                     self._logger.error( "run: unexcepted error: %s" % ( sys.exc_info()[0] ) )
                 # Request a reschedule
@@ -252,6 +254,7 @@ class EpgProvider( threading.Thread ):
 
             currentPrograms     = EpgProgram.getAllByEpgIdFromDb( conn, epgId.epgId )
             currentProgramsDict = { currProgram.originalId: currProgram for currProgram in currentPrograms }
+            newProgramsDict     = {}
 
             content, _, _ = getPage( epgUrl )
 
@@ -270,8 +273,6 @@ class EpgProvider( threading.Thread ):
                 numProgramsNew          = 0
                 numProgramsUpdated      = 0
 
-                conn.delayCommit( True )
-
                 for program in epgData:
                     if not self._running:
                         break
@@ -279,11 +280,14 @@ class EpgProvider( threading.Thread ):
                     numPrograms += 1
 
                     programNew = self._getProgramFromJson( epgId.epgId, program )
+                    if programNew.originalId in newProgramsDict:
+                        self._logger.warning( "Program with originalId %d already in newProgramsDict" % ( programNew.originalId ) )
+                    newProgramsDict[programNew.originalId] = programNew
 
                     updateDetailedData = True
 
                     programOld = None
-                    if currentProgramsDict.has_key( programNew.originalId ):
+                    if programNew.originalId in currentProgramsDict:
                         programOld = currentProgramsDict[programNew.originalId]
 
                     # If the old program has detailed info, copy those fields
@@ -320,9 +324,16 @@ class EpgProvider( threading.Thread ):
                                 # if more than 10 detailed program information grabs failed, set strategy to none.
                                 numProgramsDetailFailed += 1
                                 if numProgramsDetailFailed == 10:
-                                    self._logger.error( "Couldn't download at least 10 detailed program information files, so setting strategy to 'none'" )
+                                    self._logger.error( "Couldn't download at least 10 detailed program information files, so setting strategy to 'none', but do not store" )
                                     epgId.strategy = "none"
-                                    epgId.addToDb( conn )
+
+                conn.delayCommit( True )
+
+                for programId in newProgramsDict:
+                    programNew = newProgramsDict[programId]
+                    programOld = None
+                    if programNew.originalId in currentProgramsDict:
+                        programOld = currentProgramsDict[programNew.originalId]
 
                     if not programOld or programNew != programOld:
                         if programOld:
@@ -339,6 +350,8 @@ class EpgProvider( threading.Thread ):
                             programNew.addToDb( conn )
                         except:
                             self._logger.exception( programNew.dump() )
+
+                conn.delayCommit( False )
 
                 if self._running:
                     self._logger.debug( "Num programs:         %i" % ( numPrograms ) )
