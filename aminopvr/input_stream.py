@@ -323,5 +323,5 @@ def main():
 # allow this to be a module
 if __name__ == '__main__':
     import sys
-    from aminopvr.channel import ChannelUrl
+    from aminopvr.database.channel import ChannelUrl
     main()

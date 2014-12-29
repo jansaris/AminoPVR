@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
-from aminopvr.epg import EpgProgram
+from aminopvr.database.channel import Channel
+from aminopvr.database.epg import EpgProgram
 from aminopvr.tools import printTraceback
 import logging
 import sys

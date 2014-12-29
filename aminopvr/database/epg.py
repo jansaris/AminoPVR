@@ -15,9 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.db import DBConnection
+from aminopvr.database.db import DBConnection
 from aminopvr.tools import getTimestamp, printTraceback
-import channel
+from aminopvr.database import channel
 import copy
 import logging
 import sys

@@ -15,10 +15,10 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel, ChannelUrl
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram
-from aminopvr.schedule import Schedule
+from aminopvr.database.channel import Channel, ChannelUrl
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgProgram
+from aminopvr.database.schedule import Schedule
 from aminopvr.scheduler import Scheduler
 from aminopvr.wi.api.common import API
 import cherrypy

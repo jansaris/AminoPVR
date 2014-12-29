@@ -734,7 +734,7 @@ class PendingChannel( ChannelAbstract ):
     _logger          = logging.getLogger( 'aminopvr.PendingChannel' )
 
 # def main():
-#     conn = DBConnection( "aminopvr.db" )
+#     conn = DBConnection( "aminopvr.database.db" )
 # 
 # #     if conn:
 # #         rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] )

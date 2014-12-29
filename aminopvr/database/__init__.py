@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-from aminopvr import db
+from aminopvr.database import db
 import logging
 
 _logger = logging.getLogger( "aminopvr.database" )

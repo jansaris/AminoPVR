@@ -16,10 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from StringIO import StringIO
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import Config
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.scheduler import Scheduler

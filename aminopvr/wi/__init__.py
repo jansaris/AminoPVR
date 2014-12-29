@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr import const
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.wi.api import AminoPVRAPI
 from aminopvr.wi.channels import Channels
 from aminopvr.wi.recordings import Recordings

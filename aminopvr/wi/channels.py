@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.db import DBConnection
-from aminopvr.channel import Channel
+from aminopvr.database.db import DBConnection
+from aminopvr.database.channel import Channel
 from aminopvr.input_stream import InputStreamProtocol, InputStreamAbstract
 from aminopvr.resource_monitor import Watchdog
 from aminopvr.tsdecrypt import IsTsDecryptSupported

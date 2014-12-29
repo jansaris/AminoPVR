@@ -15,13 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.epg import RecordingProgram
+from aminopvr.database.epg import RecordingProgram
 from aminopvr.tools import printTraceback
 import copy
 import datetime
-import epg
+from aminopvr.database import epg
 import logging
 import os
 import sys

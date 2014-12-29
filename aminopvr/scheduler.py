@@ -15,14 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import Config, GeneralConfig
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram, RecordingProgram
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgProgram, RecordingProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
-from aminopvr.recording import Recording, OldRecording, RecordingState
-from aminopvr.schedule import Schedule
+from aminopvr.database.recording import Recording, OldRecording, RecordingState
+from aminopvr.database.schedule import Schedule
 from aminopvr.timer import Timer
 from aminopvr.tools import Singleton, parseTimedetlaString, printTraceback
 import copy
