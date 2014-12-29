@@ -203,6 +203,7 @@ class Schedule( object ):
         return schedule
 
     @classmethod
+    # TODO: this is odd, should title/channel_id combi be unique?
     def getByTitleAndChannelIdFromDb( cls, conn, title, channelId ):
         schedule = None
         if conn:
@@ -210,6 +211,22 @@ class Schedule( object ):
             if row:
                 schedule = cls._createScheduleFromDbDict( row[0] )
         return schedule
+
+    @classmethod
+    def search( cls, conn, query, shortForm=True ):
+        schedules   = []
+        query       = '%' + query + '%'
+        if conn:
+            rows   = None
+            select = "*"
+            if shortForm:
+                select = "DISTINCT title"
+            rows = conn.execute( "SELECT %s FROM schedules WHERE title LIKE ?" % ( select ), ( query, ) )
+            if shortForm:
+                schedules = [ row["title"] for row in rows ]
+            else:
+                schedules = [ cls._createScheduleFromDbDict( conn, row ) for row in rows ]
+        return schedules
 
     @classmethod
     def _createScheduleFromDbDict( cls, data ):

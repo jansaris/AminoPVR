@@ -290,6 +290,22 @@ class Person( object ):
         return dbPerson
 
     @classmethod
+    def search( cls, conn, query, shortForm=True ):
+        persons = []
+        query   = '%' + query + '%'
+        if conn:
+            rows   = None
+            select = "*"
+            if shortForm:
+                select = "DISTINCT person"
+            rows = conn.execute( "SELECT %s FROM persons WHERE person LIKE ?" % ( select ), ( query, ) )
+            if shortForm:
+                persons = [ row["person"] for row in rows ]
+            else:
+                persons = [ cls._createPersonFromDbDict( conn, row ) for row in rows ]
+        return persons
+
+    @classmethod
     def _createPersonFromDbDict( cls, personData ):
         person = None
         if personData:
@@ -879,30 +895,7 @@ class ProgramAbstract( object ):
             query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " ORDER BY epg_id ASC, start_time ASC"
             if len( where ) > 0:
                 query = "SELECT * FROM %s WHERE " % ( cls._tableName ) + " AND ".join( where ) + " ORDER BY epg_id ASC, start_time ASC"
-            rows  = conn.execute( query, whereValue )
-
-#             if epgId:
-#                 if startTime == None:
-#                     if endTime == None:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, ) )
-#                     else:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND start_time < ? ORDER BY start_time ASC"  % ( cls._tableName ), ( epgId, endTime, ) )
-#                 else:
-#                     if endTime == None:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, ) )
-#                     else:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE epg_id=? AND end_time > ? AND start_time < ? ORDER BY start_time ASC" % ( cls._tableName ), ( epgId, startTime, endTime, ) )
-#             else:
-#                 if startTime == None:
-#                     if endTime == None:
-#                         rows = conn.execute( "SELECT * FROM %s ORDER BY epg_id ASC, start_time ASC"  % ( cls._tableName ) )
-#                     else:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE start_time < ? ORDER BY epg_id ASC, start_time ASC"  % ( cls._tableName ), ( endTime, ) )
-#                 else:
-#                     if endTime == None:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, ) )
-#                     else:
-#                         rows = conn.execute( "SELECT * FROM %s WHERE end_time > ? AND start_time < ? ORDER BY epg_id ASC, start_time ASC" % ( cls._tableName ), ( startTime, endTime, ) )
+            rows     = conn.execute( query, whereValue )
             programs = [ cls._createProgramFromDbDict( conn, row ) for row in rows ]
 
         return programs
@@ -1063,6 +1056,15 @@ class EpgProgram( ProgramAbstract ):
             if len( rows ) == 1:
                 timestamp = rows[0]["end_time"]
         return timestamp
+    
+    @classmethod
+    def getNumberOfPrograms( cls, conn ):
+        numPrograms = 0
+        if conn:
+            rows = conn.execute( "SELECT COUNT( * ) AS num_programs FROM epg_programs" )
+            if len( rows ) == 1:
+                numPrograms = rows[0]["num_programs"]
+        return numPrograms
 
     @classmethod
     def deleteByTimeFromDB( cls, conn, startTime ):

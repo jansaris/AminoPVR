@@ -344,6 +344,17 @@ class RecordingAbstract( object ):
         return recording
 
     @classmethod
+    def getByScheduleIdChannelIdAndTimeFromDb( cls, conn, scheduleId, channelId, startTime, endTime ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        recording = None
+        if conn:
+            row = conn.execute( "SELECT * FROM %s WHERE schedule_id = ? AND channel_id = ? AND start_time = ? AND end_time = ?" % ( cls._tableName ), ( scheduleId, channelId, startTime, endTime ) )
+            if row:
+                recording = cls._createRecordingFromDbDict( conn, row[0] )
+
+        return recording
+
+    @classmethod
     def getAllUnfinishedFromDb( cls, conn ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
@@ -509,6 +520,7 @@ class RecordingAbstract( object ):
                           "schedule_id":  self.scheduleId,
                           "start_time":   self.startTime,
                           "end_time":     self.endTime,
+                          "length":       self.length,
                           "title":        self.title,
                           "channel_id":   self.channelId,
                           "channel_name": self.channelName,

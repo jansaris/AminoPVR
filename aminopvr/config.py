@@ -115,7 +115,7 @@ class GeneralConfig( ConfigSectionAbstract ):
                  "server_port":          8080,
                  "rtsp_server_port":     const.RTSP_SERVER_PORT,    # Currently a fixed port number
                  "provider":             "glashart",
-                 "input_stream_support": "tsdecrypt,multicast,http",
+                 "input_stream_support": "multicast,http,tsdecrypt",
                  "local_access_nets":    "127.0.0.1",
                  "recordings_path":      "./recordings",
                  "timeslot_delta":       "5m",
@@ -132,6 +132,10 @@ class GeneralConfig( ConfigSectionAbstract ):
     @property
     def rtspServerPort( self ):
         return const.RTSP_SERVER_PORT       # Currently a fixed port number
+
+    @property
+    def inputStreamSupport( self ):
+        return self._get( "input_stream_support" ).split( ',' )
 
     @property
     def localAccessNets( self ):
