@@ -1,3 +1,21 @@
+/*
+ *  This file is part of AminoPVR.
+ *  Copyright (C) 2012  Ino Dekker
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 Date.prototype._getMonthHuman = function()
 {
     var months = [ "January", "February", "March", "April", "May", "June",
@@ -53,4 +71,20 @@ function zeroPadded( val )
 function roundTo15Minutes( timestamp )
 {
     return timestamp - (timestamp % (15 * 60));
+}
+
+if ( typeof String.prototype.startsWith != 'function' )
+{
+    String.prototype.startsWith = function( str )
+    {
+        return this.slice( 0, str.length ) == str;
+    };
+}
+
+if ( typeof String.prototype.endsWith != 'function' )
+{
+    String.prototype.endsWith = function( str )
+    {
+        return this.slice( -str.length ) == str;
+    };
 }
