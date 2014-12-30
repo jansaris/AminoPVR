@@ -21,13 +21,15 @@ from aminopvr.tsdecrypt import TsDecrypt
 from lib import httpplus
 import logging
 import socket
+import time
 import urlparse
 #import urllib2
 
 class InputStreamProtocol( object ):
-    MULTICAST = 1
-    HTTP      = 2
-    TSDECRYPT = 3
+    MULTICAST   = 1
+    HTTP        = 2
+    TSDECRYPT   = 3
+    MOCK        = 0xff
 
 class InputStreamConfig( ConfigSectionAbstract ):
     _section = "InputStreams"
@@ -57,6 +59,8 @@ class InputStreamAbstract( object ):
             return HttpInputStream( url )
         elif protocol == InputStreamProtocol.TSDECRYPT:
             return TsDecryptInputStream( url )
+        elif protocol == InputStreamProtocol.MOCK:
+            return MockInputStream( url.ip, url.port )
         return None
 
     @classmethod
@@ -67,6 +71,8 @@ class InputStreamAbstract( object ):
             return MulticastInputStream.getUrl( url )
         elif protocol == InputStreamProtocol.TSDECRYPT:
             return TsDecryptInputStream.getUrl( url )
+        elif protocol == InputStreamProtocol.MOCK:
+            return MockInputStream.getUrl( url )
         return None
 
 defaultConfig.append( InputStreamAbstract )
@@ -280,6 +286,29 @@ class HttpInputStream( InputStreamAbstract ):
 
         return reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, httpBaseUrl )
 
+class MockInputStream( InputStreamAbstract ):
+    _logger = logging.getLogger( "aminopvr.UdpInputStream" )
+
+    def __init__( self, ip, port ):
+        InputStreamAbstract.__init__( self )
+
+        self._ip     = ip
+        self._port   = port
+
+    def open( self ):
+        return True
+
+    def close( self ):
+        pass
+
+    def read( self, length ):
+        time.sleep( 0.01 )
+        return ""
+
+    @classmethod
+    def getUrl( cls, url ):
+        return "mock://%s:%d" % ( url.ip, url.port )
+
 def main():
     sys.stderr.write( "main()\n" );
     stream = TsDecryptInputStream( "224.5.5.6", 1234 )
@@ -294,5 +323,5 @@ def main():
 # allow this to be a module
 if __name__ == '__main__':
     import sys
-    from aminopvr.channel import ChannelUrl
+    from aminopvr.database.channel import ChannelUrl
     main()

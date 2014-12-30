@@ -15,48 +15,24 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from Cheetah.Template import Template
 from aminopvr import const
-from aminopvr.channel import Channel
-from aminopvr.const import DATA_ROOT
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram
-from aminopvr.tools import getTimestamp
+from aminopvr.database.channel import Channel
 from aminopvr.wi.api import AminoPVRAPI
 from aminopvr.wi.channels import Channels
-from aminopvr.wi.epg import WebUIEpg
 from aminopvr.wi.recordings import Recordings
-from cherrypy.lib.static import serve_file, serve_fileobj
+from aminopvr.wi.webui import WebUI
 import aminopvr.providers
 import cherrypy
 import cherrypy.lib.auth_basic
-import datetime
-import json
 import logging
-import os
-import sqlite3
-import urllib
 
 _logger = logging.getLogger( "aminopvr.WI" )
-
-
-class WebUI( object ):
-    _logger = logging.getLogger( "aminopvr.WI.WebUI" )
-
-    epg = WebUIEpg()
-
-    @cherrypy.expose
-    def index( self ):
-        template = Template( file=os.path.join( DATA_ROOT, "assets/webui/index.html.tmpl" ) )
-        return template.respond()
-
 
 class WebInterface( object ):
     api         = AminoPVRAPI()
     channels    = Channels()
     recordings  = Recordings()
     webui       = WebUI()
-
 
 def stopWebserver():
     _logger.warning( "Stopping CherryPy Engine" )
@@ -90,15 +66,16 @@ def initWebserver( serverPort=8080 ):
         <title>404</title>
         <script type="text/javascript" charset="utf-8">
           <!--
-          location.href = "%s"
+          //location.href = "%s"
           //-->
         </script>
     </head>
     <body>
         <br/>
+        <font color="#0000FF">Error 404: %s not found.</font>
     </body>
 </html>
-''' % '/webui/'
+''' % ( '/webui/', cherrypy.url() )
 
     options = {
         'host':      '0.0.0.0',
@@ -128,8 +105,13 @@ def initWebserver( serverPort=8080 ):
             'tools.encode.encoding': 'utf-8'
         },
         '/assets/images': {
-            'tools.staticdir.on':  True,
-            'tools.staticdir.dir': 'assets/images'
+            'tools.staticdir.on':   True,
+            'tools.staticdir.dir':  'assets/images',
+            'tools.caching.on':     True,
+            'tools.caching.force' : True,
+            'tools.caching.delay' : 0,
+            'tools.expires.on' :    True,
+            'tools.expires.secs' :  60 * 60 * 24 * 7
         },
         '/assets/js': {
             'tools.staticdir.on':  True,

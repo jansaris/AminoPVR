@@ -475,6 +475,31 @@ class ChannelAbstract( object ):
         return numChannels
 
     @classmethod
+    def search( cls, conn, query, shortForm=True, includeInactive=False, includeRadio=False ):
+        assert cls._tableName != None, "Not the right class: %r % ( cls )"
+        channels    = []
+        query       = '%' + query + '%'
+        if conn:
+            rows = None
+            select = "*"
+            if shortForm:
+                select = "DISTINCT name"
+            whereCondition = []
+            if not includeInactive:
+                whereCondition.append( "inactive=0" )
+            if not includeRadio:
+                whereCondition.append( "radio=0" )
+            if len( whereCondition ) > 0:
+                rows = conn.execute( "SELECT %s FROM %s WHERE name LIKE ? AND %s" % ( select, cls._tableName, " AND ".join( whereCondition ) ), ( query, ) )
+            else:
+                rows = conn.execute( "SELECT %s FROM %s WHERE name LIKE ?" % ( select, cls._tableName ), ( query, ) )
+            if shortForm:
+                channels = [ row["name"] for row in rows ]
+            else:
+                channels = [ cls._createChannelFromDbDict( conn, row ) for row in rows ]
+        return channels
+
+    @classmethod
     def _createChannelFromDbDict( cls, conn, channelData ):
         channel = None
         if channelData:
@@ -709,7 +734,7 @@ class PendingChannel( ChannelAbstract ):
     _logger          = logging.getLogger( 'aminopvr.PendingChannel' )
 
 # def main():
-#     conn = DBConnection( "aminopvr.db" )
+#     conn = DBConnection( "aminopvr.database.db" )
 # 
 # #     if conn:
 # #         rows = conn.execute( "SELECT * FROM channels WHERE name LIKE ?", ["%een%"] )

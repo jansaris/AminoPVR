@@ -17,9 +17,9 @@
 """
 from aminopvr import const
 from aminopvr.config import Config, GeneralConfig, DebugConfig
-from aminopvr.db import DBConnection
+from aminopvr.database.db import DBConnection
 from aminopvr.recorder import Recorder
-from aminopvr.recording import Recording
+from aminopvr.database.recording import Recording
 from aminopvr.resource_monitor import ResourceMonitor, Watchdog
 from aminopvr.rtsp_server import RtspServer
 from aminopvr.scheduler import Scheduler
@@ -145,7 +145,7 @@ def aminoPVRProcess():
 #    contentProvider.requestContentUpdate()
     vcasProvider = provider.VcasProvider()
 
-#    from aminopvr.channel import ChannelUrl
+#    from aminopvr.database.channel import ChannelUrl
 #    from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
     
 #    url = ChannelUrl( "hd", "udp", "224.1.3.1", 12110, "", 0 )

@@ -593,8 +593,10 @@ function AminoPVRRecording()
     this._title         = "";
     this._startTime     = null;
     this._endTime       = null;
+    this._length        = 0;
     this._url           = "";
     this._filename      = "";
+    this._fileSize      = 0;
     this._marker        = 0;
     this._channelId     = -1;
     this._channelName   = "";
@@ -615,13 +617,19 @@ function AminoPVRRecording()
         this._description   = ("description"    in json) ? json["description"]    : "";
         this._startTime     = new Date( ("start_time" in json) ? json["start_time"] * 1000 : 0 );
         this._endTime       = new Date( ("end_time"   in json) ? json["end_time"] * 1000   : 0 );
+        this._length        = ("length"         in json) ? json["length"]         : 0;
         this._url           = ("url"            in json) ? json["url"]            : "";
         this._filename      = ("filename"       in json) ? json["filename"]       : "";
+        this._fileSize      = ("file_size"      in json) ? json["file_size"]      : 0;
         this._marker        = ("marker"         in json) ? json["marker"]         : 0;
         this._channelId     = ("channel_id"     in json) ? json["channel_id"]     : -1;
         this._channelName   = ("channel_name"   in json) ? json["channel_name"]   : "<Unknown>";
         this._epgProgramId  = ("epg_program_id" in json) ? json["epg_program_id"] : -1;
-        this._epgProgram    = ("epg_program"    in json) ? new AminoPVREpgProgram().fromJson( json["epg_program"] ) : null;
+        this._epgProgram    = ("epg_program"    in json) ? new AminoPVREpgProgram() : null;
+        if ( this._epgProgram != null )
+        {
+            this._epgProgram.fromJson( json["epg_program"] )
+        }
     };
 
     this.getId = function()
@@ -665,6 +673,10 @@ function AminoPVRRecording()
     {
         return this._endTime;
     };
+    this.getLength = function()
+    {
+        return this._length;
+    };
     this.getUrl = function()
     {
         return this._url;
@@ -672,6 +684,10 @@ function AminoPVRRecording()
     this.getFilename = function()
     {
         return this._filename;
+    };
+    this.getFileSize = function()
+    {
+        return this._fileSize;
     };
     this.getMarker = function()
     {
@@ -1084,6 +1100,104 @@ function AminoPVRClass()
         else
         {
             logger.error( this.__module(), "_generalConfigCallback: Retrieving general config failed" );
+        }
+    };
+
+    this.getStorageInfo = function( context, callback, async )
+    {
+        async = async || true;
+
+        var requestContext          = {};
+        requestContext["context"]   = context;
+        requestContext["callback"]  = callback;
+
+        var self = this;
+
+        logger.info( this.__module(), "getStorageInfo: Downloading storage info" );
+
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, storageInfo ) { self._storageInfoCallback( status, context, storageInfo ); } );
+        request.send( "GET", "/api/getStorageInfo", async );
+    };
+    this._storageInfoCallback = function( status, context, storageInfo )
+    {
+        if ( status )
+        {
+            try
+            {
+                logger.info( this.__module(), "_storageInfoCallback: Downloaded storage info: " + storageInfo );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], storageInfo );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_storageInfoCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_storageInfoCallback: Downloading storage info failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+
+    this.getEpgInfo = function( context, callback, async )
+    {
+        async = async || true;
+
+        var requestContext          = {};
+        requestContext["context"]   = context;
+        requestContext["callback"]  = callback;
+
+        var self = this;
+
+        logger.info( this.__module(), "getEpgInfo: Downloading epg info" );
+
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, epgInfo ) { self._epgInfoCallback( status, context, epgInfo ); } );
+        request.send( "GET", "/api/getEpgInfo", async );
+    };
+    this._epgInfoCallback = function( status, context, epgInfo )
+    {
+        if ( status )
+        {
+            try
+            {
+                logger.info( this.__module(), "_epgInfoCallback: Downloaded epg info: " + epgInfo );
+
+                if ( "callback" in context )
+                {
+                    context["callback"]( true, context["context"], epgInfo );
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_epgInfoCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_epgInfoCallback: Downloading epg info failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
         }
     };
 
@@ -1672,6 +1786,58 @@ function AminoPVRClass()
         else
         {
             logger.error( this.__module(), "_scheduledRecordingListCallback: Downloading recording list failed" );
+            if ( "callback" in context )
+            {
+                context["callback"]( false, context["context"] );
+            }
+        }
+    };
+    this.search = function( query, where, shortForm, context, callback, async )
+    {
+        query     = encodeURIComponent( query );
+        where     = encodeURIComponent( where );
+        shortForm = shortForm ? 1 : 0;
+        async     = async || true;
+
+        var requestContext          = {};
+        requestContext["context"]   = context;
+        requestContext["callback"]  = callback;
+        requestContext["shortForm"] = shortForm;
+
+        logger.info( this.__module(), "search: Search..." );
+
+        var self    = this;
+        var request = new JsonAjaxRequest();
+        request.setContext( requestContext );
+        request.setCallback( function( status, context, results ) { self._searchCallback( status, context, results ); } );
+        request.send( "GET", "/api/search/" + query + "/" + where + "/" + shortForm, async );
+    };
+    this._searchCallback = function( status, context, results )
+    {
+        if ( status )
+        {
+            try
+            {
+                if ( context["shortForm"] )
+                {
+                    if ( "callback" in context )
+                    {
+                        context["callback"]( true, context["context"], results );
+                    }
+                }
+            }
+            catch ( e )
+            {
+                logger.error( this.__module(), "_searchCallback: exception: " + e );
+                if ( "callback" in context )
+                {
+                    context["callback"]( false, context["context"] );
+                }
+            }
+        }
+        else
+        {
+            logger.error( this.__module(), "_searchCallback: Search failed" );
             if ( "callback" in context )
             {
                 context["callback"]( false, context["context"] );

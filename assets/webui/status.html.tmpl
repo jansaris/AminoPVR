@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AminoPVR - Status</title>
+    <link rel="stylesheet" href="/assets/webui/css/epg.css" />
+    <link rel="stylesheet" href="/assets/webui/css/search.css" />
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="/assets/webui/js/spin.js"></script>
+    <script src="/assets/js/aminopvr.js"></script>
+    <script src="/assets/webui/js/lib.js"></script>
+    <script src="/assets/webui/js/search.js"></script>
+    <script src="/assets/webui/js/status.js"></script>
+</head>
+
+<body>
+
+<div id="search">
+</div>
+
+<div>
+    <span class="header">Scheduled recordings:</span>
+    <table id="scheduled_recordings">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Title</th>
+                <th>Channel</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<div>
+    <span class="header">Status:</span><br />
+    Disk usage:
+    <ul>
+        <li>Total space: <span id="disk_usage_total"></span></li>
+        <li>Space used: <span id="disk_usage_used"></span></li>
+        <li>Space free: <span id="disk_usage_free"></span></li>
+    </ul>
+    Program data:
+    <ul>
+        <li>Provider: <span id="program_data_provider"></span></li>
+        <li>Last update: <span id="program_data_last_update"></span></li>
+        <li>Number of programs: <span id="program_data_num_programs"></span></li>
+        <li>Program information till: <span id="program_data_info_till"></span></li>
+    </ul>
+</div>
+
+</body>
+</html>

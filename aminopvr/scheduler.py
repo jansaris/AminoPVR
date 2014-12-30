@@ -15,14 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import Config, GeneralConfig
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram, RecordingProgram
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgProgram, RecordingProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.recorder import Recorder
-from aminopvr.recording import Recording, OldRecording, RecordingState
-from aminopvr.schedule import Schedule
+from aminopvr.database.recording import Recording, OldRecording, RecordingState
+from aminopvr.database.schedule import Schedule
 from aminopvr.timer import Timer
 from aminopvr.tools import Singleton, parseTimedetlaString, printTraceback
 import copy
@@ -84,12 +84,12 @@ class Scheduler( threading.Thread ):
         with self._lock:
             for timerId in self._timers.keys():
                 timer = self._timers[timerId]
-                if timer.has_key( "recordingId" ):
+                if "recordingId" in timer:
                     recording = Recording.getFromDb( conn, timer["recordingId"] )
                     if recording:
                         recording._id = timerId     # TODO: this should be removed, don't set private member
                         recordings.append( recording )
-                elif timer.has_key( "recording" ):
+                elif "recording" in timer:
                     recording     = copy.copy( timer["recording"] )
                     recording._id = timerId         # TODO: this should be removed, don't set private member
                     recordings.append( recording )
@@ -209,7 +209,7 @@ class Scheduler( threading.Thread ):
 
                         # Make sure we remember the new recording instance, but only if the recording has not started yet
                         # If 'recordingId' is not a key yet, then recording has not started yet.
-                        if not timer.has_key( "recordingId" ):
+                        if not "recordingId" in timer:
                             timer["recording"] = recording
                         else:
                             self._logger.warning( "We're updating a recording that has started recording, be careful" )
@@ -668,25 +668,31 @@ class Scheduler( threading.Thread ):
 
         if eventType == Timer.TIME_TRIGGER_EVENT:
             with self._lock:
-                if self._timers.has_key( timerId ):
+                if timerId in self._timers:
                     timer     = self._timers[timerId]
                     recording = timer["recording"]
                     if recording.status == RecordingState.UNKNOWN:
                         conn       = DBConnection()
                         recorder   = Recorder()
                         channel    = Channel.getFromDb( conn, recording.channelId )
-                        if channel.urls.has_key( recording.channelUrlType ):
+                        if recording.channelUrlType in channel.urls:
                             channelUrl = channel.urls[recording.channelUrlType]
 
-                            # Convert EpgProgram to RecordingProgram
-                            if recording.epgProgramId != -1 and not recording.epgProgram:
-                                recording.epgProgram = EpgProgram.getFromDb( conn, recording.epgProgramId )
-                            if recording.epgProgram:
-                                recording.copyEpgProgram()
+                            existingRecording = Recording.getByScheduleIdChannelIdAndTimeFromDb( conn, recording.scheduleId, recording.channelId, recording.startTime, recording.endTime )
+                            if existingRecording:
+                                recording = existingRecording
 
-                            # Store the recording in the database
-                            recording.addToDb( conn )
-                            self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
+                                self._logger.warning( "_startRecording: Recording with id=%d already exists in database" % ( recording.id ) )
+                            else:
+                                # Convert EpgProgram to RecordingProgram
+                                if recording.epgProgramId != -1 and not recording.epgProgram:
+                                    recording.epgProgram = EpgProgram.getFromDb( conn, recording.epgProgramId )
+                                if recording.epgProgram:
+                                    recording.copyEpgProgram()
+
+                                # Store the recording in the database
+                                recording.addToDb( conn )
+                                self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
 
                             recording.changeStatus( conn, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
                             self._logger.warning( "Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
@@ -698,9 +704,14 @@ class Scheduler( threading.Thread ):
                             generalConfig     = GeneralConfig( Config() )
                             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) )
 
-                            protocol     = InputStreamProtocol.MULTICAST
-                            if IsTsDecryptSupported():
-                                protocol = InputStreamProtocol.TSDECRYPT
+                            protocol = InputStreamProtocol.MOCK
+                            if len( generalConfig.inputStreamSupport ) > 0:
+                                if generalConfig.inputStreamSupport[0] == "http":
+                                    protocol = InputStreamProtocol.HTTP
+                                elif generalConfig.inputStreamSupport[0] == "multicast":
+                                    protocol = InputStreamProtocol.MULTICAST
+                                elif "tsdecrypt" in generalConfig.inputStreamSupport and IsTsDecryptSupported():
+                                    protocol = InputStreamProtocol.TSDECRYPT
 
                             # Hmm, recording didn't start
                             # Mark recording as unfinished

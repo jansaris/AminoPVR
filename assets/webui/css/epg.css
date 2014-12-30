@@ -19,8 +19,6 @@ html,body {
     cursor:             pointer;
 }
 
-.list { background-color: #ffffff }
-
 .nowrap { white-space: nowrap }
 
 .truncate > div {
@@ -53,6 +51,11 @@ html,body {
     font-size:          14pt;
     font-weight:        bold;
     text-align:         right;
+}
+
+#program_grid {
+    width:              100%;
+    background-color:   #ffffff;
 }
 
 .program_details {

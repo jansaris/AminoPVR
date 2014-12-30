@@ -15,9 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgProgram
+from aminopvr.database.channel import Channel
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgProgram
 from aminopvr.tools import getTimestamp
 from aminopvr.wi.api.common import API
 import cherrypy

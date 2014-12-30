@@ -2,16 +2,29 @@
 <html>
 
 <head>
-    <title>Page Title</title>
+    <title>AminoPVR - Epg</title>
     <link rel="stylesheet" href="/assets/webui/css/epg.css" />
+    <link rel="stylesheet" href="/assets/webui/css/search.css" />
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="/assets/webui/js/spin.js"></script>
     <script src="/assets/js/aminopvr.js"></script>
     <script src="/assets/webui/js/lib.js"></script>
     <script src="/assets/webui/js/epg.js"></script>
+    <script src="/assets/webui/js/search.js"></script>
 </head>
 
 <body>
+
+<div id="top_menu">
+    <div style="float: left;"><a href="/webui/epg/">EPG</a></div>
+    <div style="float: left;"><a href="/webui/schedules/">SCHEDULES</a></div>
+    <div style="float: left;"><a href="/webui/recordings/">RECORDINGS</a></div>
+    <div style="float: left;"><a href="/webui/search/">SEARCH</a></div>
+    <div style="float: left;"><a href="/webui/status/">STATUS</a></div>
+</div>
+
+<div id="search">
+</div>
 
 <div id="timeblock" class="timeblock"></div>
 <div id="timeblock_select" style="float: right">
@@ -23,12 +36,14 @@
 </table>
 </div>
 
-<table width="100%" border="0" cellpadding="4" cellspacing="2" class="list small" id="program_grid">
-    <thead>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+<div class="scrollTableContainer">
+    <table border="0" cellpadding="4" cellspacing="2" class="small" id="program_grid">
+        <thead>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
 
 <div id="screen"></div>
 

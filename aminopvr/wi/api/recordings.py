@@ -15,8 +15,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.db import DBConnection
-from aminopvr.recording import Recording
+from aminopvr.database.db import DBConnection
+from aminopvr.database.recording import Recording
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging

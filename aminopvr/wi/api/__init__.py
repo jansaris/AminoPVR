@@ -15,11 +15,14 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import PendingChannel, PendingChannelUrl, Channel
+from aminopvr.database.channel import PendingChannel, PendingChannelUrl, Channel
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.db import DBConnection
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import Person, ProgramAbstract, EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
-from aminopvr.tools import getFreeTotalSpaceMb
+from aminopvr.database.recording import Recording
+from aminopvr.database.schedule import Schedule
+from aminopvr.tools import getFreeTotalSpaceMb, getTimestamp
 from aminopvr.wi.api.channels import ChannelsAPI
 from aminopvr.wi.api.common import API
 from aminopvr.wi.api.config import ConfigAPI
@@ -137,6 +140,65 @@ class AminoPVRAPI( API ):
 
     @cherrypy.expose
     @API._grantAccess
+    @API._parseArguments( [("query", types.StringTypes), ("where", types.StringTypes), ("shortForm", types.IntType)] )
+    def search( self, query, where, shortForm=True ):
+        self._logger.debug( "search( query=%s, where=%s, shortForm=%d" % ( query, where, shortForm ) )
+
+        conn = DBConnection()
+
+        results = {}
+        if conn:
+            where = where.split( ',' )
+            if "programs" in where:
+                results["programs"] = []
+                programs = EpgProgram.getByTitleFromDb( conn, query, searchWhere=ProgramAbstract.SEARCH_TITLE )
+                for program in programs:
+                    if shortForm:
+                        title = program.title
+#                         if program.subtitle != "":
+#                             title = program.title + ": " + program.subtitle
+                        if not title in results["programs"]:
+                            results["programs"].append( title )
+                    else:
+                        results["programs"].append( program.toDict() )
+            if "channels" in where:
+                results["channels"] = []
+                channels = Channel.search( conn, query, shortForm )
+                if shortForm:
+                    results["channels"] = channels
+                else:
+                    for channel in channels:
+                        results["channels"].append( channel.toDict() )
+            if "persons" in where:
+                results["persons"] = []
+                persons = Person.search( conn, query, shortForm )
+                if shortForm:
+                    results["persons"] = persons
+                else:
+                    for person in persons:
+                        results["persons"].append( person.toDict() )
+            if "recordings" in where:
+                results["recordings"] = []
+                recordings = Recording.getByTitleFromDb( conn, query )
+                for recording in recordings:
+                    if shortForm:
+                        if not program.title in results["recordings"]:
+                            results["recordings"].append( recordings )
+                    else:
+                        results["recordings"].append( recording.toDict() )
+            if "schedules" in where:
+                results["schedules"] = []
+                schedules = Schedule.search( conn, query, shortForm )
+                if shortForm:
+                    results["schedules"] = schedules
+                else:
+                    for schedule in schedules:
+                        results["schedules"].append( schedule.toDict() )
+                
+        return self._createResponse( API.STATUS_SUCCESS, results )
+
+    @cherrypy.expose
+    @API._grantAccess
     @API._parseArguments()
     # TODO: --> api/status
     def getStorageInfo( self ):
@@ -144,6 +206,28 @@ class AminoPVRAPI( API ):
         generalConfig = GeneralConfig( Config() )
         free, total   = getFreeTotalSpaceMb( generalConfig.recordingsPath )
         return self._createResponse( API.STATUS_SUCCESS, { "available_size": free, "total_size": total } )
+
+    @cherrypy.expose
+    @API._grantAccess
+    @API._parseArguments()
+    # TODO: --> api/status
+    def getEpgInfo( self ):
+        self._logger.debug( "getEpgInfo()" )
+
+        timestampLastProgram = getTimestamp()
+        timestampLastUpdate  = 0
+        numPrograms          = 0;
+
+        conn = DBConnection()
+        if conn:
+            timestampLastProgram = EpgProgram.getTimestampLastProgram( conn )
+            numPrograms          = EpgProgram.getNumberOfPrograms( conn )
+
+        if aminopvr.providers.epgProvider:
+            epgProvider = aminopvr.providers.epgProvider()
+            timestampLastUpdate = epgProvider.getLastUpdate()
+
+        return self._createResponse( API.STATUS_SUCCESS, { "provider": "", "num_programs": numPrograms, "last_update": timestampLastUpdate, "last_program": timestampLastProgram } )
 
     @cherrypy.expose
     @API._grantAccess

@@ -15,13 +15,13 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.epg import RecordingProgram
+from aminopvr.database.epg import RecordingProgram
 from aminopvr.tools import printTraceback
 import copy
 import datetime
-import epg
+from aminopvr.database import epg
 import logging
 import os
 import sys
@@ -344,6 +344,17 @@ class RecordingAbstract( object ):
         return recording
 
     @classmethod
+    def getByScheduleIdChannelIdAndTimeFromDb( cls, conn, scheduleId, channelId, startTime, endTime ):
+        assert cls._tableName != None, "Not the right class: %r" % ( cls )
+        recording = None
+        if conn:
+            row = conn.execute( "SELECT * FROM %s WHERE schedule_id = ? AND channel_id = ? AND start_time = ? AND end_time = ?" % ( cls._tableName ), ( scheduleId, channelId, startTime, endTime ) )
+            if row:
+                recording = cls._createRecordingFromDbDict( conn, row[0] )
+
+        return recording
+
+    @classmethod
     def getAllUnfinishedFromDb( cls, conn ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
         recordings = []
@@ -509,6 +520,7 @@ class RecordingAbstract( object ):
                           "schedule_id":  self.scheduleId,
                           "start_time":   self.startTime,
                           "end_time":     self.endTime,
+                          "length":       self.length,
                           "title":        self.title,
                           "channel_id":   self.channelId,
                           "channel_name": self.channelName,

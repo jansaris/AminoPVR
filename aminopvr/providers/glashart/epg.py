@@ -16,10 +16,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from StringIO import StringIO
-from aminopvr.channel import Channel
+from aminopvr.database.channel import Channel
 from aminopvr.config import Config
-from aminopvr.db import DBConnection
-from aminopvr.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
+from aminopvr.database.db import DBConnection
+from aminopvr.database.epg import EpgId, EpgProgram, EpgProgramActor, EpgProgramDirector, \
     EpgProgramPresenter, EpgProgramGenre, Genre, Person
 from aminopvr.providers.glashart.config import GlashartConfig
 from aminopvr.scheduler import Scheduler
@@ -128,8 +128,9 @@ class EpgProvider( threading.Thread ):
 
         self._logger.warning( "Starting EPG grab timer @ %s with interval %s" % ( grabTime, grabInterval ) )
 
-        self._running = True
-        self._event   = threading.Event()
+        self._lastUpdate    = 0
+        self._running       = True
+        self._event         = threading.Event()
         self._event.clear()
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
@@ -149,6 +150,9 @@ class EpgProvider( threading.Thread ):
             self._logger.warning( "Epg update in progress: skipping request" )
             return False
 
+    def getLastUpdate( self ):
+        return self._lastUpdate;
+
     def stop( self ):
         self._logger.warning( "Stopping EpgProvider" )
         self._timer.stop()
@@ -162,6 +166,7 @@ class EpgProvider( threading.Thread ):
             if self._running:
                 try:
                     self._grabAll()
+                    self._lastUpdate = getTimestamp()
                     if not self._haveEnoughEpgData():
                         self._logger.warning( "Updated Epg, but there is still not enough data available.")
                 except:

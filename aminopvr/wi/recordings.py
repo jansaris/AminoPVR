@@ -16,8 +16,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.db import DBConnection
-from aminopvr.recording import Recording
+from aminopvr.database.db import DBConnection
+from aminopvr.database.recording import Recording
 from aminopvr.wi.api.common import API
 from cherrypy.lib.static import serve_file
 import cherrypy
