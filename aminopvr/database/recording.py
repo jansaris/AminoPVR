@@ -428,8 +428,8 @@ class RecordingAbstract( object ):
                                  SET
                                      schedule_id=?,
                                      epg_program_id=?,
-                                     channel_id=?
-                                     channel_name=?
+                                     channel_id=?,
+                                     channel_name=?,
                                      channel_url_type=?,
                                      start_time=?,
                                      end_time=?,
