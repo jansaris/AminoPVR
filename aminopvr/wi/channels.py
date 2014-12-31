@@ -75,6 +75,7 @@ class Channels( API ):
                         inputStream.close()
                         Watchdog().remove( watchdogId )
                     Watchdog().add( watchdogId, watchdogTimeout )
+                    Watchdog().kick( watchdogId, 10 )
                     cherrypy.response.headers[ "Content-Type" ] = "video/mp2t"
                     def content():
                         self._logger.info( "default: opened stream" )
