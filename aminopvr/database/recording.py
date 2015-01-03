@@ -15,13 +15,12 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.database.channel import Channel
 from aminopvr.config import GeneralConfig, Config
-from aminopvr.database.epg import RecordingProgram
+from aminopvr.database.channel import Channel, ChannelAbstract
+from aminopvr.database.epg import RecordingProgram, ProgramAbstract
 from aminopvr.tools import printTraceback
 import copy
 import datetime
-from aminopvr.database import epg
 import logging
 import os
 import sys
@@ -57,6 +56,7 @@ class RecordingAbstract( object ):
         self._marker            = 0
         self._status            = RecordingState.UNKNOWN
         self._rerecord          = False
+        self._channel           = None
         self._epgProgram        = None
 
     def __hash__( self ):
@@ -79,8 +79,8 @@ class RecordingAbstract( object ):
                        hash( self._rerecord ) ) )
 
     def __eq__( self, other ):
-        # Not comparng _id as it might not be set at comparison time.
-        # For insert/update descision it is not relevant
+        # Not comparing _id as it might not be set at comparison time.
+        # For insert/update decision it is not relevant
         if not other:
             return False
         assert isinstance( other, RecordingAbstract ), "Other object not instance of class RecordingAbstract: %r" % ( other )
@@ -142,7 +142,7 @@ class RecordingAbstract( object ):
     def epgProgram( self, epgProgram ):
         self._epgProgram = epgProgram
         if epgProgram:
-            if not isinstance( epgProgram, epg.ProgramAbstract ):
+            if not isinstance( epgProgram, ProgramAbstract ):
                 assert False, "Recording.epgProgram: epgProgram not a ProgramAbstract instance: %r" % ( epgProgram )
                 self._epgProgram   = None
                 self._epgProgramId = -1
@@ -172,6 +172,21 @@ class RecordingAbstract( object ):
     @channelUrlType.setter
     def channelUrlType( self, channelUrlType ):
         self._channelUrlType = unicode( channelUrlType )
+
+    @property
+    def channel( self ):
+        return self._channel
+
+    @channel.setter
+    def channel( self, channel ):
+        self._channel = channel
+        if channel:
+            if not isinstance( channel, ChannelAbstract ):
+                assert False, "Recording.channel: channel not a ChannelAbstract instance: %r" % ( channel )
+                self._channel   = None
+                self._channelId = -1;
+            else:
+                self._channel = channel.id
 
     @property
     def startTime( self ):
@@ -402,9 +417,14 @@ class RecordingAbstract( object ):
                 recording.rerecord          = data["rerecord"]
 
                 if recording.epgProgramId != -1:
-                    recording.epgProgram = epg.RecordingProgram.getFromDb( conn, recording.epgProgramId )
+                    recording.epgProgram = RecordingProgram.getFromDb( conn, recording.epgProgramId )
                     if not recording.epgProgram:
                         recording.epgProgramId = -1
+
+                if recording.channelId != -1:
+                    recording.channel = Channel.getFromDb( conn, recording.channelId )
+                    if not recording.channel:
+                        recording.channelId = -1
             except:
                 cls._logger.error( "_createRecordingFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -522,19 +542,27 @@ class RecordingAbstract( object ):
                           "end_time":     self.endTime,
                           "length":       self.length,
                           "title":        self.title,
-                          "channel_id":   self.channelId,
-                          "channel_name": self.channelName,
                           "url":          "/recordings/%d" % ( self.id ),
                           "filename":     self.filename,
                           "file_size":    self.fileSize / 1024 / 1024,
                           "scrambled":    self.scrambled,
                           "marker":       self.marker,
                           "status":       self.status }
+
         if self.epgProgram:
             recordingDict["epg_program_id"] = self.epgProgramId
             recordingDict["epg_program"]    = self.epgProgram.toDict()
         else:
             recordingDict["epg_program_id"] = -1
+
+        if self.channel:
+            recordingDict["channel_id"]     = self.channelId
+            recordingDict["channel_name"]   = self.channel.name
+            recordingDict["channel"]        = self.channel.toDict()
+        else:
+            recordingDict["channel_id"]     = -1
+            recordingDict["channel_name"]   = self.channelName
+
         return recordingDict
 
     def _generateFilename( self, conn ):

@@ -1,51 +1,6 @@
-html,body {
-    border:             0;
-    margin:             0;
-    padding:            0;
-    font-size:          9pt;
-    font-family:        Arial, Helvetica, sans-serif;
-    background-color:   #e0e0e0;
-    color:              #000000;
-}
-
-.body {
-    font-size: 12px;
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-.menu { background-color: #cecece }
-
 .scroll_time {
     cursor:             pointer;
 }
-
-.nowrap { white-space: nowrap }
-
-.truncate > div {
-    position:       relative;
-    overflow:       hidden;
-    height:         3em;
-}
-
-/* visible content */
-.truncate > div > span {
-    display:        block;
-    position:       absolute; 
-    max-width:      100%;
-    white-space:    nowrap;
-    overflow:       hidden;
-    text-overflow:  ellipsis;
-}
-
-/* spacer content */
-/*.truncate > div:after {
-    content:        attr(title);
-    overflow:       hidden;
-    height:         0;
-    display:        block;
-}*/
-
-.small { font-size: 9pt }
 
 .timeblock {
     font-size:          14pt;
@@ -55,7 +10,9 @@ html,body {
 
 #program_grid {
     width:              100%;
-    background-color:   #ffffff;
+//    border-spacing:     4px;
+//    border-collapse:    separate;
+//    cellspacing:        2px; 
 }
 
 .program_details {
@@ -114,11 +71,9 @@ html,body {
 }
 
 .program {
-    background-color:   #eeeeee;
     border-left-width:  6px;
     border-left-style:  solid;
     cursor:             pointer;
-    vertical-align:     text-top;
 }
 
 .selectedProgram {
@@ -158,11 +113,3 @@ html,body {
 .cat_War            { border-left-color: #B06050; }
 .cat_Western        { border-left-color: #806040; }
 .cat_Unknown        { border-left-color: #303030; }
-
-#screen
-{
-    position:   absolute;
-    left:       0;
-    top:        0;
-    background: #000;
-}

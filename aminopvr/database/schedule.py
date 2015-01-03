@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.database.channel import Channel
+from aminopvr.database.channel import Channel, ChannelAbstract
 from aminopvr.database.epg import EpgProgram
 from aminopvr.tools import printTraceback
 import logging
@@ -39,19 +39,6 @@ class Schedule( object ):
     DUPLICATION_METHOD_SUBTITLE    = 2
     DUPLICATION_METHOD_DESCRIPTION = 4
 
-    _id                 = -1
-    _type               = -1   # manual, auto
-    _channelId          = -1
-    _startTime          = 0
-    _endTime            = 0
-    _title              = "Schedule 1"
-    _preferHd           = 0
-    _preferUnscrambled  = 1
-    _dupMethod          = DUPLICATION_METHOD_TITLE
-    _startEarly         = 0
-    _endLate            = 0
-    _inactive           = 0
-
     _logger             = logging.getLogger( 'aminopvr.Schedule' )
 
     def __init__( self, id=-1 ):    # @ReservedAssignment
@@ -67,10 +54,11 @@ class Schedule( object ):
         self._startEarly        = 0
         self._endLate           = 0
         self._inactive          = False
+        self._channel           = None
 
     def __eq__( self, other ):
-        # Not comparng _id as it might not be set at comparison time.
-        # For insert/update descision it is not relevant
+        # Not comparing _id as it might not be set at comparison time.
+        # For insert/update decision it is not relevant
         if not other:
             return False
         assert isinstance( other, Schedule ), "Other object not instance of class Schedule: %r" % ( other )
@@ -108,6 +96,21 @@ class Schedule( object ):
     @channelId.setter
     def channelId( self, channelId ):
         self._channelId = int( channelId )
+
+    @property
+    def channel( self ):
+        return self._channel
+    
+    @channel.setter
+    def channel( self, channel ):
+        self._channel = channel
+        if channel:
+            if not isinstance( channel, ChannelAbstract ):
+                assert False, "Schedule.channel: channel not a ChannelAbstract instance: %r" % ( channel )
+                self._channel   = None
+                self._channelId = -1;
+            else:
+                self._channel = channel.id
 
     @property
     def startTime( self ):
@@ -187,7 +190,7 @@ class Schedule( object ):
         if conn:
             rows = conn.execute( "SELECT * FROM schedules" )
             for row in rows:
-                schedule = cls._createScheduleFromDbDict( row )
+                schedule = cls._createScheduleFromDbDict( conn, row )
                 schedules.append( schedule )
 
         return schedules
@@ -198,7 +201,7 @@ class Schedule( object ):
         if conn:
             row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) )
             if row:
-                schedule = cls._createScheduleFromDbDict( row[0] )
+                schedule = cls._createScheduleFromDbDict( conn, row[0] )
 
         return schedule
 
@@ -209,7 +212,7 @@ class Schedule( object ):
         if conn:
             row = conn.execute( "SELECT * FROM schedules WHERE title = ? AND channel_id = ?", ( title, channelId ) )
             if row:
-                schedule = cls._createScheduleFromDbDict( row[0] )
+                schedule = cls._createScheduleFromDbDict( conn, row[0] )
         return schedule
 
     @classmethod
@@ -229,7 +232,7 @@ class Schedule( object ):
         return schedules
 
     @classmethod
-    def _createScheduleFromDbDict( cls, data ):
+    def _createScheduleFromDbDict( cls, conn, data ):
         schedule = None
         if data:
             try:
@@ -245,6 +248,11 @@ class Schedule( object ):
                 schedule.startEarly         = data["start_early"]
                 schedule.endLate            = data["end_late"]
                 schedule.inactive           = data["inactive"]
+
+                if schedule.channelId != -1:
+                    schedule.channel = Channel.getFromDb( conn, schedule.channelId )
+                    if not schedule.channel:
+                        schedule.channelId = -1
             except:
                 cls._logger.error( "_createScheduleFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -281,7 +289,7 @@ class Schedule( object ):
                                  WHERE
                                      id=%s
                               """, ( self._type,
-                                     self._channel_id,
+                                     self._channelId,
                                      self._startTime,
                                      self._endTime,
                                      self._title,
@@ -361,24 +369,31 @@ class Schedule( object ):
         return schedule
 
     def toDict( self ):
-        return { "id":                  self.id,
-                 "type":                self.type,
-                 "channel_id":          self.channelId,
-                 "start_time":          self.startTime,
-                 "end_time":            self.endTime,
-                 "title":               self.title,
-                 "prefer_hd":           self.preferHd,
-                 "prefer_unscrambled":  self.preferUnscrambled,
-                 "dup_method":          self.dupMethod,
-                 "start_early":         self.startEarly,
-                 "end_late":            self.endLate,
-                 "inactive":            self.inactive }
+        scheduleDict = { "id":                  self.id,
+                         "type":                self.type,
+                         "start_time":          self.startTime,
+                         "end_time":            self.endTime,
+                         "title":               self.title,
+                         "prefer_hd":           self.preferHd,
+                         "prefer_unscrambled":  self.preferUnscrambled,
+                         "dup_method":          self.dupMethod,
+                         "start_early":         self.startEarly,
+                         "end_late":            self.endLate,
+                         "inactive":            self.inactive }
+
+        if self.channel:
+            scheduleDict["channel_id"]  = self.channelId
+            scheduleDict["channel"]     = self.channel.toDict()
+        else:
+            scheduleDict["channel_id"]  = -1
+
+        return scheduleDict
 
     def dump( self ):
         return ( "%i: %i, %s, %i, %i-%i, %i, %i, %i, %i-%i, %i" % ( self._id, self._type, self._title, self._channelId, self._startTime, self._endTime, self._preferHd, self._preferUnscrambled, self._dupMethod, self._startEarly, self._endLate, self._inactive ) )
 
 def main():
-    sys.stderr.write( "main()\n" );
+    sys.stderr.write( "main()\n" )
 
 # allow this to be a module
 if __name__ == '__main__':

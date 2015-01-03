@@ -3,6 +3,7 @@
 
 <head>
     <title>AminoPVR - Epg</title>
+    <link rel="stylesheet" href="/assets/webui/css/common.css" />
     <link rel="stylesheet" href="/assets/webui/css/epg.css" />
     <link rel="stylesheet" href="/assets/webui/css/search.css" />
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -16,11 +17,15 @@
 <body>
 
 <div id="top_menu">
-    <div style="float: left;"><a href="/webui/epg/">EPG</a></div>
-    <div style="float: left;"><a href="/webui/schedules/">SCHEDULES</a></div>
-    <div style="float: left;"><a href="/webui/recordings/">RECORDINGS</a></div>
-    <div style="float: left;"><a href="/webui/search/">SEARCH</a></div>
-    <div style="float: left;"><a href="/webui/status/">STATUS</a></div>
+    <table class="content_grid">
+        <thead>
+            <th><a href="/webui/epg/">EPG</a></th>
+            <th><a href="/webui/schedules/">SCHEDULES</a></th>
+            <th><a href="/webui/recordings/">RECORDINGS</a></th>
+            <th><a href="/webui/search/">SEARCH</a></th>
+            <th><a href="/webui/status/">STATUS</a></th>
+        </thead>
+    </table>
 </div>
 
 <div id="search">
@@ -37,7 +42,7 @@
 </div>
 
 <div class="scrollTableContainer">
-    <table border="0" cellpadding="4" cellspacing="2" class="small" id="program_grid">
+    <table class="content_grid small" id="program_grid">
         <thead>
         </thead>
         <tbody>

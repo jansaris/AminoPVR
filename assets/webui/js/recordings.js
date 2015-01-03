@@ -40,6 +40,7 @@ function _getRecordingListCallback( status, context, recordings )
                 var title       = recording.getTitle();
                 var subtitle    = "";
                 var description = "";
+                var channel     = recording.getChannelName();
                 var length      = Math.round( recording.getLength() / 60 ) + " mins";
                 var fileSize    = Math.round( recording.getFileSize() / 1024 / 1024 ) + " MB";
 
@@ -49,12 +50,16 @@ function _getRecordingListCallback( status, context, recordings )
                     subtitle    = epgProgram.getSubtitle();
                     description = epgProgram.getDescription();
                 }
+                if ( recording.getChannel() != null)
+                {
+                    channel     = recording.getChannel().getName();
+                }
 
                 var row             = $( '<tr>' ).attr( 'id', 'recording_' + recording.getId() );
                 var titleCell       = $( '<td>' ).html( title );
                 var subtitleCell    = $( '<td>' ).html( subtitle );
                 var timeCell        = $( '<td>' ).html( recording.getStartTime()._toHuman() );
-                var channelCell     = $( '<td>' ).html( recording.getChannelName() );
+                var channelCell     = $( '<td>' ).html( channel );
                 var lengthCell      = $( '<td>' ).html( length );
                 var fileSizeCell    = $( '<td>' ).html( fileSize );
                 var optionsCell     = $( '<td>' ).html( "" );

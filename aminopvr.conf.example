@@ -5,6 +5,7 @@ provider=glashart
 input_stream_support=http
 local_access_nets=127.0.0.1,192.168.0.0/16
 recordings_path=./recordings
+timeslot_delta=5m
 
 [InputStreams]
 # UDPXY base url and format

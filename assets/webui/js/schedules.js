@@ -53,9 +53,9 @@ function _getScheduleListCallback( status, context, schedules )
                 var startEarly  = "";
                 var endLate     = "";
 
-                if ( schedule.getChannelId() != -1 )
+                if ( schedule.getChannelId() != -1 && schedule.getChannel() != null )
                 {
-                    channel = schedule.getChannelId();
+                    channel = schedule.getChannel().getName();
                 }
                 if ( schedule.getDupMethod() & schedule.DUPLICATION_METHOD_TITLE )
                 {

@@ -1,0 +1,70 @@
+html,body {
+    border:             0;
+    margin:             0;
+    padding:            0;
+    font-size:          9pt;
+    font-family:        Arial, Helvetica, sans-serif;
+    background-color:   #e0e0e0;
+    color:              #000000;
+}
+
+.body {
+    font-size:          12px;
+    font-family:        Arial, Helvetica, sans-serif;
+}
+
+.content_grid {
+    background-color:   #ffffff;
+    border:             0;
+}
+
+.small {
+    font-size: 9pt;
+}
+
+.content_grid thead {
+    background-color:   #cecece;
+}
+
+.content_grid td,th {
+    padding:            4px;
+}
+
+.content_grid td {
+    background-color:   #eeeeee;
+    vertical-align:     text-top;
+}
+
+.nowrap { white-space: nowrap }
+
+.truncate > div {
+    position:       relative;
+    overflow:       hidden;
+    height:         3em;
+}
+
+/* visible content */
+.truncate > div > span {
+    display:        block;
+    position:       absolute; 
+    max-width:      100%;
+    white-space:    nowrap;
+    overflow:       hidden;
+    text-overflow:  ellipsis;
+}
+
+/* spacer content */
+/*.truncate > div:after {
+    content:        attr(title);
+    overflow:       hidden;
+    height:         0;
+    display:        block;
+}*/
+
+#screen
+{
+    position:   absolute;
+    left:       0;
+    top:        0;
+    background: #000;
+}

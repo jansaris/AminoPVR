@@ -198,7 +198,6 @@ function _initEpgGrid()
     {
         headerRow = $( '<tr>' );
         headerRow.attr( 'id', 'program_grid_header' );
-        headerRow.addClass( 'menu' );
 
         var leftCell = $( '<th>' );
         leftCell.attr( 'align', 'right' );
@@ -343,7 +342,7 @@ function _populateProgramsInEpgGrid()
                         programCell.attr( 'id', 'program_' + program.getId() );
                         programCell.attr( 'colspan', blocks );
                         programCell.css( 'width', percentage.toFixed( 1 ) + '%' );
-                        programCell.addClass( "small program truncate" );
+                        programCell.addClass( "program truncate" );
                         if ( program.getGenres().length > 0 )
                         {
                             programCell.addClass( "cat_" + program.getGenres()[0] );
@@ -737,6 +736,7 @@ function _updateRecordingFields( schedule )
         dupMethod.push( schedule.DUPLICATION_METHOD_NONE );
     }
 
+    recordType.val( schedule.getType() );
     recordChannel.val( schedule.getChannelId() );
     recordStartTime.val( schedule.getStartTime()._toLocalJSON() );
     recordEndTime.val( schedule.getEndTime()._toLocalJSON() );

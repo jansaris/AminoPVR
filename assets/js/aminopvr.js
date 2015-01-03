@@ -602,6 +602,7 @@ function AminoPVRRecording()
     this._channelName   = "";
     this._epgProgramId  = -1;
     this._epgProgram    = null;
+    this._epgChannel    = null;
 
     this.__module = function()
     {
@@ -626,9 +627,14 @@ function AminoPVRRecording()
         this._channelName   = ("channel_name"   in json) ? json["channel_name"]   : "<Unknown>";
         this._epgProgramId  = ("epg_program_id" in json) ? json["epg_program_id"] : -1;
         this._epgProgram    = ("epg_program"    in json) ? new AminoPVREpgProgram() : null;
+        this._channel       = ("channel"        in json) ? new AminoPVRChannel()    : null;
         if ( this._epgProgram != null )
         {
             this._epgProgram.fromJson( json["epg_program"] )
+        }
+        if ( this._channel != null )
+        {
+            this._channel.fromJson( json["channel"] )
         }
     };
 
@@ -700,6 +706,10 @@ function AminoPVRRecording()
     this.getChannelName = function()
     {
         return this._channelName;
+    };
+    this.getChannel = function()
+    {
+        return this._channel;
     };
     this.getEpgProgramId = function()
     {
@@ -822,6 +832,7 @@ function AminoPVRSchedule()
     this._startEarly        = 0;
     this._endLate           = 0;
     this._inactive          = false;
+    this._channel           = null;
 
     this.__module = function()
     {
@@ -842,6 +853,11 @@ function AminoPVRSchedule()
         this._startEarly        = ("start_early"            in json) ? json["start_early"]          : 0;
         this._endLate           = ("end_late"               in json) ? json["end_late"]             : 0;
         this._inactive          = ("inactive"               in json) ? json["inactive"]             : false;
+        this._channel           = ("channel"                in json) ? new AminoPVRChannel()        : null;
+        if ( this._channel != null )
+        {
+            this._channel.fromJson( json["channel"] )
+        }
     };
     this.toJson = function()
     {
@@ -881,6 +897,10 @@ function AminoPVRSchedule()
     this.setChannelId = function( channelId )
     {
         this._channelId = channelId;
+    };
+    this.getChannel = function()
+    {
+        return this._channel;
     };
     this.getStartTime = function()
     {
