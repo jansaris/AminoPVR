@@ -110,7 +110,7 @@ class Schedule( object ):
                 self._channel   = None
                 self._channelId = -1;
             else:
-                self._channel = channel.id
+                self._channelId = channel.id
 
     @property
     def startTime( self ):
