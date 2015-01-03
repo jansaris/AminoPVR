@@ -47,37 +47,43 @@ class VcasProvider( subprocess.Popen ):
 
         self._logger.warning( "Starting VCAS VMCAM server with interval %s" % ( updateInterval ) )
 
-        #-e ./etc/ -c ../../Verimatrix.ini -t 86400 -keyblockonly
-        args = []
-        args.append( os.path.join( const.DATA_ROOT, "bin", "vmcam" ) )
-        args.append( "-e" )
-        args.append( "./etc/" )
-        args.append( "-c" )
-        args.append( glashartConfig.vcasIniFile )
-        args.append( "-t" )
-        args.append( "%d" % ( updateInterval.total_seconds() ) )
-        args.append( "-keyblockonly" )
-
-        self._logger.info( "Command line: %s" % ( ' '.join( args ) ) )
-
+        self.pid = 0
         if vmcamServer != "":
-            # spawn the vmcam server process
-            super( VcasProvider, self ).__init__( args,
-                                                  cwd=os.path.abspath( os.path.join( const.DATA_ROOT, "bin" ) ),
-                                                  shell=False,
-                                                  stdout=subprocess.PIPE,
-                                                  stderr=subprocess.PIPE,
-                                                  bufsize=1,
-                                                  close_fds='posix' )
-    
-            if self.pid != 0:
-                self._logger.warning( "VMCAM server started with PID=%d" % ( self.pid ) )
+            vmcamServerPath = os.path.join( const.DATA_ROOT, "bin", vmcamServer )
+
+            #-e ./etc/ -c ../../Verimatrix.ini -t 86400 -keyblockonly
+            args = []
+            args.append( vmcamServerPath )
+            args.append( "-e" )
+            args.append( "./etc/" )
+            args.append( "-c" )
+            args.append( glashartConfig.vcasIniFile )
+            args.append( "-t" )
+            args.append( "%d" % ( updateInterval.total_seconds() ) )
+            args.append( "-keyblockonly" )
+
+            self._logger.info( "Command line: %s" % ( ' '.join( args ) ) )
+
+            if os.path.isfile( vmcamServerPath ) and os.access( vmcamServerPath, os.X_OK ):
+                # spawn the vmcam server process
+                super( VcasProvider, self ).__init__( args,
+                                                      cwd=os.path.abspath( os.path.join( const.DATA_ROOT, "bin" ) ),
+                                                      shell=False,
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      bufsize=1,
+                                                      close_fds='posix' )
+
+                if self.pid != 0:
+                    self._logger.warning( "VMCAM server started with PID=%d" % ( self.pid ) )
+                else:
+                    self._logger.error( "VMCAM server not started" )
+
+                # start stdout and stderr logging threads
+                self._LogThread( self.stdout, self._vmcamLogger.debug )
+                self._LogThread( self.stderr, self._vmcamLogger.info )
             else:
-                self._logger.error( "VMCAM server not started" )
-    
-            # start stdout and stderr logging threads
-            self._LogThread( self.stdout, self._vmcamLogger.debug )
-            self._LogThread( self.stderr, self._vmcamLogger.info )
+                self._logger.warning( "VMCAM server executable %s does not exist or is not an executable." % ( vmcamServerPath ) )
 
     def terminate( self ):
         if self.pid != 0:

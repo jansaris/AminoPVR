@@ -22,7 +22,7 @@ from aminopvr.database.epg import Person, ProgramAbstract, EpgProgram
 from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.database.recording import Recording
 from aminopvr.database.schedule import Schedule
-from aminopvr.tools import getFreeTotalSpaceMb, getTimestamp
+from aminopvr.tools import getFreeTotalSpaceMb, getTimestamp, printTraceback
 from aminopvr.wi.api.channels import ChannelsAPI
 from aminopvr.wi.api.common import API
 from aminopvr.wi.api.config import ConfigAPI
@@ -182,8 +182,8 @@ class AminoPVRAPI( API ):
                 recordings = Recording.getByTitleFromDb( conn, query )
                 for recording in recordings:
                     if shortForm:
-                        if not program.title in results["recordings"]:
-                            results["recordings"].append( recordings )
+                        if not recording.title in results["recordings"]:
+                            results["recordings"].append( recording.title )
                     else:
                         results["recordings"].append( recording.toDict() )
             if "schedules" in where:
@@ -345,17 +345,22 @@ class AminoPVRAPI( API ):
     # TODO: --> api/admin
     def postLog( self, logData="[]" ):
         self._logger.debug( "postLog( %s )" % ( logData ) )
-        logs = json.loads( logData )
-        for log in logs:
-            logger = logging.getLogger( "aminopvr.Log.%s" % ( log["module"] ) )
-            if log["level"] == 0:
-                logger.debug( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 1:
-                logger.info( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 2:
-                logger.warning( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 3:
-                logger.error( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
-            elif log["level"] == 4:
-                logger.critical( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+        try:
+            logs = json.loads( logData )
+            for log in logs:
+                logger = logging.getLogger( "aminopvr.Log.%s" % ( log["module"] ) )
+                if log["level"] == 0:
+                    logger.debug( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+                elif log["level"] == 1:
+                    logger.info( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+                elif log["level"] == 2:
+                    logger.warning( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+                elif log["level"] == 3:
+                    logger.error( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+                elif log["level"] == 4:
+                    logger.critical( "%d %s" % ( log["timestamp"], urllib.unquote( log["log_text"] ) ) )
+        except:
+            self._logger.exception( "postLog: exception: logData=%s" % ( logData ) )
+            printTraceback()
+
         return self._createResponse( API.STATUS_SUCCESS, { "numLogs": len( logs ) } )

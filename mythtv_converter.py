@@ -23,6 +23,7 @@ from aminopvr.database.recording import Recording, RecordingState, OldRecording
 from aminopvr.resource_monitor import ResourceMonitor
 from aminopvr.database.schedule import Schedule
 from aminopvr.tools import getTimestamp
+from shutil import copyfile
 import MySQLdb
 import aminopvr
 import datetime
@@ -59,45 +60,64 @@ logger = logging.getLogger( "aminopvr" )
 logger.setLevel( logging.WARNING )
 logger.addHandler( consoleHandler )
 
-_CATTRANS = { "amusement"            : "Talk",
+_CATTRANS = { "animated"             : "Animated",
               "animatie"             : "Animated",
-              "comedy"               : "Comedy",
-              "docu"                 : "Documentary",
-              "educatief"            : "Educational",
+              "adult"                : "Adult",
               "erotiek"              : "Adult",
-              "film"                 : "Film",
+              "art/music"            : "Art/Music",
               "muziek"               : "Art/Music",
-              "info"                 : "Educational",
-              "jeugd"                : "Children",
-              "kunst/cultuur"        : "Arts/Culture",
-              "misdaad"              : "Crime/Mystery",
-              "muziek"               : "Music",
-              "natuur"               : "Science/Nature",
-              "actualiteit"          : "News",
-              "overige"              : "Unknown",
-              "religieus"            : "Religion",
-              "serie"                : "Drama",
-              "sport"                : "Sports",
+              "art/culture"          : "Arts/Culture",
               "cultuur"              : "Arts/Culture",
-              "wetenschap"           : "Science/Nature" }
+              "kunst/cultuur"        : "Arts/Culture",
+              "children"             : "Children",
+              "jeugd"                : "Children",
+              "comedy"               : "Comedy",
+              "crime/mystery"        : "Crime/Mystery",
+              "misdaad"              : "Crime/Mystery",
+              "documentary"          : "Documentary",
+              "docu"                 : "Documentary",
+              "drama"                : "Drama",
+              "serie"                : "Drama",
+              "educatief"            : "Educational",
+              "educational"          : "Educational",
+              "info"                 : "Educational",
+              "film"                 : "Film",
+              "music"                : "Music",
+              "muziek"               : "Music",
+              "actualiteit"          : "News",
+              "news"                 : "News",
+              "religieus"            : "Religion",
+              "religion"             : "Religion",
+              "natuur"               : "Science/Nature",
+              "science/nature"       : "Science/Nature",
+              "wetenschap"           : "Science/Nature",
+              "sport"                : "Sports",
+              "sports"               : "Sports",
+              "amusement"            : "Talk",
+              "talk"                 : "Talk",
+              "other"                : "Unknown",
+              "overige"              : "Unknown",
+              "unknown"              : "Unknown" }
 
 class MythTvChannel( object ):
 
     _logger = logging.getLogger( "aminopvr.MytvTvChannel" )
 
-    def __init__( self, chanid, channum, callsign, name, xmltvid ):
+    def __init__( self, chanid, channum, callsign, name, xmltvid, icon ):
         self._chanid     = int( chanid )
         self._channum    = int( channum )
         self._callsign   = unicode( callsign )
         self._name       = unicode( name )
         self._xmltvid    = unicode( xmltvid )
+        self._icon       = unicode( icon )
 
     def __eq__( self, other ):
         return ( self._chanid   != other._chanid   and
                  self._channum  != other._channum  and
                  self._callsign != other._callsign and
                  self._name     != other._name     and
-                 self._xmltvid  != other._xmltvid )
+                 self._xmltvid  != other._xmltvid  and
+                 self._icon     != other._icon )
 
     def __ne__( self, other ):
         return not self.__eq__( other )
@@ -121,6 +141,10 @@ class MythTvChannel( object ):
     @property
     def xmlTvId( self ):
         return self._xmltvid
+
+    @property
+    def icon( self ):
+        return self._icon
 
     @classmethod
     def getAllByEpgIdFromDb( cls, conn, xmltvid ):
@@ -174,7 +198,8 @@ class MythTvChannel( object ):
                            channelData["channum"],
                            channelData["callsign"],
                            channelData["name"],
-                           channelData["xmltvid"] )
+                           channelData["xmltvid"],
+                           channelData["icon"] )
         return channel
 
     def dump( self ):
@@ -606,7 +631,7 @@ class MythTvRecordedProgram( object ):
     def dump( self ):
         return ( "%i: (%i-%i) %s:%s (%s, %s)" % ( self._chanid, self._starttime, self._endtime, self._title, self._subtitle, self._category, self._description ) )
 
-def _addChannel( chanId, mythTvChannelsDict, mythTvIptvChannelsDict ):
+def _addChannel( chanId, mythTvChannelsDict, mythTvIptvChannelsDict, dryRun ):
     channel = None
     urlType = None
 
@@ -641,10 +666,28 @@ def _addChannel( chanId, mythTvChannelsDict, mythTvIptvChannelsDict ):
                 channelUrl.scrambled    = False
 
                 channel.urls[urlType]   = channelUrl
+
+                _copyLogoAndThumbnail( channel, mythTvChannel, dryRun )
     else:
         logger.warning( "channel with chanId=%i not found in mythTvChannelsDict" % ( chanId ) )
 
     return ( channel, urlType )
+
+def _copyLogoAndThumbnail( channel, mythtvChannel, dryRun ):
+    if mythtvChannel.icon != "":
+        icon           = channel.epgId + ".png"
+        logoPath       = os.path.join( aminopvr.const.DATA_ROOT, "assets/images/channels/logos", icon )
+        if not os.path.exists( logoPath ):
+            channel.logo = icon
+            if not dryRun:
+                copyfile( mythtvChannel.icon, logoPath )
+            logger.warning( "_copyLogoAndThumbnail: copied logo to %s" % ( logoPath ) )
+        thumbnailPath  = os.path.join( aminopvr.const.DATA_ROOT, "assets/images/channels/thumbnails", icon )
+        if not os.path.exists( thumbnailPath ):
+            channel.thumbnail = icon
+            if not dryRun:
+                copyfile( mythtvChannel.icon, thumbnailPath )
+            logger.warning( "_copyLogoAndThumbnail: copied thumbnail to %s" % ( thumbnailPath ) )
 
 def main():
     aminopvr.const.DATA_ROOT = os.path.dirname( os.path.abspath( __file__ ) )
@@ -769,6 +812,8 @@ def main():
                     if mythTvChannel.chanId not in mythTvChannelMap:
                         if len( currChannels ) > 0:
                             logger.warning( "Channels found, but no Url match for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
+                            mythTvChannelMap[mythTvChannel.chanId]        = currChannels[0]
+                            mythTvChannelUrlTypeMap[mythTvChannel.chanId] = "sd"
                             for channel in currChannels:
                                 logger.info( "Channel: %s" % ( channel.dump() ) )
                         else:
@@ -781,7 +826,7 @@ def main():
                     # If there is enough information on MythTV side, create an inactive
                     # channel.
                     if record.chanId != 0 and record.chanId not in mythTvChannelMap:
-                        channel, urlType =_addChannel( record.chanId, mythTvChannelsDict, mythTvIptvChannelsDict )
+                        channel, urlType =_addChannel( record.chanId, mythTvChannelsDict, mythTvIptvChannelsDict, dryRun )
                         if channel:
                             logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
                             if not dryRun:
@@ -794,33 +839,33 @@ def main():
                         if record.chanId:
                             channelId = mythTvChannelMap[record.chanId].id
  
+                        recType   = Schedule.SCHEDULE_TYPE_ANY_TIME
+                        dupMethod = Schedule.DUPLICATION_METHOD_NONE
+                        if record.type == 1:    # kSingleRecord
+                            recType = Schedule.SCHEDULE_TYPE_ONCE
+                        elif record.type == 2:  # kTimeslotRecord
+                            recType = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
+                        elif record.type == 3:  # kChannelRecord
+                            recType = Schedule.SCHEDULE_TYPE_ANY_TIME
+                            if channelId == -1:
+                                logger.warning( "Expecting a channelId in record %s" % ( record.dump() ) )
+                                if not dryRun:  # on the dry-run there might be new channels added, so they don't have a valid id yet.
+                                    continue
+                        elif record.type == 4:  # kAllRecord
+                            recType   = Schedule.SCHEDULE_TYPE_ANY_TIME
+                            channelId = -1
+                        elif record.type == 5:  # kWeekslotRecord
+                            recType = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK
+                        elif record.type == 9:  # kFindDailyRecord
+                            recType = Schedule.SCHEDULE_TYPE_ONCE_EVERY_DAY
+                        elif record.type == 10: # kFindWeeklyRecord
+                            recType = Schedule.SCHEDULE_TYPE_ONCE_EVERY_WEEK
+
                         # Search for a Schedule with the same title and channelId
                         schedule = Schedule.getByTitleAndChannelIdFromDb( conn, record.title, channelId )
 
                         # No schedule exists yet, create one
                         if not schedule:
-                            recType   = Schedule.SCHEDULE_TYPE_ANY_TIME
-                            dupMethod = Schedule.DUPLICATION_METHOD_NONE
-                            if record.type == 1:    # kSingleRecord
-                                recType = Schedule.SCHEDULE_TYPE_ONCE
-                            elif record.type == 2:  # kTimeslotRecord
-                                recType = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_DAY
-                            elif record.type == 3:  # kChannelRecord
-                                recType = Schedule.SCHEDULE_TYPE_ANY_TIME
-                                if channelId == -1:
-                                    logger.warning( "Expecting a channelId in record %s" % ( record.dump() ) )
-                                    if not dryRun:  # on the dry-run there might be new channels added, so they don't have a valid id yet.
-                                        continue
-                            elif record.type == 4:  # kAllRecord
-                                recType   = Schedule.SCHEDULE_TYPE_ANY_TIME
-                                channelId = -1
-                            elif record.type == 5:  # kWeekslotRecord
-                                recType = Schedule.SCHEDULE_TYPE_TIMESLOT_EVERY_WEEK
-                            elif record.type == 9:  # kFindDailyRecord
-                                recType = Schedule.SCHEDULE_TYPE_ONCE_EVERY_DAY
-                            elif record.type == 10: # kFindWeeklyRecord
-                                recType = Schedule.SCHEDULE_TYPE_ONCE_EVERY_WEEK
- 
                             if record.dupMethod & 0x02 == 0x02: # kDupCheckSub
                                 dupMethod = dupMethod | Schedule.DUPLICATION_METHOD_SUBTITLE
                             if record.dupMethod & 0x04 == 0x04: # kDupCheckDesc
@@ -834,11 +879,11 @@ def main():
                             schedule.startTime          = record.startTime
                             schedule.endTime            = record.endTime
                             schedule.title              = record.title
-                            schedule.preferHd           = (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] == u"hd")
-                            schedule.preferUnscrambled  = True
+                            schedule.preferHd           = (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] != u"sd")
+                            schedule.preferUnscrambled  = False
                             schedule.dupMethod          = dupMethod
-                            schedule.startEarly         = record.startOffset
-                            schedule.endLate            = record.endOffset
+                            schedule.startEarly         = round( record.startOffset / 60 )
+                            schedule.endLate            = round( record.endOffset / 60 )
                             schedule.inactive           = record.inactive
  
                             logger.warning( "Adding Schedule: %s" % ( schedule.dump() ) )
@@ -859,13 +904,13 @@ def main():
                         # If there is enough information on MythTV side, create an inactive
                         # channel.
                         if recorded.chanId not in mythTvChannelMap:
-                            channel, urlType =_addChannel( recorded.chanId, mythTvChannelsDict, mythTvIptvChannelsDict )
+                            channel, urlType =_addChannel( recorded.chanId, mythTvChannelsDict, mythTvIptvChannelsDict, dryRun )
                             if channel:
                                 logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
                                 if not dryRun:
                                     channel.addToDb( conn )
-                                mythTvChannelMap[record.chanId]        = channel
-                                mythTvChannelUrlTypeMap[record.chanId] = urlType
+                                mythTvChannelMap[recorded.chanId]        = channel
+                                mythTvChannelUrlTypeMap[recorded.chanId] = urlType
 
                         if recorded.chanId in mythTvChannelMap:
                             channel = mythTvChannelMap[recorded.chanId]
@@ -941,7 +986,7 @@ def main():
                         # If there is enough information on MythTV side, create an inactive
                         # channel.
                         if recordedProgram.chanId not in mythTvChannelMap:
-                            channel, urlType =_addChannel( recordedProgram.chanId, mythTvChannelsDict, mythTvIptvChannelsDict )
+                            channel, urlType =_addChannel( recordedProgram.chanId, mythTvChannelsDict, mythTvIptvChannelsDict, dryRun )
                             if channel:
                                 logger.warning( "Adding Channel: %s" % ( channel.dump() ) )
                                 if not dryRun:
@@ -1007,7 +1052,7 @@ def main():
                                     logger.warning( "Linking \"%s\" to \"%s\"" % ( os.path.join( mythtvRecPath, recorded.baseName ), os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) ) ) )
                                     if not dryRun:
                                         try:
-                                            os.symlink( os.path.join( mythtvRecPath, recorded.baseName ), os.path.join( outputRecPath, filename ) )
+                                            os.symlink( os.path.join( mythtvRecPath, recorded.baseName ), os.path.join( generalConfig.recordingsPath, recording.filename ) )
                                         except OSError, e:
                                             logger.error( "Unable to create symbolic link" )
                                             logger.error( traceback.format_exc() )

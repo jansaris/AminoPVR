@@ -316,7 +316,7 @@ function LoggerClass()
                 }
                 else
                 {
-                    window.setTimeout( function()
+                    logger._remoteLogTimeout = window.setTimeout( function()
                     {
                         logger._sendDebugLog();
                     }, logger._SEND_DEBUG_LOG_INTERVAL );
@@ -777,9 +777,11 @@ function AminoPVRRecording()
         } );
         request.send( "GET", "/api/recordings/setRecordingMarker/" + this._id + "/" + this._marker, async );
     };
-    this.deleteFromDb = function()
+    this.deleteFromDb = function( rerecord )
     {
-        logger.info( this.__module(), "deleteFromDb()" );
+        rerecord = rerecord || false;
+
+        logger.info( this.__module(), "deleteFromDb( rerecord=" + rerecord + " )" );
 
         var requestContext         = {};
         requestContext["deleted"]  = false;
@@ -796,7 +798,14 @@ function AminoPVRRecording()
                 context["deleted"] = true;
             }
         } );
-        request.send( "GET", "/api/recordings/deleteRecording/" + this._id, false );
+        if ( rerecord )
+        {
+            request.send( "GET", "/api/recordings/deleteRecording/" + this._id + "/True", false );
+        }
+        else
+        {
+            request.send( "GET", "/api/recordings/deleteRecording/" + this._id, false );
+        }
 
         return requestContext["deleted"];
     };
@@ -1907,7 +1916,7 @@ function AminoPVRController( type, handlerInst )
                     {
                         window.setTimeout( function()
                         {
-                            self._init();
+                            self.init();
                         }, self._POLL_LONG_INTERVAL );
                     }
                 } );

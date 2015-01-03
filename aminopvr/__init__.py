@@ -17,7 +17,8 @@
 """
 from aminopvr import const
 from aminopvr.config import Config, GeneralConfig, DebugConfig
-from aminopvr.database.db import DBConnection
+from aminopvr.database import InitialSchema, MainSanityCheck
+from aminopvr.database.db import DBConnection, upgradeDatabase, sanityCheckDatabase
 from aminopvr.recorder import Recorder
 from aminopvr.database.recording import Recording
 from aminopvr.resource_monitor import ResourceMonitor, Watchdog
@@ -114,6 +115,16 @@ def aminoPVRProcess():
     logger.debug( 'aminoPVRProcess' )
 
     global epgGrabber, contentProvider, vcasProvider, recorder, scheduler, resourceMonitor, watchdog
+
+    conn = DBConnection()
+    if conn:
+        # upgrading the db
+        upgradeDatabase( conn, InitialSchema )
+        # fix up any db problems
+        sanityCheckDatabase( conn, MainSanityCheck )
+    else:
+        logger.error( "Unable to initialise database!" )
+        sys.exit()
 
     generalConfig   = GeneralConfig( Config() )
     resourceMonitor = ResourceMonitor()

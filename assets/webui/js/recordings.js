@@ -42,7 +42,7 @@ function _getRecordingListCallback( status, context, recordings )
                 var description = "";
                 var channel     = recording.getChannelName();
                 var length      = Math.round( recording.getLength() / 60 ) + " mins";
-                var fileSize    = Math.round( recording.getFileSize() / 1024 / 1024 ) + " MB";
+                var fileSize    = Math.round( recording.getFileSize() ) + " MB";
 
                 if ( epgProgram != null )
                 {
@@ -55,6 +55,16 @@ function _getRecordingListCallback( status, context, recordings )
                     channel     = recording.getChannel().getName();
                 }
 
+                var optionRemove    = $( '<a>' ).attr( 'href', '#' ).html( 'Remove' ).click( function() {
+                    var recordingId = $(this).parents( 'tr' ).attr( 'id' );
+                    logger.warning( __module, "recordingId=" + recordingId );
+                    RemoveRecording( recordingId, false );
+                } );
+                var optionRerecord  = $( '<a>' ).attr( 'href', '#' ).html( 'Remove & Re-record' ).click( function() {
+                    var recordingId = $(this).parents( 'tr' ).attr( 'id' );
+                    logger.warning( __module, "recordingId=" + recordingId );
+                    RemoveRecording( recordingId, true );
+                } );
                 var row             = $( '<tr>' ).attr( 'id', 'recording_' + recording.getId() );
                 var titleCell       = $( '<td>' ).html( title );
                 var subtitleCell    = $( '<td>' ).html( subtitle );
@@ -62,7 +72,7 @@ function _getRecordingListCallback( status, context, recordings )
                 var channelCell     = $( '<td>' ).html( channel );
                 var lengthCell      = $( '<td>' ).html( length );
                 var fileSizeCell    = $( '<td>' ).html( fileSize );
-                var optionsCell     = $( '<td>' ).html( "" );
+                var optionsCell     = $( '<td>' ).attr( 'rowspan', 2 ).append( optionRemove ).append( $( '<br>' ) ).append( optionRerecord );
                 row.append( titleCell );
                 row.append( subtitleCell );
                 row.append( timeCell );
@@ -91,6 +101,24 @@ function _getRecordingListCallback( status, context, recordings )
     if ( context && "callback" in context )
     {
         context["callback"]();
+    }
+}
+
+function RemoveRecording( recordingId, rerecord )
+{
+    rerecord    = rerecord || false;
+    recordingId = recordingId.replace( 'recording_', '' );
+
+    for ( var i in _recordings )
+    {
+        var recording = _recordings[i];
+        if ( recording.getId() == recordingId )
+        {
+            if ( recording.deleteFromDb( rerecord ) )
+            {
+                aminopvr.getRecordingList( null, function( status, context, recordings ) { _getRecordingListCallback( status, context, recordings ); } );
+            }
+        }
     }
 }
 
