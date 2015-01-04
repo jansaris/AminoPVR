@@ -104,8 +104,8 @@ function _filterWhereFromSearchQuery( searchQuery )
 
 function _removeSearch()
 {
-//    $( '#search_list' ).html( "" );
-//    $( '#search_list' ).hide();
+    $( '#search_list' ).html( "" );
+    $( '#search_list' ).hide();
 }
 
 function _updateSearchCallback( status, context, results )

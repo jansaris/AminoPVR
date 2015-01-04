@@ -16,7 +16,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var _recordings = [];
+var _titleFilter = "";
+var _recordings  = [];
 
 var __module = "aminopvr.webui.recordings";
 
@@ -26,9 +27,9 @@ function _getRecordingListCallback( status, context, recordings )
     {
         try
         {
-            var recordingTable = $( '#recordings tbody' );
-
-            recordingTable.find( 'tr' ).remove();
+            var titleSelect = $( '#title_select select[name="title_select"]' );
+            titleSelect.find( "option" ).remove().end().append( '<option value="">All recordings</option>' );
+            var titles = [];
 
             _recordings = recordings;
 
@@ -38,57 +39,41 @@ function _getRecordingListCallback( status, context, recordings )
 
                 var epgProgram  = recording.getEpgProgram();
                 var title       = recording.getTitle();
-                var subtitle    = "";
-                var description = "";
-                var channel     = recording.getChannelName();
-                var length      = Math.round( recording.getLength() / 60 ) + " mins";
-                var fileSize    = Math.round( recording.getFileSize() ) + " MB";
 
                 if ( epgProgram != null )
                 {
                     title       = epgProgram.getTitle();
-                    subtitle    = epgProgram.getSubtitle();
-                    description = epgProgram.getDescription();
                 }
-                if ( recording.getChannel() != null)
+
+                if ( titles.indexOf( title ) == -1 )
                 {
-                    channel     = recording.getChannel().getName();
+                    titles.push( title );
                 }
-
-                var optionRemove    = $( '<a>' ).attr( 'href', '#' ).html( 'Remove' ).click( function() {
-                    var recordingId = $(this).parents( 'tr' ).attr( 'id' );
-                    logger.warning( __module, "recordingId=" + recordingId );
-                    RemoveRecording( recordingId, false );
-                } );
-                var optionRerecord  = $( '<a>' ).attr( 'href', '#' ).html( 'Remove & Re-record' ).click( function() {
-                    var recordingId = $(this).parents( 'tr' ).attr( 'id' );
-                    logger.warning( __module, "recordingId=" + recordingId );
-                    RemoveRecording( recordingId, true );
-                } );
-                var row             = $( '<tr>' ).attr( 'id', 'recording_' + recording.getId() );
-                var titleCell       = $( '<td>' ).html( title );
-                var subtitleCell    = $( '<td>' ).html( subtitle );
-                var timeCell        = $( '<td>' ).html( recording.getStartTime()._toHuman() );
-                var channelCell     = $( '<td>' ).html( channel );
-                var lengthCell      = $( '<td>' ).html( length );
-                var fileSizeCell    = $( '<td>' ).html( fileSize );
-                var optionsCell     = $( '<td>' ).attr( 'rowspan', 2 ).append( optionRemove ).append( $( '<br>' ) ).append( optionRerecord );
-                row.append( titleCell );
-                row.append( subtitleCell );
-                row.append( timeCell );
-                row.append( channelCell );
-                row.append( lengthCell );
-                row.append( fileSizeCell );
-                row.append( optionsCell );
-
-                recordingTable.append( row );
-
-                var row             = $( '<tr>' );
-                var descriptionCell = $( '<td>' ).attr( 'colspan', 3 ).html( description );
-                row.append( descriptionCell );
-
-                recordingTable.append( row );
             }
+
+            function compare( a, b )
+            {
+                if ( a > b )
+                {
+                    return -1;
+                }
+                else if ( a < b )
+                {
+                    return 1;
+                }
+                return 0;
+            }
+
+            titles.sort( compare );
+            for ( var i in titles )
+            {
+                titleSelect.find( "option" ).end().append( '<option value="' + titles[i] + '">' + titles[i] + '</option>' );
+            }
+
+            titleSelect.val( _titleFilter );
+            _titleFilter = titleSelect.val();
+
+            _updateRecordingTable();
 
             logger.info( __module, "_getRecordingListCallback: Downloaded recording list" );
         }
@@ -101,6 +86,84 @@ function _getRecordingListCallback( status, context, recordings )
     if ( context && "callback" in context )
     {
         context["callback"]();
+    }
+}
+
+function _updateTitleSelection()
+{
+    var titleSelect = $( '#title_select select[name="title_select"]' );
+    _titleFilter = titleSelect.val();
+
+    logger.info( __module, "_updateTitleSelection: _titleFilter=" + _titleFilter );
+
+    _updateRecordingTable();
+}
+
+function _updateRecordingTable()
+{
+    var recordingTable = $( '#recordings tbody' );
+
+    recordingTable.find( 'tr' ).remove();
+
+    for ( var i in _recordings )
+    {
+        var recording   = _recordings[i];
+
+        var epgProgram  = recording.getEpgProgram();
+        var title       = recording.getTitle();
+        var subtitle    = "";
+        var description = "";
+        var channel     = recording.getChannelName();
+        var length      = Math.round( recording.getLength() / 60 ) + " mins";
+        var fileSize    = Math.round( recording.getFileSize() ) + " MB";
+
+        if ( epgProgram != null )
+        {
+            title       = epgProgram.getTitle();
+            subtitle    = epgProgram.getSubtitle();
+            description = epgProgram.getDescription();
+        }
+        if ( recording.getChannel() != null)
+        {
+            channel     = recording.getChannel().getName();
+        }
+
+        if ( _titleFilter == "" || title == _titleFilter )
+        {
+            var optionRemove    = $( '<a>' ).attr( 'href', '#' ).html( 'Remove' ).click( function() {
+                var recordingId = $(this).parents( 'tr' ).attr( 'id' );
+                logger.warning( __module, "recordingId=" + recordingId );
+                RemoveRecording( recordingId, false );
+            } );
+            var optionRerecord  = $( '<a>' ).attr( 'href', '#' ).html( 'Remove & Re-record' ).click( function() {
+                var recordingId = $(this).parents( 'tr' ).attr( 'id' );
+                logger.warning( __module, "recordingId=" + recordingId );
+                RemoveRecording( recordingId, true );
+            } );
+            var row             = $( '<tr>' ).attr( 'id', 'recording_' + recording.getId() );
+            var titleCell       = $( '<td>' ).html( title );
+            var subtitleCell    = $( '<td>' ).html( subtitle );
+            var timeCell        = $( '<td>' ).html( recording.getStartTime()._toHuman() );
+            var channelCell     = $( '<td>' ).html( channel );
+            var lengthCell      = $( '<td>' ).html( length );
+            var fileSizeCell    = $( '<td>' ).html( fileSize );
+            var optionsCell     = $( '<td>' ).attr( 'rowspan', 2 ).append( optionRemove ).append( $( '<br>' ) ).append( optionRerecord );
+            row.append( titleCell );
+            row.append( subtitleCell );
+            row.append( timeCell );
+            row.append( channelCell );
+            row.append( lengthCell );
+            row.append( fileSizeCell );
+            row.append( optionsCell );
+    
+            recordingTable.append( row );
+    
+            var row             = $( '<tr>' );
+            var descriptionCell = $( '<td>' ).attr( 'colspan', 3 ).html( description );
+            row.append( descriptionCell );
+    
+            recordingTable.append( row );
+        }
     }
 }
 
@@ -126,6 +189,9 @@ $( function() {
     logger.init( true, logger.INFO );
 
     _recordings = [];
+
+    var titleSelect = $( '#title_select select[name="title_select"]' );
+    titleSelect.change( function( event ) { _updateTitleSelection(); } );
 
     aminopvr.getRecordingList( null, function( status, context, recordings ) { _getRecordingListCallback( status, context, recordings ); } );
 } );
