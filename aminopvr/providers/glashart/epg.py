@@ -397,6 +397,8 @@ class EpgProvider( threading.Thread ):
         # are currently not active
         uniqueEpgIds = Channel.getUniqueEpgIdsFromDb( conn, includeRadio=True )
 
+        conn.delayCommit( True )
+
         # Get epgids from database (contains channels per epg_id and strategy)
         epgIds        = EpgId.getAllFromDb( conn, includeRadio=True )
         epgIdsDict    = { epgId.epgId: epgId for epgId in epgIds }
@@ -414,6 +416,8 @@ class EpgProvider( threading.Thread ):
             epgId = EpgId( newEpgId, "none" )
             epgId.addToDb( conn )
             self._logger.info( "_syncEpgIds: adding epgId=%s" % ( epgId.epgId ) )
+
+        conn.delayCommit( False )
 
     def _getProgramFromJson( self, epgId, json ):
         startTime = json["start"]
