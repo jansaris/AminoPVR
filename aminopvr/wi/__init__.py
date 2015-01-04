@@ -99,10 +99,12 @@ def initWebserver( serverPort=8080 ):
 
     conf = {
         '/': {
-            'tools.staticdir.root': options['data_root'],
-            'tools.staticfile.root': options['data_root'],
-            'tools.encode.on': True,
-            'tools.encode.encoding': 'utf-8'
+            'tools.staticdir.root':     options['data_root'],
+            'tools.staticfile.root':    options['data_root'],
+            'tools.encode.on':          True,
+            'tools.encode.encoding':    'utf-8',
+            'tools.gzip.on':            True,
+            'tools.gzip.mime_types':    ['text/html', 'text/plain', 'text/css', 'text/javascript', 'application/json', 'application/javascript']
         },
         '/assets/images': {
             'tools.staticdir.on':   True,
