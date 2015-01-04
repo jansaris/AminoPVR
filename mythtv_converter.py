@@ -819,6 +819,8 @@ def main():
                         else:
                             logger.warning( "No channels found for chanId=%i, epgId=%s" % ( mythTvChannel.chanId, epgId ) )
 
+                conn.delayCommit( True )
+
                 # Convert MythTV records (schedule entries) to AminoPVR schedules
                 for record in mythTvRecords:
                     # If the channel is not in the channel map (yet), it does not exist
@@ -894,7 +896,11 @@ def main():
                             logger.warning( "Schedule with title=%s and channelId=%i already exists" % ( schedule.title, schedule.channelId ) )
  
                         mythTvRecordMap[record.recordId] = schedule
- 
+
+                conn.delayCommit( False )
+
+                conn.delayCommit( True )
+
                 for recordKey in mythTvOldRecordedDict.keys():
                     recorded = mythTvOldRecordedDict[recordKey]
 
@@ -976,6 +982,10 @@ def main():
                     else:
                         logger.warning( "(Old) Recording with recordKey=%s is still in recording list" % ( recordKey ) )
 
+                conn.delayCommit( False )
+
+                conn.delayCommit( True )
+
                 for recordKey in mythTvRecordedDict.keys():
                     if recordKey in mythTvRecordedProgramsDict:
                         recorded        = mythTvRecordedDict[recordKey]
@@ -1039,7 +1049,6 @@ def main():
                                 recording.endTime           = recorded.endTime
                                 recording.length            = recorded.endTime - recorded.startTime
                                 recording.title             = recorded.title
-                                recording.filename          = recorded.baseName
                                 recording.fileSize          = recorded.fileSize
                                 recording.type              = mythTvChannelUrlTypeMap[recordedProgram.chanId]
                                 recording.status            = RecordingState.RECORDING_FINISHED
@@ -1047,6 +1056,8 @@ def main():
                                 logger.warning( "Adding Recording: %s" % ( recording.dump() ) )
                                 if not dryRun:
                                     recording.addToDb( conn )
+                                else:
+                                    recording.filename = recorded.baseName
 
                                 if not os.path.exists( os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) ) ):
                                     logger.warning( "Linking \"%s\" to \"%s\"" % ( os.path.join( mythtvRecPath, recorded.baseName ), os.path.abspath( os.path.join( generalConfig.recordingsPath, recording.filename ) ) ) )
@@ -1062,10 +1073,15 @@ def main():
                             logger.warning( "channel with chanId=%i not found in mythTvChannelMap (%s)" % ( recordedProgram.chanId, recordedProgram.dump() ) )
                     else:
                         logger.warning( "recordKey=%s not found in mythTvRecordedProgramsDict" % ( recordKey ) )
+
+                conn.delayCommit( False )
+
             except:
                 logger.error( traceback.format_exc() )
         else:
             logger.error( "Unable to open AminoPVR database" )
+
+    conn.delayCommit( False )
 
     resourceMonitor.stop()
 
