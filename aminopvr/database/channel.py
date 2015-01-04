@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.const import DATA_ROOT
+from aminopvr.database.cache import Cache
 from aminopvr.input_stream import InputStreamAbstract, InputStreamProtocol
 from aminopvr.tools import getPage, printTraceback
 import copy
@@ -230,23 +231,6 @@ class ChannelAbstract( object ):
 
         self._logger.debug( "ChannelAbstract( id=%i )" % ( int( id ) ) )
 
-#    def __init__( self, id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ): # @ReservedAssignment
-#         assert self._tableName != None, "Not the right class: %r" % ( self )
-#         assert self._channelUrlClass != None, "Not the right class: %r" % ( self )
-# 
-#         self._id         = int( id )
-#         self._number     = int( number )
-#         self._epgId      = unicode( epgId )
-#         self._name       = unicode( name )
-#         self._nameShort  = unicode( nameShort )
-#         self._logo       = unicode( logo )
-#         self._thumbnail  = unicode( thumbnail )
-#         self._radio      = int( radio )
-#         self._inactive   = int( inactive )
-#         self._urls       = {} 
-# 
-#         self._logger.debug( 'ChannelAbstract.__init__( id=%i, number=%s, epgId=%s, name=%s, nameShort=%s, logo=%s, thumbnail=%s, radio=%i, inactive=%i )' % ( id, number, epgId, name, nameShort, logo, thumbnail, radio, inactive ) )
-
     def __hash__( self ):
         return ( hash( hash( self._number ) +
                        hash( self._epgId ) +
@@ -439,8 +423,8 @@ class ChannelAbstract( object ):
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
-        channel = None
-        if conn:
+        channel = Cache().get( cls._tableName, id )
+        if not channel and conn:
             row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) )
             if row:
                 channel = cls._createChannelFromDbDict( conn, row[0] )
@@ -514,6 +498,8 @@ class ChannelAbstract( object ):
                 channel.radio       = channelData["radio"]
                 channel.inactive    = channelData["inactive"]
                 channel.getUrlsFromDb( conn )
+
+                Cache().cache( cls._tableName, channel.id, channel )
             except:
                 cls._logger.error( "_createChannelFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -548,11 +534,14 @@ class ChannelAbstract( object ):
                 for key in self._urls.keys():
                     self._urls[key].addToDb( conn, self._id )
 
+            Cache().cache( self._tableName, self.id, self )
+
     def deleteFromDb( self, conn ):
         assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
             conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ) )
             self._channelUrlClass.deleteByChannelIdFromDb( conn, self._id )
+            Cache().purge( self._tableName, self._id )
 
 #    def getM3UEntry( self, unicast ):
 #        output = ""

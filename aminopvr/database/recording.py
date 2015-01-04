@@ -17,6 +17,7 @@
 """
 from aminopvr.config import GeneralConfig, Config
 from aminopvr.database.channel import Channel, ChannelAbstract
+from aminopvr.database.cache import Cache
 from aminopvr.database.epg import RecordingProgram, ProgramAbstract
 from aminopvr.tools import printTraceback
 import copy
@@ -384,8 +385,8 @@ class RecordingAbstract( object ):
     @classmethod
     def getFromDb( cls, conn, id ):  # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
-        recording = None
-        if conn:
+        recording = Cache().get( cls._tableName, id )
+        if not recording and conn:
             row = conn.execute( "SELECT * FROM %s WHERE id = ?" % ( cls._tableName ), ( id, ) )
             if row:
                 recording = cls._createRecordingFromDbDict( conn, row[0] )
@@ -425,6 +426,8 @@ class RecordingAbstract( object ):
                     recording.channel = Channel.getFromDb( conn, recording.channelId )
                     if not recording.channel:
                         recording.channelId = -1
+
+                Cache().cache( cls._tableName, recording.id, recording )
             except:
                 cls._logger.error( "_createRecordingFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -535,6 +538,8 @@ class RecordingAbstract( object ):
                 if recordingId:
                     self._id = recordingId
 
+            Cache().cache( self._tableName, self.id, self )
+
     def toDict( self ):
         recordingDict = { "id":           self.id,
                           "schedule_id":  self.scheduleId,
@@ -604,6 +609,8 @@ class Recording( RecordingAbstract ):
 
             conn.execute( "DELETE FROM recordings WHERE id=?", ( self._id, ) )
 
+            Cache().purge( self._tableName, self.id )
+
     def changeStatus( self, conn, status ):
         if self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
@@ -641,6 +648,8 @@ class OldRecording( RecordingAbstract ):
                 recordingProgram.deleteFromDb( conn )
 
             conn.execute( "DELETE FROM %s WHERE id = ?" % ( self._tableName ), ( self._id, ) )
+
+            Cache().purge( self._tableName, self.id )
 
 def main():
     sys.stderr.write( "main()\n" );

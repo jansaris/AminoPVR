@@ -15,6 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+from aminopvr.database.cache import Cache
 from aminopvr.database.channel import Channel, ChannelAbstract
 from aminopvr.database.epg import EpgProgram
 from aminopvr.tools import printTraceback
@@ -197,8 +198,8 @@ class Schedule( object ):
 
     @classmethod
     def getFromDb( cls, conn, id ):  # @ReservedAssignment
-        schedule = None
-        if conn:
+        schedule = Cache().get( "schedules", id )
+        if not schedule and conn:
             row = conn.execute( "SELECT * FROM schedules WHERE id = ?", ( id, ) )
             if row:
                 schedule = cls._createScheduleFromDbDict( conn, row[0] )
@@ -253,6 +254,9 @@ class Schedule( object ):
                     schedule.channel = Channel.getFromDb( conn, schedule.channelId )
                     if not schedule.channel:
                         schedule.channelId = -1
+
+                Cache().cache( "schedules", schedule.id, schedule )
+
             except:
                 cls._logger.error( "_createScheduleFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -261,6 +265,8 @@ class Schedule( object ):
     def deleteFromDb( self, conn ):
         if conn:
             conn.execute( "DELETE FROM schedules WHERE id = ?", ( self._id, ) )
+
+            Cache().purge( "schedules", self._id )
 
     def addToDb( self, conn ):
         if conn:
@@ -329,6 +335,8 @@ class Schedule( object ):
                                                  self._inactive ) )
                 if scheduleId:
                     self._id = scheduleId
+
+            Cache().cache( "schedules", self.id, self )
 
     def getPrograms( self, conn, startTime=0 ):
         programs = []

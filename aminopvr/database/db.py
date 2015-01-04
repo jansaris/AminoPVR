@@ -17,6 +17,7 @@
 """
 from aminopvr.const import DATA_ROOT
 from aminopvr.resource_monitor import ResourceMonitor
+from aminopvr.tools import printTraceback
 import logging
 import os
 import re
@@ -63,10 +64,8 @@ class DBConnection( object ):
             while attempt < 5:
                 try:
                     if args == None:
-                        _logger.debug( "%s: %s" % ( self._filename, query ) )
                         sqlResult = self._cursor.execute( query )
                     else:
-                        _logger.debug( "%s: %s with args %s" % ( self._filename, query, args ) )
                         sqlResult = self._cursor.execute( query, args )
                     if not self._delayCommit and not query.lower().startswith( "select" ):
                         self._conn.commit()
@@ -85,9 +84,11 @@ class DBConnection( object ):
                         time.sleep( 1 )
                     else:
                         _logger.error( "DB error: %s" % ( e.message ) )
+                        printTraceback()
                         raise
                 except sqlite3.DatabaseError, e:
                     _logger.error( "Fatal error executing query: %s" % ( e.message ) )
+                    printTraceback()
                     raise
 
             return sqlResult
@@ -159,6 +160,7 @@ class SchemaUpgrade( object ):
             result = self.connection.execute( "SELECT db_version FROM db_version" )
         except:
             _logger.error( "checkDbVersion: db_version table not found!" )
+            printTraceback()
             return 0
 
         if result:

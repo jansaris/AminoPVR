@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from aminopvr.database.db import DBConnection
+from aminopvr.database.cache import Cache
 from aminopvr.tools import getTimestamp, printTraceback
 from aminopvr.database import channel
 import copy
@@ -75,8 +75,8 @@ class EpgId( object ):
 
     @classmethod
     def getFromDb( cls, conn, epgId ):
-        epgid = None
-        if conn:
+        epgid = Cache().get( "epg_ids", epgId )
+        if not epgid and conn:
             row = conn.execute( "SELECT * FROM epg_ids WHERE epg_id=?", ( epgId, ) )
             if row:
                 epgid = cls( row[0]["epg_id"], row[0]["strategy"] )
@@ -91,10 +91,12 @@ class EpgId( object ):
                     conn.execute( "UPDATE epg_ids SET strategy=? WHERE epg_id=?", ( self._strategy, self._epgId ) )
             else:
                 conn.insert( "INSERT INTO epg_ids (epg_id, strategy) VALUES (?, ?)", ( self._epgId, self._strategy ) )
+            Cache().cache( "epg_ids", self._epgId, self )
 
     def deleteFromDb( self, conn ):
         if conn:
             conn.execute( "DELETE FROM epg_ids WHERE epg_id=?", ( self._epgId, ) )
+            Cache().purge( "epg_ids", self._epgId )
 
     def dump( self ):
         return ( "%s: %s" % ( self._epgId, self._strategy ) )
@@ -121,8 +123,6 @@ class EpgId( object ):
 class Genre( object ):
     _logger     = logging.getLogger( 'aminopvr.Genre' )
 
-    _genreCache = {}
-
     def __init__( self, id=-1 ):    # @ReservedAssignment
         self._id     = int( id )
         self._genre  = ""
@@ -135,7 +135,7 @@ class Genre( object ):
 
     def __eq__( self, other ):
         # Not comparing _id as it might not be set at comparison time.
-        # For insert/update descision it is not relevant
+        # For insert/update decision it is not relevant
         if not other:
             return False
         assert isinstance( other, Genre ), "Other object not instance of class Genre: %r" % ( other )
@@ -158,15 +158,12 @@ class Genre( object ):
 
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
-        genre = None
-        if id in cls._genreCache:
-            genre = cls._genreCache[id]
-        else:
-            if conn:
-                row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) )
-                if row:
-                    genre = cls._createGenreFromDbDict( row[0] )
-                    cls._genreCache[id] = genre
+        genre = Cache().get( "genres", id )
+        if not genre and conn:
+            row = conn.execute( "SELECT * FROM genres WHERE id=?", ( id, ) )
+            if row:
+                genre = cls._createGenreFromDbDict( row[0] )
+                Cache().cache( "genres", id, genre )
 
         return genre
 
@@ -197,8 +194,7 @@ class Genre( object ):
                 genre       = cls( genreData["id"] )
                 genre.genre = genreData["genre"]
 
-                if genre._id not in cls._genreCache:
-                    cls._genreCache[genre._id] = genre
+                Cache().cache( "genres", genre.id, genre )
             except:
                 cls._logger.error( "_createGenreFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -213,6 +209,8 @@ class Genre( object ):
                         conn.insert( "INSERT INTO genres (genre) VALUES (?)", ( self._genre, ) )
                         dbGenre = Genre.getByGenreFromDb( conn, self._genre )
                     self._id = dbGenre._id
+
+                    Cache().cache( "genres", self.id, self )
                 else:
                     self._logger.warning( "Genre.addToDb: self._genre is empty" );
 
@@ -223,8 +221,6 @@ class Genre( object ):
 
 class Person( object ):
     _logger = logging.getLogger( 'aminopvr.Person' )
-
-    _personCache = {}
 
     def __init__( self, id=-1 ):   # @ReservedAssignment
         self._id     = int( id )
@@ -259,14 +255,11 @@ class Person( object ):
 
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
-        person = None
-        if id in cls._personCache:
-            person = cls._personCache[id]
-        else:
-            if conn:
-                row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) )
-                if row:
-                    person = cls._createPersonFromDbDict( row[0] )
+        person = Cache().get( "persons", id )
+        if not person and conn:
+            row = conn.execute( "SELECT * FROM persons WHERE id=?", ( id, ) )
+            if row:
+                person = cls._createPersonFromDbDict( row[0] )
 
         return person
 
@@ -313,8 +306,7 @@ class Person( object ):
                 person        = cls( personData["id"] )
                 person.person = personData["person"]
 
-                if person._id not in cls._personCache:
-                    cls._personCache[person._id] = person
+                Cache().cache( "persons", person.id, person )
             except:
                 cls._logger.error( "_createPersonFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -330,6 +322,8 @@ class Person( object ):
                         conn.insert( "INSERT INTO persons (person) VALUES (?)", ( self._person, ) )
                         dbPerson = self.getByPersonFromDB( conn, self._person )
                     self._id = dbPerson._id
+
+                    Cache().cache( "persons", self.id, self )
                 else:
                     self._logger.warning( "Person.addToDb: self._person is empty" );
 
@@ -914,8 +908,8 @@ class ProgramAbstract( object ):
     @classmethod
     def getFromDb( cls, conn, id ): # @ReservedAssignment
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
-        program = None
-        if conn:
+        program = Cache().get( cls._tableName, id )
+        if not program and conn:
             row = conn.execute( "SELECT * FROM %s WHERE id=?" % ( cls._tableName ), ( id, ) )
             if row:
                 program = cls._createProgramFromDbDict( conn, row[0] )
@@ -979,6 +973,7 @@ class ProgramAbstract( object ):
                 director.deleteFromDb( conn )
             for presenter in self._presenters:
                 presenter.deleteFromDb( conn )
+            Cache().purge( self._tableName )
 
     def toDict( self ):
         epgProgramDict = { "epg_id":     self._epgId,
@@ -1042,6 +1037,8 @@ class EpgProgram( ProgramAbstract ):
                 program.presenters      = EpgProgramPresenter.getAllFromDb( conn, programData["id"] )
                 if programData["ratings"] != "":
                     program.ratings     = programData["ratings"].split( ";" )
+
+                Cache().cache( cls._tableName, program.id, program )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -1074,6 +1071,8 @@ class EpgProgram( ProgramAbstract ):
             conn.execute( "DELETE FROM epg_program_directors WHERE program_id IN (SELECT id FROM epg_programs WHERE end_time < ?)", ( startTime, ) )
             conn.execute( "DELETE FROM epg_program_presenters WHERE program_id IN (SELECT id FROM epg_programs WHERE end_time < ?)", ( startTime, ) )
             conn.execute( "DELETE FROM epg_programs WHERE end_time < ?", ( startTime, ) )
+
+            Cache().purge( cls._tableName )
 
     def addToDb( self, conn ):
         if conn:
@@ -1302,6 +1301,8 @@ class EpgProgram( ProgramAbstract ):
                 for presenter in newPresenters:
                     presenter.addToDb( conn )
 
+                Cache().cache( self._tableName, self.id, self )
+
 class RecordingProgram( ProgramAbstract ):
     _tableName = "recording_programs"
     _logger    = logging.getLogger( 'aminopvr.Recording.Program' )
@@ -1349,6 +1350,8 @@ class RecordingProgram( ProgramAbstract ):
                 program.presenters      = RecordingProgramPresenter.getAllFromDb( conn, programData["id"] )
                 if programData["ratings"] != "":
                     program.ratings     = programData["ratings"].split( ";" )
+
+                Cache().cache( cls._tableName, program.id, program )
             except:
                 cls._logger.error( "_createProgramFromDbDict: unexpected error: %s" % ( sys.exc_info()[0] ) )
                 printTraceback()
@@ -1468,7 +1471,11 @@ class RecordingProgram( ProgramAbstract ):
                 for presenter in newPresenters:
                     presenter.addToDb( conn )
 
+                Cache().cache( self._tableName, self.id, self )
+
 def main():
+    from aminopvr.database.db import DBConnection
+
     sys.stderr.write( "main()\n" );
 
     conn = DBConnection()
