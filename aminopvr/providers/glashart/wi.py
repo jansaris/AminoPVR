@@ -102,6 +102,7 @@ class _WIGlashart( object ):
         method = cherrypy.request.method.upper()
         url    = _getGlashartConfig().epgDataPath + "/" + '/'.join( list( args ) )
         return self._serveRemoteContent( url, method, kwargs )
+    epgdata._cp_config = { 'tools.gzip.on': False }
 
     @cherrypy.expose
     def last_update_txt( self, *args, **kwargs ):
