@@ -628,6 +628,8 @@ class Recording( RecordingAbstract ):
                 else:
                     conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
 
+            Cache().cache( self._tableName, self.id, self )
+
     def copyEpgProgram( self ):
         if self._epgProgram:
             self._epgProgram   = RecordingProgram.copy( self._epgProgram )
