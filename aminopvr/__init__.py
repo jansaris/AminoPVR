@@ -107,8 +107,7 @@ def stopRtspServer():
         rtspServer.terminate()
 
 def isRecordingActive():
-    conn = DBConnection()
-    unfinishedRecordings = Recording.getAllUnfinishedFromDb( conn )
+    unfinishedRecordings = Recorder().getActiveRecordings()
     return len( unfinishedRecordings ) > 0
 
 def aminoPVRProcess():
