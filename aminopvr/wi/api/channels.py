@@ -85,9 +85,13 @@ class ChannelsAPI( API ):
         conn     = DBConnection()
         channels = Channel.getAllFromDb( conn )
 
+        oneUrlPerChannel = False
+        if protocol == InputStreamProtocol.TSDECRYPT:
+            oneUrlPerChannel = True
+
         m3u = "#EXTM3U\n"
         for channel in channels:
-            m3u += channel.toM3UEntry( protocol, includeScrambled, includeHd )
+            m3u += channel.toM3UEntry( protocol, includeScrambled, includeHd, oneUrlPerChannel )
 
         cherrypy.response.headers["Content-Type"] = "text/plain"
         return m3u

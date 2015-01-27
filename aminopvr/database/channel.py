@@ -625,13 +625,13 @@ class ChannelAbstract( object ):
         else:
             return None
 
-    def toM3UEntry( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True ):
+    def toM3UEntry( self, protocol=InputStreamProtocol.HTTP, includeScrambled=False, includeHd=True, oneUrlPerChannel=False ):
         output = ""
 
         for urlType in self._urls.keys():
             channelName   = self._name
             channelNumber = self._number
-            if includeHd:
+            if includeHd and not oneUrlPerChannel:
                 if urlType == "sd" and ( self._urls.has_key( "hd" ) or self._urls.has_key( "hd+" ) ):
                     channelName   = channelName + " SD"
                     channelNumber = channelNumber + 9000
@@ -645,6 +645,8 @@ class ChannelAbstract( object ):
                 output += "#EXTTYPE:%s\n" % ( urlType )
                 output += "#EXTMYTHTV:xmltvid=%s\n" % ( self._epgId )
                 output += "%s\n" % ( self._urls[urlType].getUrl( protocol ) )
+            if oneUrlPerChannel:
+                break
 
         return output
 
