@@ -621,10 +621,9 @@ class Recording( RecordingAbstract ):
                 if status == RecordingState.RECORDING_FINISHED or status == RecordingState.RECORDING_UNFINISHED:
                     generalConfig     = GeneralConfig( Config() )
                     recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
-                    recordingFileSize = 0
                     if os.path.exists( recordingFilename ):
-                        recordingFileSize = os.stat( recordingFilename ).st_size;
-                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, recordingFileSize, self._id ) )
+                        self._fileSize = os.stat( recordingFilename ).st_size;
+                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, self._fileSize, self._id ) )
                 else:
                     conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
 
