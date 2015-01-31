@@ -17,6 +17,7 @@
 """
 from aminopvr.tools import Singleton
 import logging
+import threading
 
 class Cache( object ):
 
@@ -26,32 +27,37 @@ class Cache( object ):
                                 "persons", "recording_programs", "recordings", "schedules" ]
 
     _logger = logging.getLogger( "aminopvr.db.Cache" )
+    _lock   = threading.Lock()
 
     def __init__( self ):
-        self._cache = {}
+        with self._lock:
+            self._cache = {}
 
     def cache( self, objectClass, itemId, item ):
-        if objectClass in self.__cachableObjectClasses:
-            if not objectClass in self._cache:
-                self._cache[objectClass] = {}
-            self._cache[objectClass][itemId] = item
+        with self._lock:
+            if objectClass in self.__cachableObjectClasses:
+                if not objectClass in self._cache:
+                    self._cache[objectClass] = {}
+                self._cache[objectClass][itemId] = item
 
     def get( self, objectClass, itemId ):
         item = None
-        if objectClass in self.__cachableObjectClasses:
-            if objectClass in self._cache:
-                if itemId in self._cache[objectClass]:
-                    item = self._cache[objectClass][itemId]
+        with self._lock:
+            if objectClass in self.__cachableObjectClasses:
+                if objectClass in self._cache:
+                    if itemId in self._cache[objectClass]:
+                        item = self._cache[objectClass][itemId]
         return item
 
     def purge( self, objectClass=None, itemId=None ):
-        if objectClass == None:
-            self._cache = {}
-        else:
-            if objectClass in self.__cachableObjectClasses:
-                if objectClass in self._cache:
-                    if itemId == None:
-                        del self._cache[objectClass]
-                    else:
-                        if itemId in self._cache[objectClass]:
-                            del self._cache[objectClass][itemId]
+        with self._lock:
+            if objectClass == None:
+                self._cache = {}
+            else:
+                if objectClass in self.__cachableObjectClasses:
+                    if objectClass in self._cache:
+                        if itemId == None:
+                            del self._cache[objectClass]
+                        else:
+                            if itemId in self._cache[objectClass]:
+                                del self._cache[objectClass][itemId]
