@@ -604,7 +604,7 @@ class Recording( RecordingAbstract ):
 
             generalConfig     = GeneralConfig( Config() )
             recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
-            if os.path.exists( recordingFilename ):
+            if os.path.islink( recordingFilename ) or os.path.isfile( recordingFilename ):
                 os.unlink( recordingFilename )
 
             conn.execute( "DELETE FROM recordings WHERE id=?", ( self._id, ) )
