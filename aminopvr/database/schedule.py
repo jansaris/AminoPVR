@@ -293,7 +293,7 @@ class Schedule( object ):
                                      end_late=?,
                                      inactive=? 
                                  WHERE
-                                     id=%s
+                                     id=?
                               """, ( self._type,
                                      self._channelId,
                                      self._startTime,
