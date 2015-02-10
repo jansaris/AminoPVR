@@ -742,8 +742,8 @@ function _updateRecordingFields( schedule )
     recordEndTime.val( schedule.getEndTime()._toLocalJSON() );
     recordTitle.val( schedule.getTitle() );
     recordDupMethod.val( dupMethod );
-    recordStartEarly.val( schedule.getStartEarly() );
-    recordEndLate.val( schedule.getEndLate() );
+    recordStartEarly.val( schedule.getStartEarly() / 60 );
+    recordEndLate.val( schedule.getEndLate() / 60 );
     recordPreferHd.prop( "checked", schedule.getPreferHd() );
     recordPreferUnscrambled.prop( "checked", schedule.getPreferUnscrambled() );
     recordInactive.prop( "checked", schedule.getInactive() );
@@ -822,8 +822,8 @@ function _getScheduleFromElements()
     _currentSchedule.setStartTime           ( new Date( recordStartTime.val() )._toUTC() );
     _currentSchedule.setEndTime             ( new Date( recordEndTime.val() )._toUTC() );
     _currentSchedule.setTitle               ( recordTitle.val() );
-    _currentSchedule.setStartEarly          ( parseInt( recordStartEarly.val() ) );
-    _currentSchedule.setEndLate             ( parseInt( recordEndLate.val() ) );
+    _currentSchedule.setStartEarly          ( parseInt( recordStartEarly.val() ) * 60 );
+    _currentSchedule.setEndLate             ( parseInt( recordEndLate.val() ) * 60 );
     _currentSchedule.setPreferHd            ( recordPreferHd.is( ":checked" ) ? true : false );
     _currentSchedule.setPreferUnscrambled   ( recordPreferUnscrambled.is( ":checked" ) ? true : false );
     _currentSchedule.setDupMethod           ( dupMethod );
