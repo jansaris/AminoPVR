@@ -17,6 +17,7 @@
 """
 from aminopvr.database.db import DBConnection
 from aminopvr.database.recording import Recording
+from aminopvr.scheduler import Scheduler
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
@@ -79,6 +80,8 @@ class RecordingsAPI( API ):
         recording   = Recording.getFromDb( conn, id )
         if recording:
             recording.deleteFromDb( conn, rerecord )
+            if rerecord:
+                Scheduler().requestReschedule()
             return self._createResponse( API.STATUS_SUCCESS )
         else:
             self._logger.warning( "deleteRecording: recording with id=%d does not exist" % ( id ) )
