@@ -26,7 +26,8 @@ import logging
 import types
 import uuid
 
-BUFFER_SIZE = 40 * 188
+BUFFER_SIZE             = 40 * 188
+WATCHDOG_KICK_PERIOD    = 5
 
 class Channels( API ):
     _logger = logging.getLogger( "aminopvr.WI.Channels" )
@@ -75,15 +76,15 @@ class Channels( API ):
                         inputStream.close()
                         Watchdog().remove( watchdogId )
                     Watchdog().add( watchdogId, watchdogTimeout )
-                    Watchdog().kick( watchdogId, 10 )
+                    Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
                     cherrypy.response.headers[ "Content-Type" ] = "video/mp2t"
                     def content():
                         self._logger.info( "default: opened stream" )
-                        Watchdog().kick( watchdogId, 10 )
+                        Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
                         data = inputStream.read( BUFFER_SIZE )
                         while len( data ) > 0:
                             yield data
-                            Watchdog().kick( watchdogId, 10 )
+                            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
                             data = inputStream.read( BUFFER_SIZE )
                         self._logger.info( "default: EOS" )
                         inputStream.close()

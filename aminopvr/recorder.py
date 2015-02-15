@@ -16,10 +16,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from aminopvr.input_stream import InputStreamAbstract
+from aminopvr.resource_monitor import Watchdog
 from aminopvr.tools import Singleton
 from Queue import Queue
 import logging
+import os
 import threading
+import uuid
+
+BUFFER_SIZE             = 40 * 188
+WATCHDOG_KICK_PERIOD    = 5
 
 class ActiveRecording( threading.Thread ):
 
@@ -119,18 +125,35 @@ class ActiveRecording( threading.Thread ):
         inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
         if inputStream and inputStream.open():
             self._logger.debug( "ActiveRecording.run: start recording from %s" % ( self._url ) )
+
+            watchdogId = uuid.uuid1()
+            def watchdogTimeout():
+                self._logger.warning( "default: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
+                inputStream.close()
+                Watchdog().remove( watchdogId )
+                with self._listenerLock:
+                    for listener in self._listeners:
+                        self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
+                        self._listeners.remove( listener )
+                        if listener.has_key( "callback" ) and listener["callback"]:
+                            listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+            Watchdog().add( watchdogId, watchdogTimeout )
+            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
+
             while self._running:
-                data = inputStream.read( 16 * 1024 )
+                data = inputStream.read( BUFFER_SIZE )
 
                 # If date == None, then there was a timeout
                 if data:
+                    Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
                     with self._listenerLock:
                         for listener in self._listeners:
                             """ Write data to listener["outputFile"] """
                             if listener["new"]:
                                 listener["new"] = False
                                 try:
-                                    listener["output"] = open( listener["outputFile"], "wb" )
+                                    fd = open( listener["outputFile"], os.O_WRONLY | os.O_CREAT | os.O_BINARY, 0644 )
+                                    listener["output"] = os.fdopen( fd )
                                     if listener.has_key( "callback" ) and listener["callback"]:
                                         listener["callback"]( listener["id"], ActiveRecording.STARTED )
                                 except:
@@ -140,6 +163,7 @@ class ActiveRecording( threading.Thread ):
                                 listener["output"].write( data )
 
             inputStream.close()
+            Watchdog().remove( watchdogId )
             with self._listenerLock:
                 for listener in self._listeners:
                     self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
