@@ -821,6 +821,9 @@ class Scheduler( threading.Thread ):
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
                             recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
                             self._logger.warning( "Recording '%s' aborted" % ( recording.title ) )
+
+                            # Request a reschedule of recordings, because a recording failed.
+                            Scheduler().requestReschedule()
                         else:
                             self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d already finished" % ( timerId ) )
 
