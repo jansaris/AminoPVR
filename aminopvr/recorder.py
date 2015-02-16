@@ -17,7 +17,7 @@
 """
 from aminopvr.input_stream import InputStreamAbstract
 from aminopvr.resource_monitor import Watchdog
-from aminopvr.tools import Singleton
+from aminopvr.tools import Singleton, printTraceback
 from Queue import Queue
 import logging
 import os
@@ -128,7 +128,7 @@ class ActiveRecording( threading.Thread ):
 
             watchdogId = uuid.uuid1()
             def watchdogTimeout():
-                self._logger.warning( "default: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
+                self._logger.warning( "ActiveRecording.run: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
                 inputStream.close()
                 Watchdog().remove( watchdogId )
                 with self._listenerLock:
@@ -152,11 +152,12 @@ class ActiveRecording( threading.Thread ):
                             if listener["new"]:
                                 listener["new"] = False
                                 try:
-                                    fd = open( listener["outputFile"], os.O_WRONLY | os.O_CREAT | os.O_BINARY, 0644 )
-                                    listener["output"] = os.fdopen( fd )
+                                    fd = os.open( listener["outputFile"], os.O_WRONLY | os.O_CREAT, 0644 )
+                                    listener["output"] = os.fdopen( fd, "w" )
                                     if listener.has_key( "callback" ) and listener["callback"]:
                                         listener["callback"]( listener["id"], ActiveRecording.STARTED )
                                 except:
+                                    printTraceback()
                                     if listener.has_key( "callback" ) and listener["callback"]:
                                         listener["callback"]( listener["id"], ActiveRecording.ABORTED )
                             if "output" in listener:
