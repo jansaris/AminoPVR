@@ -95,7 +95,7 @@ class RecordingsAPI( API ):
         conn      = DBConnection()
         recording = Recording.getFromDb( conn, id )
         if recording:
-            return self._createResponse( API.STATUS_SUCCESS, { "marker": recording.marker / 1024 / 1024 } )
+            return self._createResponse( API.STATUS_SUCCESS, { "marker": recording.marker } )
         return self._createResponse( API.STATUS_FAIL )
 
     @cherrypy.expose
@@ -106,7 +106,7 @@ class RecordingsAPI( API ):
         conn      = DBConnection()
         recording = Recording.getFromDb( conn, id )
         if recording:
-            recording.marker = marker * 1024 * 1024
+            recording.marker = marker
             self._logger.warn( "setRecordingMarker: marker=%d" % ( recording.marker ) )
             recording.addToDb( conn )
             return self._createResponse( API.STATUS_SUCCESS )
