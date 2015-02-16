@@ -68,7 +68,7 @@ class Scheduler( threading.Thread ):
                     time.sleep( 1.0 )
             return True
         else:
-            self._logger.warning( "Epg update in progress: skipping request" )
+            self._logger.warning( "Rescheduling in progress: skipping request" )
             return False
 
     def stop( self, timeout=10 ):
