@@ -153,7 +153,7 @@ class ActiveRecording( threading.Thread ):
                                 listener["new"] = False
                                 try:
                                     fd = os.open( listener["outputFile"], os.O_WRONLY | os.O_CREAT, 0644 )
-                                    listener["output"] = os.fdopen( fd, "w" )
+                                    listener["output"] = os.fdopen( fd, 'w' )
                                     if listener.has_key( "callback" ) and listener["callback"]:
                                         listener["callback"]( listener["id"], ActiveRecording.STARTED )
                                 except:
