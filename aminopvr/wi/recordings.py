@@ -32,8 +32,8 @@ class Recordings( API ):
     def default( self, *args, **kwargs ):
         self._logger.debug( "default( %s, %s )" % ( str( args ), str( kwargs ) ) )
 
-        for header in cherrypy.request.headers:
-            self._logger.info( "default: header: %s: %s" % ( header, cherrypy.request.headers[header] ) )
+#         for header in cherrypy.request.headers:
+#             self._logger.info( "default: header: %s: %s" % ( header, cherrypy.request.headers[header] ) )
 
         conn        = DBConnection()
         recordingId = list( args )[0]
