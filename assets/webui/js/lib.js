@@ -25,7 +25,7 @@ Date.prototype._getMonthHuman = function()
 
 Date.prototype._getDayHuman = function()
 {
-    var days = [ "Sunday", "Monday", "Thusday", "Wednesday", "Thursday", "Friday", "Saturday" ];
+    var days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" ];
     return days[this.getDay()];
 }
 
