@@ -884,8 +884,8 @@ def main():
                             schedule.preferHd           = (channelId != -1 and mythTvChannelUrlTypeMap[record.chanId] != u"sd")
                             schedule.preferUnscrambled  = False
                             schedule.dupMethod          = dupMethod
-                            schedule.startEarly         = round( record.startOffset / 60 )
-                            schedule.endLate            = round( record.endOffset / 60 )
+                            schedule.startEarly         = record.startOffset
+                            schedule.endLate            = record.endOffset
                             schedule.inactive           = record.inactive
  
                             logger.warning( "Adding Schedule: %s" % ( schedule.dump() ) )
