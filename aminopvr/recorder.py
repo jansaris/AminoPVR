@@ -84,8 +84,8 @@ class ActiveRecording( threading.Thread ):
                     self._listeners.remove( listener )
             if "output" in listener:
                 listener["output"].close()
-            if listener.has_key( "callback" ) and listener["callback"]:
-                listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+                listener["output"] = None
+            self._notifyListener( listener, ActiveRecording.ABORTED )
 
         self._running = False
         self.join( 5.0 )
@@ -112,72 +112,96 @@ class ActiveRecording( threading.Thread ):
                     self._listeners.remove( listener )
                     if "output" in listener:
                         listener["output"].close()
-                    if listener.has_key( "callback" ) and listener["callback"]:
-                        if abort:
-                            listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-                        else:
-                            listener["callback"]( listener["id"], ActiveRecording.FINISHED )
+                        listener["output"] = None
+                    
+                    if abort:
+                        self._notifyListener( listener, ActiveRecording.ABORTED )
+                    else:
+                        self._notifyListener( listener, ActiveRecording.FINISHED )
 
         self._logger.info( "ActiveRecording.removeListener: number of listeners=%d" % ( len( self._listeners ) ) )
         return len( self._listeners )
 
+    def _abortRecordings( self ):
+        with self._listenerLock:
+            for listener in self._listeners:
+                if "output" in listener and listener["output"]:
+                    listener["output"].close()
+                    listener["output"] = None
+                self._notifyListener( listener, ActiveRecording.ABORTED )
+            self._listeners = []
+
+    def _notifyListener( self, listener, result ):
+        if listener and "callback" in listener and listener["callback"]:
+            listener["callback"]( listener["id"], result )
+
     def run( self ):
-        inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
-        if inputStream and inputStream.open():
-            self._logger.debug( "ActiveRecording.run: start recording from %s" % ( self._url ) )
-
-            watchdogId = uuid.uuid1()
-            def watchdogTimeout():
-                self._logger.warning( "ActiveRecording.run: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
-                inputStream.close()
-                Watchdog().remove( watchdogId )
-                with self._listenerLock:
-                    for listener in self._listeners:
-                        self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
-                        self._listeners.remove( listener )
-                        if listener.has_key( "callback" ) and listener["callback"]:
-                            listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-            Watchdog().add( watchdogId, watchdogTimeout )
-            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-
-            while self._running:
-                data = inputStream.read( BUFFER_SIZE )
-
-                # If date == None, then there was a timeout
-                if data:
+        try:
+            inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
+            if inputStream:
+                if inputStream.open():
+                    self._logger.debug( "ActiveRecording.run: start recording from %s" % ( self._url ) )
+    
+                    watchdogId = uuid.uuid1()
+                    def watchdogTimeout():
+                        self._logger.warning( "ActiveRecording.run: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
+                        if inputStream:
+                            inputStream.close()
+                            inputStream = None
+                        Watchdog().remove( watchdogId )
+                        self._abortRecordings()
+    
+                    Watchdog().add( watchdogId, watchdogTimeout )
                     Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-                    with self._listenerLock:
-                        for listener in self._listeners:
-                            """ Write data to listener["outputFile"] """
-                            if listener["new"]:
-                                listener["new"] = False
-                                try:
-                                    fd = os.open( listener["outputFile"], os.O_WRONLY | os.O_CREAT, 0644 )
-                                    listener["output"] = os.fdopen( fd, "wb" )
-                                    if listener.has_key( "callback" ) and listener["callback"]:
-                                        listener["callback"]( listener["id"], ActiveRecording.STARTED )
-                                except:
-                                    printTraceback()
-                                    if listener.has_key( "callback" ) and listener["callback"]:
-                                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-                            if "output" in listener:
-                                listener["output"].write( data )
+        
+                    while self._running and len( self._listeners ) > 0:
+                        data = inputStream.read( BUFFER_SIZE )
+        
+                        # If date == None, then there was a timeout
+                        if data:
+                            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
+                            with self._listenerLock:
+                                for listener in self._listeners:
+                                    """ Write data to listener["outputFile"] """
+                                    if listener["new"]:
+                                        listener["new"] = False
+                                        try:
+                                            fd = os.open( listener["outputFile"], os.O_WRONLY | os.O_CREAT, 0644 )
+                                            listener["output"] = os.fdopen( fd, "wb" )
+                                            self._notifyListener( listener, ActiveRecording.STARTED )
+                                        except:
+                                            self._logger.error( "ActiveRecording.run: error while creating recording %s" % ( listener["outputFile"] ) )
+                                            printTraceback()
+                                            self._listeners.remove( listener )
+                                            self._notifyListener( listener, ActiveRecording.ABORTED )
+                                    if "output" in listener:
+                                        try:
+                                            listener["output"].write( data )
+                                        except:
+                                            self._logger.error( "ActiveRecording.run: error while writing to recording %s" % ( listener["outputFile"] ) )
+                                            printTraceback()
+                                            listener["output"].close()
+                                            listener["output"] = None
+                                            self._listeners.remove( listener )
+                                            self._notifyListener( listener, ActiveRecording.ABORTED )
+        
+                    inputStream.close()
+                    inputStream = None
+                    Watchdog().remove( watchdogId )
+                    self._abortRecordings()
+                else:
+                    self._logger.critical( "ActiveRecording.run: Could not open url=%r on protocol=%d" % ( self._url, self._protocol ) )
+                    self._abortRecordings()
+            else:
+                self._logger.critical( "ActiveRecording.run: Could not create url=%r on protocol=%d" % ( self._url, self._protocol ) )
+                self._abortRecordings()
 
-            inputStream.close()
-            Watchdog().remove( watchdogId )
-            with self._listenerLock:
-                for listener in self._listeners:
-                    self._logger.warning( "ActiveRecording.run: we've finished streaming, but there are still listener with id %d attached" % ( listener["id"] ) )
-                    self._listeners.remove( listener )
-                    if listener.has_key( "callback" ) and listener["callback"]:
-                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
-        else:
-            self._logger.critical( "ActiveRecording.run: Could not create or open url=%r on protocol=%d" % ( self._url, self._protocol ) )
-            with self._listenerLock:
-                for listener in self._listeners:
-                    self._listeners.remove( listener )
-                    if listener.has_key( "callback" ) and listener["callback"]:
-                        listener["callback"]( listener["id"], ActiveRecording.ABORTED )
+        except:
+            self._logger.error( "ActiveRecording.run: error while recording from %s" % ( self._url ) )
+            printTraceback()
+            if inputStream:
+                inputStream.close()
+            self._abortRecordings()
 
 class _RecorderQueueItem( object ):
     STOP_RECORDER       = 1
