@@ -226,7 +226,7 @@ class Scheduler( threading.Thread ):
                                 currRecording.epgProgram = epgProgram
                                 currRecording.addToDb( conn )
 
-                        self._logger.warning( "Updated timer with id=%d for recording of %s (schedule: %d) at %s on %s" % ( timer["id"], recording.title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), recording.channelName ) )
+                        self._logger.warning( "Updated timer with id=%d for recording of '%s' (schedule: %d) at %s on %s" % ( timer["id"], recording.title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), recording.channelName ) )
 
                         touchedTimers.append( timerId )
 
@@ -250,7 +250,7 @@ class Scheduler( threading.Thread ):
                                                     'callbackArguments': timer["id"] } ] )
                         self._timers[timer["id"]] = timer
 
-                        self._logger.warning( "Created timer with id=%d for recording of %s (schedule: %d) at %s on %s" % ( timer["id"], timer["recording"].title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName ) )
+                        self._logger.warning( "Created timer with id=%d for recording of '%s' (schedule: %d) at %s on %s" % ( timer["id"], timer["recording"].title, timer["scheduleId"], datetime.datetime.fromtimestamp( timer["startTime"] ), timer["recording"].channelName ) )
 
                         self._idCounter += 1
                         touchedTimers.append( timer["id"] )
