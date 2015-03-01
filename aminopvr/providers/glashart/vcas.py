@@ -85,7 +85,7 @@ class VcasProvider( subprocess.Popen ):
             else:
                 self._logger.warning( "VMCAM server executable %s does not exist or is not an executable." % ( vmcamServerPath ) )
 
-    def terminate( self ):
+    def shutdown( self ):
         if self.pid != 0:
             self._logger.warning( "Stopping VMCAM server" )
             self.send_signal( signal.SIGTERM )

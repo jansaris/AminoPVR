@@ -75,7 +75,7 @@ class RtspServer( subprocess.Popen ):
         else:
             self._logger.warning( "RTSP server executable %s does not exist or is not an executable." % ( rtspServerPath ) )
 
-    def terminate( self ):
+    def shutdown( self ):
         if self.pid != 0:
             self._logger.warning( "Stopping RTSP server" )
             self.send_signal( signal.SIGTERM )

@@ -81,7 +81,7 @@ def shutdown():
     if contentProvider:
         contentProvider.stop()
     if vcasProvider:
-        vcasProvider.terminate()
+        vcasProvider.shutdown()
     if recorder:
         recorder.stopAllRecordings()
     if scheduler:
@@ -105,7 +105,7 @@ def startRtspServer():
 
 def stopRtspServer():
     if rtspServer != None:
-        rtspServer.terminate()
+        rtspServer.shutdown()
 
 def isRecordingActive():
     unfinishedRecordings = Recorder().getActiveRecordings()

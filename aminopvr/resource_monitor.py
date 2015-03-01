@@ -19,6 +19,7 @@ from aminopvr.timer import Timer
 from aminopvr.tools import Singleton, getTimestamp
 import datetime
 import logging
+import threading
 
 class Watchdog( object ):
     __metaclass__ = Singleton
@@ -28,7 +29,8 @@ class Watchdog( object ):
     _logger = logging.getLogger( "aminopvr.Watchdog" )
 
     def __init__( self ):
-        self._watchdogs = {};
+        self._watchdogLock  = threading.RLock()
+        self._watchdogs     = {};
 
         now                 = datetime.datetime.now()
         watchdogInterval    = datetime.timedelta( seconds=2 )
@@ -43,41 +45,53 @@ class Watchdog( object ):
     def stop( self ):
         self._logger.warning( "Stopping Watchdog" )
         self._timer.stop()
+        with self._watchdogLock:
+            for watchdogId in self._watchdogs:
+                self._logger.info( "Notify watchdog %s" % ( watchdogId ) )
+                watchdog = self._watchdogs[watchdogId]
+                if "callback" in watchdog:
+                    callback = watchdog["callback"]
+                    callback()
 
     def add( self, watchdogId, callback ):
-        if not watchdogId in self._watchdogs:
-            self._watchdogs[watchdogId] = { "callback": callback, "lastkick": 0 }
-        else:
-            self._logger.error( "Watchdog %s already exists" % ( watchdogId ) )
+        with self._watchdogLock:
+            if not watchdogId in self._watchdogs:
+                self._watchdogs[watchdogId] = { "callback": callback, "lastkick": 0 }
+            else:
+                self._logger.error( "Watchdog %s already exists" % ( watchdogId ) )
 
     def kick( self, watchdogId, kick ):
-        if watchdogId in self._watchdogs:
-            self._watchdogs[watchdogId]["lastkick"] = getTimestamp() + kick
-        else:
-            self._logger.error( "Watchdog %s does not exists" % ( watchdogId ) )
+        with self._watchdogLock:
+            if watchdogId in self._watchdogs:
+                self._watchdogs[watchdogId]["lastkick"] = getTimestamp() + kick
+            else:
+                self._logger.error( "Watchdog %s does not exists" % ( watchdogId ) )
 
     def remove( self, watchdogId ):
-        if watchdogId in self._watchdogs:
-            del self._watchdogs[watchdogId]
-        else:
-            self._logger.error( "Watchdog %s does not exists" % ( watchdogId ) )
+        with self._watchdogLock:
+            if watchdogId in self._watchdogs:
+                del self._watchdogs[watchdogId]
+            else:
+                self._logger.error( "Watchdog %s does not exists" % ( watchdogId ) )
         
     def _timerCallback( self, event, arguments ):
         now = getTimestamp()
 
         expiredWatchdogId = None
-        for watchdogId in self._watchdogs:
-            watchdog = self._watchdogs[watchdogId]
-            if watchdog["lastkick"] != 0 and watchdog["lastkick"] < now:
-                expiredWatchdogId = watchdogId
-                break
+        with self._watchdogLock:
+            for watchdogId in self._watchdogs:
+                watchdog = self._watchdogs[watchdogId]
+                if watchdog["lastkick"] != 0 and watchdog["lastkick"] < now:
+                    expiredWatchdogId = watchdogId
+                    break
 
         if expiredWatchdogId != None:
-            watchdog = self._watchdogs[expiredWatchdogId]
-            self._logger.warning( "Watchdog %s not kicked in time" % ( watchdogId ) )
-            if "callback" in watchdog:
-                callback = watchdog["callback"]
-                callback()
+            with self._watchdogLock:
+                watchdog = self._watchdogs[expiredWatchdogId]
+                self._logger.warning( "Watchdog %s not kicked in time" % ( watchdogId ) )
+                if "callback" in watchdog:
+                    callback = watchdog["callback"]
+                    callback()
 
 class ResourceMonitor( object ):
     __metaclass__ = Singleton

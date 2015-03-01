@@ -101,7 +101,7 @@ class TsDecrypt( subprocess.Popen ):
         self._LogThread( self.stdout, self._tsdecryptLogger.info )
         self._LogThread( self.stderr, self._tsdecryptLogger.info )
 
-    def terminate( self ):
+    def shutdown( self ):
         if self.pid != 0:
             self._logger.warning( "Stopping tsdecrypt" )
             self.send_signal( signal.SIGTERM )

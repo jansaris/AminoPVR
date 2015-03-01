@@ -193,13 +193,13 @@ class TsDecryptInputStream( UdpInputStream ):
             self.close()
         except:
             pass
-        self._tsdecrypt.terminate()
+        self._tsdecrypt.shutdown()
         self._inUse.remove( self._useIp )
         self._logger.info( "TsDecryptInputStream object destroyed" )
 
     def close( self ):
         super( TsDecryptInputStream, self ).close()
-        self._tsdecrypt.terminate()
+        self._tsdecrypt.shutdown()
 
     @classmethod
     def getUrl( cls, url ):
@@ -254,6 +254,7 @@ class HttpInputStream( InputStreamAbstract ):
             return False
 
         if not self._response:
+            self._logger.warning( "HttpInputStream.open: no response" )
             return False
 
         return True
@@ -266,6 +267,7 @@ class HttpInputStream( InputStreamAbstract ):
         try:
             data = self._response.read( length )
         except httpplus.HTTPTimeoutException:
+            self._logger.warning( "HttpInputStream.read: read timeout" )
             pass
         return data
 
