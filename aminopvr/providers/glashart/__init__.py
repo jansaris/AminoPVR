@@ -220,7 +220,8 @@ class ContentProvider( threading.Thread ):
                         #                                   for( o ( " doRunAfterLoad( ) : " + Kb           .length) ;Kb           .length;) { var a            =Kb           .pop( ) ;try{ a            ( ) }
                         "INIT_FUNCTION":                  r"for\(%s\(\"doRunAfterLoad\(\): \"\+[A-Za-z]{1,2}.length\);[A-Za-z]{1,2}.length;\)\{var [A-Za-z]{1,2}=[A-Za-z]{1,2}.pop\(\);try\{[A-Za-z]{1,2}\(\)\}",
                         "LAST_JS_LINE":                   r"([A-Za-z]{1,2}\(\);\s*%s\(\"initial buildMenu\(\) done.\"\);)",
-                        "KEY_EVENT_FUNCTION":             r"function (?P<key_event_function>[A-Za-z]{1,2})\([A-Za-z]{1,2}\)\{[A-Za-z]{1,2}\(\);[A-Za-z]{1,2}&&clearTimeout\([A-Za-z]{1,2}\);[A-Za-z]{1,2}=\s*[A-Za-z]{1,2}.keyCode\|\|[A-Za-z]{1,2}.charCode;",
+                        #                                   function oc                                   ( b            ) { ia           ( ) ;$a            &&clearTimeout( $a            ) ;b            =   b            .keyCode| | b            .charCode;
+                        "KEY_EVENT_FUNCTION":             r"function (?P<key_event_function>[A-Za-z]{1,2})\([A-Za-z]{1,2}\)\{[A-Za-z]{1,2}\(\);[$A-Za-z]{1,2}&&clearTimeout\([$A-Za-z]{1,2}\);[A-Za-z]{1,2}=\s*[A-Za-z]{1,2}.keyCode\|\|[A-Za-z]{1,2}.charCode;",
                      }
             symbolNames = {}
             symbolNames["channel_logo_path"]  = self._glashartConfig.channelLogoPath
