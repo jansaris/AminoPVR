@@ -230,12 +230,31 @@ def main():
 
     aminopvr.aminoPVRProcess()
 
-    try:
-        while 1:
+    running = True
+    while running:
+        if aminopvr.const.DAEMON:
             time.sleep( 1.0 )
-            pass
-    except KeyboardInterrupt:
-        logger.warning( "Clean exit" )
+        else:
+            try:
+                cmd = sys.stdin.readline().rstrip()
+                logger.debug('User input: "%s"' % (cmd,))
+                if cmd in ('h', '?'):
+#                    print h
+                    pass
+                elif cmd == 'q':
+                    logger.warning( "User requested shutdown" )
+                    running = False
+                    aminopvr.shutdown()
+                else:
+                    raise ValueError
+            except KeyboardInterrupt:
+                logger.warning( "Clean exit" )
+                running = False
+                aminopvr.shutdown()
+            except ValueError:
+                logger.error( "Unknown Command. Type h or ? for help" )
+            except:
+                raise
 
     sys.exit( 0 )
 
