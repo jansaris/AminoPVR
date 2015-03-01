@@ -163,6 +163,9 @@ class Config( object ):
 
         if os.path.exists( self._configFilename( self._filename ) ):
             self._config.read( self._configFilename( self._filename ) )
+            self._logger.info( "Config.__init__(): Config read from file %s" % ( self._configFilename( self._filename ) ) )
+        else:
+            self._logger.warning( "Config.__init__(): Config file %s does not exists" % ( self._configFilename( self._filename ) ) )
 
     def getSection( self, section ):
         options = None

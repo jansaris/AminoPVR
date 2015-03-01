@@ -209,11 +209,9 @@ def main():
         if stopDaemon:
             sys.exit()
 
-    aminopvr.init()
-
     if consoleLogging:
         consoleHandler = logging.StreamHandler( sys.stdout )
-        consoleHandler.setLevel( logging.INFO )
+        consoleHandler.setLevel( logging.DEBUG )
         consoleHandler.setFormatter( formatter )
         cherryPyConsoleHandler = logging.StreamHandler( sys.stdout )
         cherryPyConsoleHandler.setLevel( logging.WARNING )
@@ -221,6 +219,8 @@ def main():
 
         logger.addHandler( consoleHandler )
         cherryPyLogger.addHandler( cherryPyConsoleHandler )
+
+    aminopvr.init()
 
     if aminopvr.const.DAEMON:
         daemonize()

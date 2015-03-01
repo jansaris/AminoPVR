@@ -45,6 +45,7 @@ vcasProvider    = None
 rtspServer      = None
 
 def init():
+    logger.warning( "Initialize AminoPVR" )
     debugConfig = DebugConfig( Config() )
 
     for debugLogger in debugConfig.logger.keys():
