@@ -18,6 +18,7 @@
 from aminopvr import const
 from aminopvr.database.channel import Channel
 from aminopvr.wi.api import AminoPVRAPI
+from aminopvr.wi.api.controller import ControllerAPI
 from aminopvr.wi.channels import Channels
 from aminopvr.wi.recordings import Recordings
 from aminopvr.wi.webui import WebUI
@@ -36,6 +37,7 @@ class WebInterface( object ):
 
 def stopWebserver():
     _logger.warning( "Stopping CherryPy Engine" )
+    ControllerAPI().notifyShutdown()
     cherrypy.engine.stop()
 
 def initWebserver( serverPort=8080 ):

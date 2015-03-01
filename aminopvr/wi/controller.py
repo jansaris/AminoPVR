@@ -22,13 +22,16 @@ import threading
 class Controller( object ):
     __metaclass__ = Singleton
 
-    TYPE_CONTROLLER = 1
-    TYPE_RENDERER   = 2
+    TYPE_SERVER     = 1
+    TYPE_CONTROLLER = 2
+    TYPE_RENDERER   = 3
 
     def __init__( self ):
         self._listeners  = {}
-        self._listenerId = 0
+        self._listenerId = 1
         self._lock       = threading.RLock()
+
+        self.addListener( '0.0.0.0', self.TYPE_SERVER )
 
     def addListener( self, ip, type ):  # @ReservedAssignment
         listenerId = -1
@@ -82,6 +85,11 @@ class Controller( object ):
                 return False
         listener = self._listeners[toId]
         return self.sendMessage( fromId, listener["ip"], listener["type"], message )
+
+    def broadcastMessage( self, message ):
+        with self._lock:
+            for id_ in self._listeners:
+                self.sendMessageToId( 0, id_, message )
 
     def getMessage( self, id, timeout=25.0 ):  # @ReservedAssignment
         listener = None

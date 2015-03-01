@@ -81,3 +81,9 @@ class ControllerAPI( API ):
         controller = Controller()
         listeners  = controller.getListeners()
         return self._createResponse( API.STATUS_SUCCESS, listeners )
+    
+    @classmethod
+    def notifyShutdown( cls ):
+        cls._logger.info( "notifyShutdown" )
+        controller = Controller()
+        controller.broadcastMessage( { "type": "notification", "data": { "command": "shutdown" } } )
