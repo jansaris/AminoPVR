@@ -34,10 +34,6 @@ class VirtualTuner( threading.Thread ):
     _tunerLock    = threading.Lock()
     _activeTuners = []
 
-    STARTED  = 1
-    ABORTED  = 2
-    FINISHED = 3
-
     def __init__( self, url, protocol ):
         """
         Initialize 'VirtualTuner' instance.
