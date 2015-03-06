@@ -625,7 +625,7 @@ class Recording( RecordingAbstract ):
                     recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
                     if os.path.exists( recordingFilename ):
                         self._fileSize = os.stat( recordingFilename ).st_size;
-                    self._logger.warning( "changeStatus: recording (un)finished; status=%d, fileSize=%d" % ( self._status, self._fileSize ) )
+                    self._logger.warning( "changeStatus: recording (un)finished; id=%d, status=%d, fileSize=%d" % ( self._id, self._status, self._fileSize ) )
                     conn.execute( "UPDATE %s SET status=?, file_size=? WHERE id=?" % ( self._tableName ), ( status, self._fileSize, self._id ) )
                 else:
                     conn.execute( "UPDATE %s SET status=? WHERE id=?" % ( self._tableName ), ( status, self._id ) )

@@ -26,8 +26,6 @@ import threading
 import time
 import unicodedata
 
-lock = threading.Lock()
-
 _logger = logging.getLogger( "aminopvr.db" )
 
 def _like( mask, value, escape=None ):
@@ -35,6 +33,10 @@ def _like( mask, value, escape=None ):
     return mask[1:-1].lower() in value.lower()
 
 class DBConnection( object ):
+
+    _logger = logging.getLogger( "aminopvr.db.DBConnection" )
+    _lock   = threading.Lock()
+
     def __init__( self, filename="aminopvr.db" ):
         self._filename           = filename
         self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
@@ -58,7 +60,7 @@ class DBConnection( object ):
     def execute( self, query, args=None ):
         if query == None:
             return
-        with lock:
+        with self._lock:
             sqlResult = None
             attempt   = 0
             while attempt < 5:
@@ -79,15 +81,15 @@ class DBConnection( object ):
                     break
                 except sqlite3.OperationalError, e:
                     if "unable to open database file" in e.message or "database is locked" in e.message:
-                        _logger.warning( "DB error: %s" % ( e.message ) )
+                        self._logger.warning( "DB error: %s" % ( e.message ) )
                         attempt += 1
                         time.sleep( 1 )
                     else:
-                        _logger.error( "DB error: %s" % ( e.message ) )
+                        self._logger.error( "DB error: %s" % ( e.message ) )
                         printTraceback()
                         raise
                 except sqlite3.DatabaseError, e:
-                    _logger.error( "Fatal error executing query: %s" % ( e.message ) )
+                    self._logger.error( "Fatal error executing query: %s" % ( e.message ) )
                     printTraceback()
                     raise
 
