@@ -17,17 +17,14 @@
 """
 from aminopvr.database.db import DBConnection
 from aminopvr.database.channel import Channel
-from aminopvr.input_stream import InputStreamProtocol, InputStreamAbstract
-from aminopvr.resource_monitor import Watchdog
+from aminopvr.input_stream import InputStreamProtocol
 from aminopvr.tsdecrypt import IsTsDecryptSupported
+from aminopvr.virtual_tuner import VirtualTuner
 from aminopvr.wi.api.common import API
 import cherrypy
 import logging
 import types
 import uuid
-
-BUFFER_SIZE             = 40 * 188
-WATCHDOG_KICK_PERIOD    = 5
 
 class Channels( API ):
     _logger = logging.getLogger( "aminopvr.WI.Channels" )
@@ -68,28 +65,20 @@ class Channels( API ):
                 url = channel.urls["sd"]
 
             if url:
-                inputStream = InputStreamAbstract.createInputStream( protocol, url )
-                if inputStream.open():
-                    watchdogId = uuid.uuid1()
-                    def watchdogTimeout():
-                        self._logger.warning( "default: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
-                        inputStream.close()
-                        Watchdog().remove( watchdogId )
-                    Watchdog().add( watchdogId, watchdogTimeout )
-                    Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-                    cherrypy.response.headers[ "Content-Type" ] = "video/mp2t"
+                tuner = VirtualTuner.getTuner( url, protocol )
+                if tuner:
+                    listenerId = uuid.uuid1()
+                    tuner.addListener( listenerId )
+                    cherrypy.response.headers["Content-Type"] = "video/mp2t"
                     def content():
-                        self._logger.info( "default: opened stream" )
-                        Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-                        data = inputStream.read( BUFFER_SIZE )
-                        while len( data ) > 0:
+                        self._logger.info( "default: opened tuner" )
+                        data = tuner.read( listenerId )
+                        while data and len( data ) > 0:
                             yield data
-                            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-                            data = inputStream.read( BUFFER_SIZE )
+                            data = tuner.read( listenerId )
                         self._logger.info( "default: EOS" )
-                        inputStream.close()
-                        Watchdog().remove( watchdogId )
-
+                        tuner.removeListener( listenerId )
+ 
                     return content()
                 else:
                     return self._createResponse( API.STATUS_FAIL )

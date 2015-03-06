@@ -584,6 +584,7 @@ class Recording( RecordingAbstract ):
     _logger    = logging.getLogger( 'aminopvr.Recording' )
 
     def deleteFromDb( self, conn, rerecord=False ):
+        assert self._tableName != None, "Not the right class: %r" % ( self )
         if conn:
             self._logger.warning( "Remove recording id=%d (%s recorded at %s from %s; rerecord=%s)" % ( self._id, self._title, datetime.datetime.fromtimestamp( self._startTime ), self._channelName, rerecord ) )
 
@@ -607,11 +608,12 @@ class Recording( RecordingAbstract ):
             if os.path.islink( recordingFilename ) or os.path.isfile( recordingFilename ):
                 os.unlink( recordingFilename )
 
-            conn.execute( "DELETE FROM recordings WHERE id=?", ( self._id, ) )
+            conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ) )
 
             Cache().purge( self._tableName, self.id )
 
     def changeStatus( self, conn, status ):
+        assert self._tableName != None, "Not the right class: %r" % ( self )
         if self._id == -1:
             self._logger.error( "changeStatus: cannot change recording status; recording not in database yet" )
             return
@@ -623,11 +625,14 @@ class Recording( RecordingAbstract ):
                     recordingFilename = os.path.abspath( os.path.join( generalConfig.recordingsPath, self._filename ) )
                     if os.path.exists( recordingFilename ):
                         self._fileSize = os.stat( recordingFilename ).st_size;
-                    conn.execute( "UPDATE recordings SET status=?, file_size=? WHERE id=?", ( status, self._fileSize, self._id ) )
+                    self._logger.warning( "changeStatus: recording (un)finished; status=%d, fileSize=%d" % ( self._status, self._fileSize ) )
+                    conn.execute( "UPDATE %s SET status=?, file_size=? WHERE id=?" % ( self._tableName ), ( status, self._fileSize, self._id ) )
                 else:
-                    conn.execute( "UPDATE recordings SET status=? WHERE id=?", ( status, self._id ) )
+                    conn.execute( "UPDATE %s SET status=? WHERE id=?" % ( self._tableName ), ( status, self._id ) )
 
             Cache().purge( self._tableName, self.id )
+        else:
+            self._logger.warning( "changeStatus: status of recording with id=%d didn't change: %d == %d" % ( self._id, self._status, status ) )
 
     def copyEpgProgram( self ):
         if self._epgProgram:

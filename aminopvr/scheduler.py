@@ -782,7 +782,7 @@ class Scheduler( threading.Thread ):
         """
         self._logger.debug( "_recorderCallback: id=%d, recorderState=%d" % ( timerId, recorderState ) )
         with self._lock:
-            if self._timers.has_key( timerId ):
+            if timerId in self._timers:
                 conn  = DBConnection()
                 timer = self._timers[timerId]
                 self._logger.info( "_recorderCallback: recording id=%d" % ( timer["recordingId"] ) )

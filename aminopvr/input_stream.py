@@ -289,7 +289,7 @@ class HttpInputStream( InputStreamAbstract ):
         return reduce( lambda x, y: x.replace( y, formatMap[y] ), formatMap, httpBaseUrl )
 
 class MockInputStream( InputStreamAbstract ):
-    _logger = logging.getLogger( "aminopvr.UdpInputStream" )
+    _logger = logging.getLogger( "aminopvr.MockInputStream" )
 
     def __init__( self, ip, port ):
         InputStreamAbstract.__init__( self )

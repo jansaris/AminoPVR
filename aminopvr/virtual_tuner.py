@@ -31,7 +31,7 @@ WATCHDOG_KICK_PERIOD    = 5
 class VirtualTuner( threading.Thread ):
 
     _logger       = logging.getLogger( "aminopvr.VirtualTuner" )
-    _tunerLock    = threading.Lock()
+    _tunerLock    = threading.RLock()
     _activeTuners = []
 
     def __init__( self, url, protocol ):
@@ -43,13 +43,15 @@ class VirtualTuner( threading.Thread ):
         """
         threading.Thread.__init__( self )
 
-        self._url               = url
-        self._protocol          = protocol
+        self._url           = url
+        self._protocol      = protocol
 
-        self._running           = False
+        self._inputStream   = None
+        self._watchdogId    = None
+        self._running       = False
 
-        self._listeners         = []
-        self._listenerLock      = threading.RLock()
+        self._listeners     = []
+        self._listenerLock  = threading.RLock()
 
         self._logger.debug( "VirtualTuner.__init__( url=%s, protocol=%s )" % ( url, protocol ) )
 
@@ -130,6 +132,7 @@ class VirtualTuner( threading.Thread ):
         if fifo:
             try:
                 data = listener["fifo"].get( True, 5.0 )
+                listener["fifo"].task_done()
             except Queue.Empty:
                 self._logger.debug( "VirtualTuner.read(): FIFO is (still) empty" )
 
@@ -137,6 +140,9 @@ class VirtualTuner( threading.Thread ):
 
     def _terminateTuner( self ):
         with self._listenerLock:
+            for listener in self._listeners:
+                if listener["callback"]:
+                    listener["callback"]( listener["id"], None )
             self._listeners = []
         
         with self._tunerLock:
@@ -145,45 +151,51 @@ class VirtualTuner( threading.Thread ):
                     self._activeTuners.remove( activeTuner )
                     break
 
+    def _watchdogTimeout( self ):
+        self._logger.warning( "VirtualTuner.run: watchdog timed out; close stream; remove watchdog %s" % ( self._watchdogId ) )
+        try:
+            if self._inputStream:
+                self._inputStream.close()
+                self._inputStream = None
+        except:
+            pass
+        Watchdog().remove( self._watchdogId )
+        self._terminateTuner()
+
     def run( self ):
         try:
-            inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
-            if inputStream:
-                if inputStream.open():
+            self._inputStream = InputStreamAbstract.createInputStream( self._protocol, self._url )
+            if self._inputStream:
+                if self._inputStream.open():
                     self._logger.info( "VirtualTuner.run: start reading from %s on protocol %d" % ( self._url, self._protocol ) )
-    
-                    watchdogId = uuid.uuid1()
-                    def watchdogTimeout():
-                        self._logger.warning( "VirtualTuner.run: watchdog timed out; close stream; remove watchdog %s" % ( watchdogId ) )
-                        if inputStream:
-                            inputStream.close()
-                            inputStream = None
-                        Watchdog().remove( watchdogId )
-                        self._terminateTuner()
-    
-                    Watchdog().add( watchdogId, watchdogTimeout )
-                    Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
-        
+
+                    self._watchdogId = uuid.uuid1()
+                    Watchdog().add( self._watchdogId, self._watchdogTimeout )
+                    Watchdog().kick( self._watchdogId, WATCHDOG_KICK_PERIOD )
+
                     while self._running and len( self._listeners ) > 0:
-                        data = inputStream.read( BUFFER_SIZE )
-        
+                        data = self._inputStream.read( BUFFER_SIZE )
+
                         # If date == None, then there was a timeout
                         if data:
-                            Watchdog().kick( watchdogId, WATCHDOG_KICK_PERIOD )
+                            Watchdog().kick( self._watchdogId, WATCHDOG_KICK_PERIOD )
                             with self._listenerLock:
                                 for listener in self._listeners:
                                     if listener["callback"]:
-                                        listener["callback"]( data )
+                                        listener["callback"]( listener["id"], data )
                                     else:
                                         try:
                                             listener["fifo"].put( data, True, 1.0 )
                                         except Queue.Full:
                                             self._logger.info( "VirtualTuner.run: listener's queue full, remove listener" )
                                             self._listeners.remove( listener )
-        
-                    inputStream.close()
-                    inputStream = None
-                    Watchdog().remove( watchdogId )
+
+                    try:
+                        self._inputStream.close()
+                        self._inputStream = None
+                    except:
+                        pass
+                    Watchdog().remove( self._watchdogId )
                     self._terminateTuner()
                 else:
                     self._logger.critical( "VirtualTuner.run: Could not open input stream with url=%r on protocol=%d" % ( self._url, self._protocol ) )
@@ -195,6 +207,6 @@ class VirtualTuner( threading.Thread ):
         except:
             self._logger.error( "VirtualTuner.run: error while reading from %s on protocol=%d" % ( self._url, self._protocol ) )
             printTraceback()
-            if inputStream:
-                inputStream.close()
+            if self._inputStream:
+                self._inputStream.close()
             self._terminateTuner()
