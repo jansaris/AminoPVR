@@ -36,7 +36,7 @@ class Watchdog( object ):
         watchdogInterval    = datetime.timedelta( seconds=2 )
         watchdogTime        = now + watchdogInterval
 
-        self._logger.warning( "Starting Watchdog timer @ %s with interval %s" % ( watchdogTime, watchdogInterval ) )
+        self._logger.warning( "Starting Watchdog timer @ %s with interval %s" % ( watchdogTime.strftime("%Y-%m-%d %H:%M:%S"), watchdogInterval ) )
 
         self._timer = Timer( [ { "time": watchdogTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=0.5, recurrenceInterval=watchdogInterval )
 
@@ -122,7 +122,7 @@ class ResourceMonitor( object ):
         grabInterval = datetime.timedelta( minutes=10 )
         grabTime     = now + grabInterval
 
-        self._logger.warning( "Starting ResourceMonitor timer @ %s with interval %s" % ( grabTime, grabInterval ) )
+        self._logger.warning( "Starting ResourceMonitor timer @ %s with interval %s" % ( grabTime.strftime("%Y-%m-%d %H:%M:%S"), grabInterval ) )
 
         self._timer = Timer( [ { "time": grabTime, "callback": self._timerCallback, "callbackArguments": None } ], pollInterval=10.0, recurrenceInterval=grabInterval )
 
