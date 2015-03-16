@@ -486,7 +486,7 @@ class RecordingAbstract( object ):
                                 self._marker,
                                 self._status,
                                 self._rerecord,
-                                self._id ) )
+                                self._id ), logger=self._logger )
             else:
                 if self._filename == "":
                     self._filename = self._generateFilename( conn )
@@ -534,7 +534,7 @@ class RecordingAbstract( object ):
                                              self._scrambled,
                                              self._marker,
                                              self._status,
-                                             self._rerecord ) )
+                                             self._rerecord ), logger=self._logger )
                 if recordingId:
                     self._id = recordingId
 
@@ -608,7 +608,7 @@ class Recording( RecordingAbstract ):
             if os.path.islink( recordingFilename ) or os.path.isfile( recordingFilename ):
                 os.unlink( recordingFilename )
 
-            conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ) )
+            conn.execute( "DELETE FROM %s WHERE id=?" % ( self._tableName ), ( self._id, ), logger=self._logger )
 
             Cache().purge( self._tableName, self.id )
 
@@ -626,9 +626,9 @@ class Recording( RecordingAbstract ):
                     if os.path.exists( recordingFilename ):
                         self._fileSize = os.stat( recordingFilename ).st_size;
                     self._logger.warning( "changeStatus: recording (un)finished; id=%d, status=%d, fileSize=%d" % ( self._id, self._status, self._fileSize ) )
-                    conn.execute( "UPDATE %s SET status=?, file_size=? WHERE id=?" % ( self._tableName ), ( status, self._fileSize, self._id ) )
+                    conn.execute( "UPDATE %s SET status=?, file_size=? WHERE id=?" % ( self._tableName ), ( status, self._fileSize, self._id ), logger=self._logger )
                 else:
-                    conn.execute( "UPDATE %s SET status=? WHERE id=?" % ( self._tableName ), ( status, self._id ) )
+                    conn.execute( "UPDATE %s SET status=? WHERE id=?" % ( self._tableName ), ( status, self._id ), logger=self._logger )
 
             Cache().purge( self._tableName, self.id )
         else:
@@ -653,7 +653,7 @@ class OldRecording( RecordingAbstract ):
                 recordingProgram = RecordingProgram.getFromDb( conn, self._epgProgramId )
                 recordingProgram.deleteFromDb( conn )
 
-            conn.execute( "DELETE FROM %s WHERE id = ?" % ( self._tableName ), ( self._id, ) )
+            conn.execute( "DELETE FROM %s WHERE id = ?" % ( self._tableName ), ( self._id, ), logger=self._logger )
 
             Cache().purge( self._tableName, self.id )
 

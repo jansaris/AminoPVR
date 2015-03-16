@@ -38,17 +38,19 @@ class DBConnection( object ):
     _lock   = threading.Lock()
 
     def __init__( self, filename="aminopvr.db" ):
-        self._filename           = filename
-        self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
-        self._delayCommit        = False
-        self._cursor             = self._conn.cursor()
-        self._cursor.row_factory = sqlite3.Row
-        self._conn.create_function( "LIKE", 2, _like )
-        self._conn.create_function( "LIKE", 3, _like )
+        self._filename      = filename
+        self._delayCommit   = False
+        with self._lock:
+            self._conn               = sqlite3.connect( self._dbFilename( filename ), 20 )
+            self._cursor             = self._conn.cursor()
+            self._cursor.row_factory = sqlite3.Row
+            self._conn.create_function( "LIKE", 2, _like )
+            self._conn.create_function( "LIKE", 3, _like )
 
     def __del__( self ):
         if self._conn:
-            self._conn.commit()
+            if self._delayCommit:
+                self._conn.commit()
             self._conn.close()
 
     def delayCommit( self, enable ):
@@ -57,7 +59,7 @@ class DBConnection( object ):
                 self._conn.commit()
         self._delayCommit = enable
 
-    def execute( self, query, args=None ):
+    def execute( self, query, args=None, logger=None ):
         if query == None:
             return
         with self._lock:
@@ -69,6 +71,8 @@ class DBConnection( object ):
                         sqlResult = self._cursor.execute( query )
                     else:
                         sqlResult = self._cursor.execute( query, args )
+                    if logger:
+                        logger.warning( "Executing query: %s with args=%r" % ( query, args ) )
                     if not self._delayCommit and not query.lower().startswith( "select" ):
                         self._conn.commit()
                     if query.lower().startswith( "select" ):
