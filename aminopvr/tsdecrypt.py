@@ -55,7 +55,7 @@ class TsDecrypt( subprocess.Popen ):
 
     def __init__( self, url, outputIp, outputPort ):
     
-        self._logger.warning( "Starting tsdecrypt, output on %s:%d" % ( outputIp, outputPort ) )
+        self._logger.info( "Starting tsdecrypt, output on %s:%d" % ( outputIp, outputPort ) )
 
         tsdecryptConfig = TsDecryptConfig( Config() )
 
@@ -93,7 +93,7 @@ class TsDecrypt( subprocess.Popen ):
                                            close_fds='posix' )
 
         if self.pid != 0:
-            self._logger.warning( "tsdecrypt started with PID=%d" % ( self.pid ) )
+            self._logger.info( "tsdecrypt started with PID=%d" % ( self.pid ) )
         else:
             self._logger.error( "tsdecrypt not started" )
 
@@ -103,10 +103,10 @@ class TsDecrypt( subprocess.Popen ):
 
     def shutdown( self ):
         if self.pid != 0:
-            self._logger.warning( "Stopping tsdecrypt" )
+            self._logger.info( "Stopping tsdecrypt" )
             self.send_signal( signal.SIGTERM )
             self.wait()
-            self._logger.warning( "tsdecrypt stopped" )
+            self._logger.info( "tsdecrypt stopped" )
             self.pid = 0
 
     def _LogThread( self, pipe, logger ):
