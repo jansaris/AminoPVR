@@ -534,7 +534,7 @@ class RecordingAbstract( object ):
                                              self._scrambled,
                                              self._marker,
                                              self._status,
-                                             self._rerecord ), logger=self._logger )
+                                             self._rerecord ) )
                 if recordingId:
                     self._id = recordingId
 
