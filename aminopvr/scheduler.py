@@ -695,7 +695,7 @@ class Scheduler( threading.Thread ):
                                 self._logger.info( "_startRecording: Recording with id=%d stored in database" % ( recording.id ) )
 
                             recording.changeStatus( conn, RecordingState.START_RECORDING )  # Not providing DBConnection, because recording is not in the db yet!
-                            self._logger.warning( "Start recording '%s' on channel '%s'" % ( recording.title, recording.channelName ) )
+                            self._logger.warning( "Start recording with id %d: '%s' on channel '%s'" % ( recording.id, recording.title, recording.channelName ) )
 
                             # Now lets keep reference to the id, instead of the object
                             timer["recordingId"] = recording.id
@@ -793,39 +793,39 @@ class Scheduler( threading.Thread ):
                             recording.changeStatus( conn, RecordingState.RECORDING_STARTED )
                             self._logger.warning( "Recording '%s' started" % ( recording.title ) )
                         else:
-                            self._logger.error( "_recorderCallback: STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                            self._logger.error( "_recorderCallback: STARTED: recording with id=%d in unexpected state=%d" % ( recording.id, recording.status ) )
 
                     elif recorderState == Recorder.NOT_STARTED:
                         if recording.status == RecordingState.START_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
                             self._logger.warning( "Recording '%s' not started" % ( recording.title ) )
                         else:
-                            self._logger.error( "_recorderCallback: NOT_STARTED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                            self._logger.error( "_recorderCallback: NOT_STARTED: recording with id=%d in unexpected state=%d" % ( recording.id, recording.status ) )
 
                     elif recorderState == Recorder.FINISHED:
                         if recording.status == RecordingState.STOP_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_FINISHED )
                             self._logger.warning( "Recording '%s' finished" % ( recording.title ) )
                         else:
-                            self._logger.error( "_recorderCallback: FINISHED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                            self._logger.error( "_recorderCallback: FINISHED: recording with id=%d in unexpected state=%d" % ( recording.id, recording.status ) )
 
                     elif recorderState == Recorder.NOT_STOPPED:
                         if recording.status == RecordingState.STOP_RECORDING:
                             recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
                             self._logger.warning( "Recording '%s' not stopped" % ( recording.title ) )
                         else:
-                            self._logger.error( "_recorderCallback: NOT_STOPPED: recording with timerId=%d in unexpected state=%d" % ( timerId, recording.status ) )
+                            self._logger.error( "_recorderCallback: NOT_STOPPED: recording with id=%d in unexpected state=%d" % ( recording.id, recording.status ) )
 
                     elif recorderState == Recorder.ABORTED:
                         if recording.status != RecordingState.RECORDING_FINISHED:
-                            self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d set to UNFINISHED (was %d)" % ( timerId, recording.status ) )
+                            self._logger.warning( "_recorderCallback: ABORTED: recording with id=%d set to UNFINISHED (was %d)" % ( recording.id, recording.status ) )
                             recording.changeStatus( conn, RecordingState.RECORDING_UNFINISHED )
                             self._logger.warning( "Recording '%s' aborted" % ( recording.title ) )
 
                             # Request a reschedule of recordings, because a recording failed.
                             Scheduler().requestReschedule()
                         else:
-                            self._logger.warning( "_recorderCallback: ABORTED: recording with timerId=%d already finished" % ( timerId ) )
+                            self._logger.warning( "_recorderCallback: ABORTED: recording with id=%d already finished" % ( recording.id ) )
 
                     if recording.status == RecordingState.RECORDING_FINISHED or \
                        recording.status == RecordingState.RECORDING_UNFINISHED:

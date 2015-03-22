@@ -383,11 +383,11 @@ class RecordingAbstract( object ):
         return recordings
 
     @classmethod
-    def getFromDb( cls, conn, id ):  # @ReservedAssignment
+    def getFromDb( cls, conn, id_ ):
         assert cls._tableName != None, "Not the right class: %r" % ( cls )
-        recording = Cache().get( cls._tableName, id )
+        recording = Cache().get( cls._tableName, id_ )
         if not recording and conn:
-            row = conn.execute( "SELECT * FROM %s WHERE id = ?" % ( cls._tableName ), ( id, ) )
+            row = conn.execute( "SELECT * FROM %s WHERE id = ?" % ( cls._tableName ), ( id_, ) )
             if row:
                 recording = cls._createRecordingFromDbDict( conn, row[0] )
 
@@ -537,6 +537,8 @@ class RecordingAbstract( object ):
                                              self._rerecord ) )
                 if recordingId:
                     self._id = recordingId
+                else:
+                    self._logger.error( "Recording not inserted into table %s" % ( self._tableName ) )
 
             Cache().cache( self._tableName, self.id, self )
 
