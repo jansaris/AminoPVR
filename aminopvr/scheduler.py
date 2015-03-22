@@ -260,7 +260,7 @@ class Scheduler( threading.Thread ):
         self._logger.warning( "Removing existing timers that were not updated." )
         with self._lock:
             untouchedTimers = set( self._timers.keys() ).difference( set( touchedTimers ) )
-            self._logger.info( "untouchedTimers=%r" % ( untouchedTimers ) )
+            self._logger.debug( "untouchedTimers=%r" % ( untouchedTimers ) )
             for untouchedTimer in untouchedTimers:
                 if untouchedTimer in self._timers:
                     timer = self._timers[untouchedTimer]
@@ -487,7 +487,7 @@ class Scheduler( threading.Thread ):
                     if schedule.type == Schedule.SCHEDULE_TYPE_ONCE:
                         break
                 else:
-                    self._logger.info( "_handleSchedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
+                    self._logger.debug( "_handleSchedule: Program %i - '%s' starting at %s does not meet schedule requirements" % ( program.id, program.title, startTime ) )
 
         return newRecordings
 
@@ -578,7 +578,7 @@ class Scheduler( threading.Thread ):
         filteredPrograms = []
         for program in programs:
             found = False
-            self._logger.info( "_filterOutDuplicates: checking program: title=%s, subtitle=%s, description=%s" % ( program.title, program.subtitle, program.description ) )
+            self._logger.debug( "_filterOutDuplicates: checking program: title=%s, subtitle=%s, description=%s" % ( program.title, program.subtitle, program.description ) )
             for recording in recordings:
                 if recording.epgProgram:
                     self._logger.debug( "_filterOutDuplicates: checking against: title=%s, subtitle=%s, description=%s" % ( recording.epgProgram.title, recording.epgProgram.subtitle, recording.epgProgram.description ) )
@@ -588,7 +588,7 @@ class Scheduler( threading.Thread ):
                      ( ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_TITLE       and program.title       == recording.epgProgram.title )       or not ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_TITLE ) )    and
                      ( ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_SUBTITLE    and program.subtitle    == recording.epgProgram.subtitle )    or not ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_SUBTITLE ) ) and
                      ( ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_DESCRIPTION and program.description == recording.epgProgram.description ) or not ( schedule.dupMethod & Schedule.DUPLICATION_METHOD_DESCRIPTION ) ) ):
-                    self._logger.info( "_filterOutDuplicates: found duplicate program: dupMethod=%i, title=%s, subtitle=%s, description=%s" % ( schedule.dupMethod, recording.epgProgram.title, recording.epgProgram.subtitle, recording.epgProgram.description ) )
+                    self._logger.debug( "_filterOutDuplicates: found duplicate program: dupMethod=%i, title=%s, subtitle=%s, description=%s" % ( schedule.dupMethod, recording.epgProgram.title, recording.epgProgram.subtitle, recording.epgProgram.description ) )
                     found = True
                     break
             if not found:
