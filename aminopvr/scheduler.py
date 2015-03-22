@@ -85,7 +85,7 @@ class Scheduler( threading.Thread ):
             for timerId in self._timers.keys():
                 timer = self._timers[timerId]
                 if "recordingId" in timer:
-                    recording = Recording.getFromDb( conn, timer["recordingId"] )
+                    recording = copy.copy( Recording.getFromDb( conn, timer["recordingId"] ) )
                     if recording:
                         recording._id = timerId     # TODO: this should be removed, don't set private member
                         recordings.append( recording )
