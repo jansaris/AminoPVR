@@ -485,7 +485,7 @@ class EpgProvider( threading.Thread ):
         for key in json.keys():
             if key not in ["start", "end", "id", "name", "description", "episodeTitle", "actors",
                            "directors", "genres", "presenters", "aspectratio", "nicamWarning",
-                           "nicamParentalRating", "disableRestart", "restartPriceTier"]:
+                           "nicamParentalRating", "disableRestart", "restartPriceTier", "images"]:
                 self._logger.warning( "Unknown json key: %s: %s" % ( key, json[key] ) )
 
         return program
