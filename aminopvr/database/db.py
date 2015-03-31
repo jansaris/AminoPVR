@@ -72,7 +72,7 @@ class DBConnection( object ):
                     else:
                         sqlResult = self._cursor.execute( query, args )
                     if logger:
-                        logger.warning( "Executing query: %s with args=%r" % ( query, args ) )
+                        logger.debug( "Executing query: %s with args=%r" % ( query, args ) )
                     if not self._delayCommit and not query.lower().startswith( "select" ):
                         self._conn.commit()
                     if query.lower().startswith( "select" ):
