@@ -158,6 +158,8 @@ class VirtualTuner( threading.Thread ):
                 self._inputStream.close()
                 self._inputStream = None
         except:
+            self._logger.error( "VirtualTuner.run: unable to close input stream" )
+            printTraceback()
             pass
         Watchdog().remove( self._watchdogId )
         self._terminateTuner()

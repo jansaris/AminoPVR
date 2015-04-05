@@ -21,6 +21,7 @@ from aminopvr.tools import Singleton, printTraceback
 from aminopvr.virtual_tuner import VirtualTuner
 from Queue import Queue
 import logging
+import stat
 import os
 import threading
 # import uuid
@@ -62,6 +63,7 @@ class ActiveRecording( object ):
             self._tuner.addListener( self._id, self._dataCallback )
             try:
                 fd = os.open( self._outputFile, os.O_WRONLY | os.O_CREAT, 0644 )
+                os.chmod( self._outputFile, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH )
                 self._output = os.fdopen( fd, "wb" )
                 self._notifyListener( ActiveRecording.STARTED )
             except:
@@ -75,6 +77,7 @@ class ActiveRecording( object ):
     def stop( self, abort=False ):
         if self._tuner:
             self._tuner.removeListener( self._id )
+            self._tuner = None
             if self._output:
                 self._output.close()
                 self._output = None
@@ -90,20 +93,10 @@ class ActiveRecording( object ):
             except:
                 self._logger.error( "ActiveRecording._dataCallback: error while writing to recording %s" % ( self._outputFile ) )
                 printTraceback()
-                self._tuner.removeListener( self._id )
-                self._tuner = None
-                if self._output:
-                    self._output.close()
-                    self._output = None
-                self._notifyListener( ActiveRecording.ABORTED )
+                self.stop( True )
         else:
             self._logger.warning( "ActiveRecording._dataCallback: didn't receive data" )
-            self._tuner.removeListener( self._id )
-            self._tuner = None
-            if self._output:
-                self._output.close()
-                self._output = None
-            self._notifyListener( ActiveRecording.ABORTED )
+            self.stop( True )
 
     def _notifyListener( self, result ):
         if self._callback:
